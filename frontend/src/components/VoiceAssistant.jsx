@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from './ui/button';
 import { 
@@ -7,7 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
-import { Mic, MicOff, Volume2, Loader2, X } from 'lucide-react';
+import { Textarea } from './ui/textarea';
+import { ScrollArea } from './ui/scroll-area';
+import { Mic, MicOff, Volume2, Loader2, X, Send, MessageSquare } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -20,6 +22,8 @@ const VoiceAssistant = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
+  const [textInput, setTextInput] = useState('');
+  const [mode, setMode] = useState('voice'); // 'voice' or 'text'
   
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -48,7 +52,7 @@ const VoiceAssistant = () => {
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
-      setError('Microphone access denied');
+      setError('Accès au microphone refusé');
       console.error('Error accessing microphone:', err);
     }
   };
@@ -63,7 +67,6 @@ const VoiceAssistant = () => {
   const processAudio = async (audioBlob) => {
     setIsProcessing(true);
     try {
-      // Convert blob to base64
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
       reader.onloadend = async () => {
@@ -76,26 +79,50 @@ const VoiceAssistant = () => {
         });
 
         const userText = transcribeResponse.data.text;
-        setMessages(prev => [...prev, { role: 'user', content: userText }]);
-
-        // Get AI response
-        const chatResponse = await axios.post(`${API_URL}/api/voice/chat`, {
-          text: userText,
-          language: language
-        });
-
-        const aiResponse = chatResponse.data.response;
-        setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
-
-        // Speak response
-        await speakText(aiResponse);
+        await sendChatMessage(userText);
       };
     } catch (err) {
-      setError('Error processing audio');
+      setError('Erreur de transcription');
       console.error('Processing error:', err);
+      setIsProcessing(false);
+    }
+  };
+
+  const sendChatMessage = useCallback(async (text) => {
+    if (!text.trim()) return;
+    
+    setIsProcessing(true);
+    setMessages(prev => [...prev, { role: 'user', content: text }]);
+
+    try {
+      // Get AI response
+      const chatResponse = await axios.post(`${API_URL}/api/voice/chat`, {
+        text: text,
+        language: language
+      });
+
+      const aiResponse = chatResponse.data.response;
+      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+
+      // Speak response if in voice mode
+      if (mode === 'voice') {
+        await speakText(aiResponse);
+      }
+    } catch (err) {
+      setError('Erreur de communication');
+      console.error('Chat error:', err);
     } finally {
       setIsProcessing(false);
     }
+  }, [language, mode]);
+
+  const handleTextSubmit = async (e) => {
+    e?.preventDefault();
+    if (!textInput.trim() || isProcessing) return;
+    
+    const text = textInput;
+    setTextInput('');
+    await sendChatMessage(text);
   };
 
   const speakText = async (text) => {
@@ -124,6 +151,11 @@ const VoiceAssistant = () => {
     setIsSpeaking(false);
   };
 
+  const clearChat = () => {
+    setMessages([]);
+    setError(null);
+  };
+
   return (
     <>
       {/* Floating Action Button */}
@@ -138,81 +170,167 @@ const VoiceAssistant = () => {
 
       {/* Voice Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mic className="h-5 w-5 text-primary" />
-              {t('voiceAssistant')}
+            <DialogTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Mic className="h-5 w-5 text-primary" />
+                {t('voiceAssistant')} PREMIDIS
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  variant={mode === 'voice' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setMode('voice')}
+                >
+                  <Mic className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={mode === 'text' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setMode('text')}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                </Button>
+              </div>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col items-center gap-6 py-6">
-            {/* Recording Button */}
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isProcessing || isSpeaking}
-              className={`
-                h-24 w-24 rounded-full flex items-center justify-center transition-all duration-300
-                ${isRecording 
-                  ? 'bg-destructive text-destructive-foreground animate-pulse' 
-                  : 'bg-primary text-primary-foreground hover:scale-105'
-                }
-                ${(isProcessing || isSpeaking) ? 'opacity-50 cursor-not-allowed' : ''}
-              `}
-              data-testid="voice-record-btn"
-            >
-              {isProcessing ? (
-                <Loader2 className="h-10 w-10 animate-spin" />
-              ) : isSpeaking ? (
-                <Volume2 className="h-10 w-10 animate-pulse" />
-              ) : isRecording ? (
-                <MicOff className="h-10 w-10" />
-              ) : (
-                <Mic className="h-10 w-10" />
+          {/* Messages Area */}
+          <ScrollArea className="flex-1 min-h-[300px] max-h-[400px] pr-4">
+            <div className="space-y-4 py-4">
+              {messages.length === 0 && (
+                <div className="text-center text-muted-foreground py-8">
+                  <Mic className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p className="text-sm">
+                    {mode === 'voice' 
+                      ? 'Appuyez sur le bouton et parlez' 
+                      : 'Écrivez votre question ci-dessous'}
+                  </p>
+                </div>
               )}
-            </button>
-
-            {/* Status Text */}
-            <p className="text-sm text-muted-foreground">
-              {isProcessing ? t('processing') : 
-               isSpeaking ? 'Réponse en cours...' :
-               isRecording ? t('listening') : t('speak')}
-            </p>
-
-            {/* Stop Speaking Button */}
-            {isSpeaking && (
-              <Button variant="outline" size="sm" onClick={stopSpeaking}>
-                <X className="h-4 w-4 mr-2" />
-                Arrêter
-              </Button>
-            )}
-
-            {/* Error Display */}
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
-
-            {/* Messages */}
-            {messages.length > 0 && (
-              <div className="w-full max-h-48 overflow-y-auto space-y-3 mt-4 p-3 bg-muted rounded-lg">
-                {messages.slice(-4).map((msg, idx) => (
+              {messages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
                   <div
-                    key={idx}
                     className={`
-                      text-sm p-2 rounded-lg
+                      max-w-[85%] rounded-2xl px-4 py-3
                       ${msg.role === 'user' 
-                        ? 'bg-primary/10 text-foreground ml-4' 
-                        : 'bg-secondary/10 text-foreground mr-4'
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-muted'
                       }
                     `}
                   >
-                    <p className="text-xs font-medium mb-1 text-muted-foreground">
+                    <p className="text-xs font-medium mb-1 opacity-70">
                       {msg.role === 'user' ? 'Vous' : 'Assistant'}
                     </p>
-                    {msg.content}
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   </div>
-                ))}
+                </div>
+              ))}
+              {isProcessing && (
+                <div className="flex justify-start">
+                  <div className="bg-muted rounded-2xl px-4 py-3">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          {/* Error Display */}
+          {error && (
+            <p className="text-sm text-destructive text-center py-2">{error}</p>
+          )}
+
+          {/* Input Area */}
+          <div className="border-t pt-4 space-y-4">
+            {mode === 'voice' ? (
+              <div className="flex flex-col items-center gap-4">
+                {/* Recording Button */}
+                <button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isProcessing || isSpeaking}
+                  className={`
+                    h-20 w-20 rounded-full flex items-center justify-center transition-all duration-300
+                    ${isRecording 
+                      ? 'bg-destructive text-destructive-foreground animate-pulse scale-110' 
+                      : 'bg-primary text-primary-foreground hover:scale-105'
+                    }
+                    ${(isProcessing || isSpeaking) ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
+                  data-testid="voice-record-btn"
+                >
+                  {isProcessing ? (
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  ) : isSpeaking ? (
+                    <Volume2 className="h-8 w-8 animate-pulse" />
+                  ) : isRecording ? (
+                    <MicOff className="h-8 w-8" />
+                  ) : (
+                    <Mic className="h-8 w-8" />
+                  )}
+                </button>
+
+                {/* Status Text */}
+                <p className="text-sm text-muted-foreground">
+                  {isProcessing ? 'Traitement...' : 
+                   isSpeaking ? 'Réponse en cours...' :
+                   isRecording ? 'Écoute en cours... (cliquez pour arrêter)' : 
+                   'Cliquez pour parler'}
+                </p>
+
+                {/* Stop Speaking Button */}
+                {isSpeaking && (
+                  <Button variant="outline" size="sm" onClick={stopSpeaking}>
+                    <X className="h-4 w-4 mr-2" />
+                    Arrêter
+                  </Button>
+                )}
               </div>
+            ) : (
+              <form onSubmit={handleTextSubmit} className="flex gap-2">
+                <Textarea
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Posez votre question..."
+                  className="min-h-[60px] max-h-[100px] resize-none"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleTextSubmit();
+                    }
+                  }}
+                  disabled={isProcessing}
+                  data-testid="voice-text-input"
+                />
+                <Button 
+                  type="submit" 
+                  disabled={isProcessing || !textInput.trim()}
+                  className="h-auto"
+                  data-testid="voice-send-btn"
+                >
+                  {isProcessing ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
+                </Button>
+              </form>
+            )}
+
+            {/* Clear Chat */}
+            {messages.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearChat}
+                className="w-full text-muted-foreground"
+              >
+                Effacer la conversation
+              </Button>
             )}
           </div>
         </DialogContent>

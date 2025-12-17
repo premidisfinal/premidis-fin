@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Banknote, Download, FileText, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Banknote, Download, FileText, Loader2, TrendingUp, TrendingDown, Printer, Upload } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 
@@ -75,16 +75,34 @@ const Payroll = () => {
             <p className="text-muted-foreground">Consultez vos fiches de paie</p>
           </div>
           
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-32" data-testid="year-select">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((year) => (
-                <SelectItem key={year} value={year}>{year}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => window.print()} data-testid="print-payroll-btn">
+              <Printer className="mr-2 h-4 w-4" />
+              Imprimer
+            </Button>
+            <Button variant="outline" onClick={() => {
+              const csv = payslips.map(p => `${p.month}/${p.year},${p.base_salary},${p.bonuses},${p.deductions},${p.net_salary}`).join('\n');
+              const blob = new Blob([`Mois,Base,Primes,Retenues,Net\n${csv}`], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `fiches_paie_${selectedYear}.csv`;
+              a.click();
+            }} data-testid="export-payroll-btn">
+              <Download className="mr-2 h-4 w-4" />
+              Exporter
+            </Button>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-32" data-testid="year-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Summary Cards */}

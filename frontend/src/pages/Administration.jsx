@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -20,6 +21,7 @@ import { toast } from 'sonner';
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Administration = () => {
+  const navigate = useNavigate();
   const { user, isAdmin, canEdit } = useAuth();
   const { t } = useLanguage();
   const [employees, setEmployees] = useState([]);
@@ -398,29 +400,39 @@ const Administration = () => {
                     </div>
                   </div>
 
-                  {isAdmin() && (
-                    <div className="mt-4 pt-4 border-t flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => handleEdit(employee)}
-                        data-testid={`edit-${employee.id}`}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        {t('edit')}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                        onClick={() => handleDelete(employee.id)}
-                        data-testid={`delete-${employee.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="mt-4 pt-4 border-t flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => navigate(`/employee/${employee.id}`)}
+                      data-testid={`view-${employee.id}`}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Voir dossier
+                    </Button>
+                    {isAdmin() && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(employee)}
+                          data-testid={`edit-${employee.id}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={() => handleDelete(employee.id)}
+                          data-testid={`delete-${employee.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}

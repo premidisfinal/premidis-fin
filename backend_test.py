@@ -403,6 +403,14 @@ class PREMIERDIsAPITester:
         self.test_list_leaves()
         self.test_leave_stats()
         self.test_approve_leave()
+        self.test_leaves_calendar()
+        
+        # Attendance management
+        self.test_attendance_check_in()
+        self.test_attendance_today()
+        self.test_attendance_check_out()
+        self.test_list_attendance()
+        self.test_create_attendance_record()
         
         # Payroll
         self.test_list_payslips()

@@ -251,7 +251,7 @@ const Communication = () => {
 
           {/* Chat Tab */}
           <TabsContent value="chat">
-            <div className="grid gap-4 md:grid-cols-3 h-[600px]">
+            <div className="grid gap-4 md:grid-cols-3 h-[700px]">
               {/* Contacts List */}
               <Card className="md:col-span-1">
                 <CardHeader className="pb-3">
@@ -267,7 +267,7 @@ const Communication = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <ScrollArea className="h-[500px]">
+                  <ScrollArea className="h-[600px]">
                     {filteredContacts.map((contact) => (
                       <div
                         key={contact.id}
@@ -321,7 +321,7 @@ const Communication = () => {
                       </div>
                     </CardHeader>
                     
-                    <ScrollArea className="flex-1 p-4">
+                    <ScrollArea className="flex-1 p-4" style={{ height: '500px' }}>
                       <div className="space-y-4">
                         {getConversation(selectedContact.id).map((msg) => (
                           <div
@@ -330,14 +330,14 @@ const Communication = () => {
                           >
                             <div
                               className={`
-                                max-w-[70%] rounded-2xl px-4 py-2
+                                max-w-[80%] rounded-2xl px-4 py-3
                                 ${msg.sender_id === user.id 
                                   ? 'bg-primary text-primary-foreground' 
                                   : 'bg-muted'
                                 }
                               `}
                             >
-                              <p>{msg.content}</p>
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                               <p className={`text-xs mt-1 ${msg.sender_id === user.id ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                                 {format(new Date(msg.created_at), 'HH:mm')}
                               </p>
@@ -347,19 +347,26 @@ const Communication = () => {
                       </div>
                     </ScrollArea>
 
-                    <div className="p-4 border-t">
+                    <div className="p-4 border-t bg-muted/30">
                       <div className="flex gap-2">
-                        <Input
+                        <Textarea
                           placeholder="Écrivez votre message..."
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                          className="min-h-[60px] max-h-[120px] resize-none"
                           data-testid="message-input"
                         />
-                        <Button onClick={handleSendMessage} data-testid="send-message-btn">
-                          <Send className="h-4 w-4" />
+                        <Button onClick={handleSendMessage} className="h-auto" data-testid="send-message-btn">
+                          <Send className="h-5 w-5" />
                         </Button>
                       </div>
+                      <p className="text-xs text-muted-foreground mt-1">Appuyez sur Entrée pour envoyer, Shift+Entrée pour un saut de ligne</p>
                     </div>
                   </>
                 ) : (

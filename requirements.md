@@ -1,4 +1,4 @@
-# PREMIERDIs HR Platform - Requirements & Architecture
+# PREMIDIS HR Platform - Requirements & Architecture
 
 ## Original Problem Statement
 Application web RH (PWA) pour PREMIERDIs sarl, une grande entreprise internationale avec environ 10 000 employés répartis dans 6 pays. L'objectif est de créer une plateforme RH centralisée, moderne, intuitive et évolutive, permettant une gestion complète des employés, des congés, des rémunérations et de la communication interne.
@@ -13,10 +13,10 @@ Application web RH (PWA) pour PREMIERDIs sarl, une grande entreprise internation
 
 ### Backend (FastAPI + MongoDB)
 - **Auth Module**: JWT authentication with 4 roles (super_admin, admin, secretary, employee)
-- **Employee Module**: CRUD operations for employee management
+- **Employee Module**: CRUD operations + document management
 - **Leave Module**: Leave request creation, approval workflow
 - **Payroll Module**: Payslip management
-- **Performance Module**: Evaluations and objectives
+- **Performance Module**: Evaluations and objectives creation
 - **Communication Module**: Internal chat + official announcements
 - **Rules Module**: Internal regulations
 - **Voice AI Module**: OpenAI Whisper (STT) + TTS integration
@@ -25,11 +25,14 @@ Application web RH (PWA) pour PREMIERDIs sarl, une grande entreprise internation
 - **Authentication**: Login/Register with JWT
 - **Dashboard**: Tile-based module overview with stats
 - **6 Module Pages**: Communication, Administration, Time Management, Performance, Rules, Payroll
+- **Employee Profile**: Odoo-style with tabs (Travail, CV, Certifications, Personnel, Paie, Objectifs)
+- **Notification Center**: Real-time notifications popup
 - **Settings**: Profile, language selection, notifications
 - **Voice Assistant**: Floating action button with multilingual support
+- **Logo**: PREMIDIS custom SVG logo (turquoise/purple rings)
 
 ### Database Collections
-- users, employees, leaves, payslips, evaluations, announcements, messages, rules
+- users, employees, leaves, payslips, evaluations, announcements, messages, rules, documents
 
 ## Features Completed ✅
 1. ✅ User authentication (register/login/JWT)
@@ -44,19 +47,25 @@ Application web RH (PWA) pour PREMIERDIs sarl, une grande entreprise internation
 10. ✅ Voice AI assistant (Whisper + TTS + Chat)
 11. ✅ Role-based access control
 12. ✅ Responsive design
+13. ✅ PREMIDIS Logo integrated (sidebar + login)
+14. ✅ Notification Center with real-time updates
+15. ✅ Employee Profile with Odoo-style tabs
+16. ✅ "Mon Dossier" for employees (view only)
+17. ✅ Admin objective creation
+18. ✅ Document management endpoints
 
 ## Test Accounts
 - **Super Admin**: superadmin@premierdis.com / SuperAdmin123!
 - **Employee**: admin@premierdis.com / Admin123!
 
-## Next Tasks (Phase 2)
+## Next Tasks (Phase 3)
 1. [ ] SendGrid email integration for account verification
-2. [ ] Employee photo upload (file storage)
-3. [ ] Advanced payslip PDF generation/download
+2. [ ] Employee photo upload with storage
+3. [ ] Payslip PDF generation/download
 4. [ ] Real-time chat with WebSocket
-5. [ ] Performance evaluation creation form
-6. [ ] Attendance tracking module
-7. [ ] Export data to Excel/CSV
-8. [ ] Dashboard charts and analytics
-9. [ ] Push notifications
-10. [ ] PWA manifest and offline support
+5. [ ] Fingerprint device integration for attendance
+6. [ ] Export data to Excel/CSV
+7. [ ] Dashboard charts and analytics
+8. [ ] Push notifications
+9. [ ] PWA manifest and offline support
+10. [ ] Premium account password management

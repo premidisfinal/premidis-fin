@@ -161,9 +161,10 @@ const VoiceAssistant = () => {
       {/* Floating Action Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg hover:shadow-xl flex items-center justify-center text-white transition-all duration-300 hover:scale-110 voice-pulse"
+        className="fixed bottom-20 right-6 z-[9999] h-14 w-14 rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg hover:shadow-xl flex items-center justify-center text-white transition-all duration-300 hover:scale-110 voice-pulse"
         aria-label={t('voiceAssistant')}
         data-testid="voice-assistant-fab"
+        style={{ zIndex: 9999 }}
       >
         <Mic className="h-6 w-6" />
       </button>

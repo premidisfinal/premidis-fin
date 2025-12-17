@@ -361,6 +361,35 @@ async def delete_employee(
         raise HTTPException(status_code=404, detail="Employee not found")
     return {"message": "Employee deleted"}
 
+@employees_router.get("/{employee_id}/documents")
+async def get_employee_documents(employee_id: str, current_user: dict = Depends(get_current_user)):
+    # Employees can only see their own documents
+    if current_user["role"] == "employee" and current_user["id"] != employee_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    documents = await db.documents.find({"employee_id": employee_id}, {"_id": 0}).to_list(100)
+    return {"documents": documents}
+
+@employees_router.post("/{employee_id}/documents")
+async def upload_employee_document(
+    employee_id: str,
+    name: str,
+    doc_type: str,
+    current_user: dict = Depends(require_roles(["super_admin", "admin", "secretary"]))
+):
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "employee_id": employee_id,
+        "name": name,
+        "type": doc_type,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    await db.documents.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
 # ==================== LEAVES ROUTES ====================
 @leaves_router.get("")
 async def list_leaves(

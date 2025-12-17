@@ -301,6 +301,60 @@ class PREMIERDIsAPITester:
         self.token = original_token
         return success
 
+    def test_leaves_calendar(self):
+        """Test leaves calendar endpoint"""
+        success, response, status = self.make_request('GET', 'leaves/calendar', expected_status=200)
+        self.log_result("Leaves Calendar", success, f"Status: {status}")
+        return success
+
+    def test_attendance_check_in(self):
+        """Test attendance check-in"""
+        success, response, status = self.make_request('POST', 'attendance/check-in', {}, expected_status=200)
+        self.log_result("Attendance Check-in", success, f"Status: {status}")
+        return success
+
+    def test_attendance_check_out(self):
+        """Test attendance check-out"""
+        success, response, status = self.make_request('POST', 'attendance/check-out', {}, expected_status=200)
+        self.log_result("Attendance Check-out", success, f"Status: {status}")
+        return success
+
+    def test_attendance_today(self):
+        """Test get today's attendance"""
+        success, response, status = self.make_request('GET', 'attendance/today', expected_status=200)
+        self.log_result("Today's Attendance", success, f"Status: {status}")
+        return success
+
+    def test_list_attendance(self):
+        """Test listing attendance records"""
+        success, response, status = self.make_request('GET', 'attendance', expected_status=200)
+        self.log_result("List Attendance", success, f"Status: {status}")
+        return success
+
+    def test_create_attendance_record(self):
+        """Test creating attendance record (admin only)"""
+        if not self.admin_token:
+            return False
+            
+        # Switch to admin token
+        original_token = self.token
+        self.token = self.admin_token
+        
+        attendance_data = {
+            "employee_id": self.user_id,
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "check_in": "09:00",
+            "check_out": "17:00",
+            "notes": "Test attendance record"
+        }
+        
+        success, response, status = self.make_request('POST', 'attendance', attendance_data, expected_status=200)
+        self.log_result("Create Attendance Record", success, f"Status: {status}")
+        
+        # Switch back to original token
+        self.token = original_token
+        return success
+
     def test_voice_endpoints(self):
         """Test voice AI endpoints availability"""
         # Test transcribe endpoint (will fail without audio data, but should return 400 not 500)

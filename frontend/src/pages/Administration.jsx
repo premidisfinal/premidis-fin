@@ -1,0 +1,434 @@
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Badge } from '../components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import { 
+  Users, Plus, Search, Filter, Loader2, Mail, Phone, 
+  Building2, Calendar, Briefcase, Edit, Trash2, Eye
+} from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'sonner';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+const Administration = () => {
+  const { user, isAdmin, canEdit } = useAuth();
+  const { t } = useLanguage();
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState('all');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editEmployee, setEditEmployee] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    department: 'administration',
+    position: '',
+    hire_date: '',
+    salary: '',
+    contract_type: 'CDI',
+    country: 'RDC'
+  });
+
+  const departments = [
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'comptabilite', label: 'Comptabilité' },
+    { value: 'administration', label: 'Administration' },
+    { value: 'ressources_humaines', label: 'Ressources Humaines' },
+    { value: 'juridique', label: 'Juridique' },
+    { value: 'nettoyage', label: 'Nettoyage' },
+    { value: 'securite', label: 'Sécurité' }
+  ];
+
+  const contractTypes = ['CDI', 'CDD', 'Stage', 'Consultant'];
+  const countries = ['RDC', 'Congo', 'Rwanda', 'Burundi', 'Uganda', 'Kenya'];
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [filterDepartment]);
+
+  const fetchEmployees = async () => {
+    try {
+      const params = filterDepartment !== 'all' ? { department: filterDepartment } : {};
+      const response = await axios.get(`${API_URL}/api/employees`, { params });
+      setEmployees(response.data.employees);
+    } catch (error) {
+      toast.error('Erreur lors du chargement des employés');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      if (editEmployee) {
+        await axios.put(`${API_URL}/api/employees/${editEmployee.id}`, formData);
+        toast.success('Employé mis à jour');
+      } else {
+        await axios.post(`${API_URL}/api/employees`, {
+          ...formData,
+          salary: parseFloat(formData.salary)
+        });
+        toast.success('Employé ajouté');
+      }
+      setDialogOpen(false);
+      resetForm();
+      fetchEmployees();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (employee) => {
+    setEditEmployee(employee);
+    setFormData({
+      first_name: employee.first_name,
+      last_name: employee.last_name,
+      email: employee.email,
+      phone: employee.phone || '',
+      department: employee.department,
+      position: employee.position,
+      hire_date: employee.hire_date,
+      salary: employee.salary.toString(),
+      contract_type: employee.contract_type,
+      country: employee.country
+    });
+    setDialogOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet employé ?')) return;
+    
+    try {
+      await axios.delete(`${API_URL}/api/employees/${id}`);
+      toast.success('Employé supprimé');
+      fetchEmployees();
+    } catch (error) {
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
+  const resetForm = () => {
+    setEditEmployee(null);
+    setFormData({
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      department: 'administration',
+      position: '',
+      hire_date: '',
+      salary: '',
+      contract_type: 'CDI',
+      country: 'RDC'
+    });
+  };
+
+  const filteredEmployees = employees.filter(emp => 
+    `${emp.first_name} ${emp.last_name} ${emp.email}`.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6" data-testid="administration-page">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{t('administration')}</h1>
+            <p className="text-muted-foreground">Gestion des dossiers du personnel</p>
+          </div>
+          
+          {canEdit() && (
+            <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+              <DialogTrigger asChild>
+                <Button data-testid="add-employee-btn">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Ajouter un employé
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editEmployee ? 'Modifier l\'employé' : 'Nouvel employé'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t('firstName')}</Label>
+                      <Input
+                        value={formData.first_name}
+                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                        required
+                        data-testid="emp-firstname"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t('lastName')}</Label>
+                      <Input
+                        value={formData.last_name}
+                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                        required
+                        data-testid="emp-lastname"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t('email')}</Label>
+                      <Input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        required
+                        data-testid="emp-email"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Téléphone</Label>
+                      <Input
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        data-testid="emp-phone"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t('department')}</Label>
+                      <Select
+                        value={formData.department}
+                        onValueChange={(value) => setFormData({ ...formData, department: value })}
+                      >
+                        <SelectTrigger data-testid="emp-department">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departments.map((dept) => (
+                            <SelectItem key={dept.value} value={dept.value}>
+                              {dept.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Poste</Label>
+                      <Input
+                        value={formData.position}
+                        onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                        required
+                        data-testid="emp-position"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Date d'embauche</Label>
+                      <Input
+                        type="date"
+                        value={formData.hire_date}
+                        onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                        required
+                        data-testid="emp-hire-date"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Salaire (USD)</Label>
+                      <Input
+                        type="number"
+                        value={formData.salary}
+                        onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                        required
+                        data-testid="emp-salary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Type de contrat</Label>
+                      <Select
+                        value={formData.contract_type}
+                        onValueChange={(value) => setFormData({ ...formData, contract_type: value })}
+                      >
+                        <SelectTrigger data-testid="emp-contract">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {contractTypes.map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Pays</Label>
+                      <Select
+                        value={formData.country}
+                        onValueChange={(value) => setFormData({ ...formData, country: value })}
+                      >
+                        <SelectTrigger data-testid="emp-country">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countries.map((country) => (
+                            <SelectItem key={country} value={country}>{country}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={submitting} data-testid="save-employee-btn">
+                    {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {editEmployee ? 'Mettre à jour' : 'Ajouter'}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un employé..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              data-testid="employee-search"
+            />
+          </div>
+          <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+            <SelectTrigger className="w-[200px]" data-testid="department-filter">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Département" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les départements</SelectItem>
+              {departments.map((dept) => (
+                <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Employee Count */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Users className="h-4 w-4" />
+          <span>{filteredEmployees.length} employé(s) trouvé(s)</span>
+        </div>
+
+        {/* Employees Grid */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : filteredEmployees.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12 text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Aucun employé trouvé</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredEmployees.map((employee) => (
+              <Card key={employee.id} className="hover:shadow-md transition-shadow" data-testid={`employee-card-${employee.id}`}>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-14 w-14">
+                      <AvatarImage src={employee.avatar_url} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                        {employee.first_name?.[0]}{employee.last_name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold truncate">
+                        {employee.first_name} {employee.last_name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">{employee.position}</p>
+                      <Badge variant="secondary" className="mt-1 capitalize text-xs">
+                        {employee.department?.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                      <span className="truncate">{employee.email}</span>
+                    </div>
+                    {employee.phone && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Phone className="h-4 w-4" />
+                        <span>{employee.phone}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Building2 className="h-4 w-4" />
+                      <span>{employee.country}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Briefcase className="h-4 w-4" />
+                      <span>{employee.contract_type}</span>
+                    </div>
+                  </div>
+
+                  {isAdmin() && (
+                    <div className="mt-4 pt-4 border-t flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleEdit(employee)}
+                        data-testid={`edit-${employee.id}`}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        {t('edit')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => handleDelete(employee.id)}
+                        data-testid={`delete-${employee.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default Administration;

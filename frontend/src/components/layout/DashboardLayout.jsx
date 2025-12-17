@@ -25,9 +25,11 @@ import {
   Menu,
   ChevronDown,
   Globe,
-  Bell
+  User
 } from 'lucide-react';
 import VoiceAssistant from '../VoiceAssistant';
+import NotificationCenter from '../NotificationCenter';
+import Logo from '../Logo';
 
 const DashboardLayout = ({ children }) => {
   const { user, logout, isAdmin } = useAuth();
@@ -44,6 +46,7 @@ const DashboardLayout = ({ children }) => {
     { path: '/performance', icon: TrendingUp, label: 'performance' },
     { path: '/rules', icon: BookOpen, label: 'rules' },
     { path: '/payroll', icon: Banknote, label: 'payroll' },
+    { path: '/my-profile', icon: User, label: 'Mon Dossier', employeeOnly: true },
   ];
 
   const handleLogout = () => {
@@ -55,6 +58,7 @@ const DashboardLayout = ({ children }) => {
     <nav className="flex flex-col gap-2 p-4">
       {navItems.map((item) => {
         if (item.adminOnly && !isAdmin()) return null;
+        if (item.employeeOnly && isAdmin()) return null;
         const isActive = location.pathname.startsWith(item.path);
         
         return (
@@ -72,7 +76,7 @@ const DashboardLayout = ({ children }) => {
             data-testid={`nav-${item.label}`}
           >
             <item.icon className="h-5 w-5" />
-            <span className="font-medium">{t(item.label)}</span>
+            <span className="font-medium">{typeof item.label === 'string' && item.label.includes(' ') ? item.label : t(item.label)}</span>
           </Link>
         );
       })}
@@ -83,14 +87,8 @@ const DashboardLayout = ({ children }) => {
     <div className="min-h-screen bg-muted/30">
       {/* Desktop Sidebar */}
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r bg-card lg:block">
-        <div className="flex h-16 items-center gap-3 border-b px-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary">
-            <span className="text-lg font-bold text-white">P</span>
-          </div>
-          <div>
-            <h1 className="font-semibold text-foreground">PREMIERDIs</h1>
-            <p className="text-xs text-muted-foreground">HR Platform</p>
-          </div>
+        <div className="flex h-16 items-center border-b px-4">
+          <Logo size="default" showText={true} />
         </div>
         
         <div className="flex flex-col h-[calc(100vh-4rem)]">
@@ -114,14 +112,8 @@ const DashboardLayout = ({ children }) => {
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="w-64 p-0">
-          <div className="flex h-16 items-center gap-3 border-b px-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary">
-              <span className="text-lg font-bold text-white">P</span>
-            </div>
-            <div>
-              <h1 className="font-semibold">PREMIERDIs</h1>
-              <p className="text-xs text-muted-foreground">HR Platform</p>
-            </div>
+          <div className="flex h-16 items-center border-b px-4">
+            <Logo size="default" showText={true} />
           </div>
           <NavContent />
         </SheetContent>
@@ -173,12 +165,7 @@ const DashboardLayout = ({ children }) => {
               </DropdownMenu>
 
               {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative" data-testid="notifications-btn">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
-                  3
-                </span>
-              </Button>
+              <NotificationCenter />
 
               {/* User Menu */}
               <DropdownMenu>

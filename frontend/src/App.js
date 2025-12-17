@@ -15,6 +15,7 @@ import Performance from './pages/Performance';
 import Rules from './pages/Rules';
 import Payroll from './pages/Payroll';
 import Settings from './pages/Settings';
+import EmployeeProfile from './pages/EmployeeProfile';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -89,6 +90,10 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+      
+      {/* Employee Profile Routes */}
+      <Route path="/my-profile" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
+      <Route path="/employee/:id" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
       
       {/* Default Redirect */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

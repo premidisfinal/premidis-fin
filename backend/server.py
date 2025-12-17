@@ -138,6 +138,18 @@ class LeaveUpdate(BaseModel):
     status: str
     admin_comment: Optional[str] = None
 
+class AttendanceCreate(BaseModel):
+    employee_id: Optional[str] = None
+    date: str
+    check_in: Optional[str] = None
+    check_out: Optional[str] = None
+    notes: Optional[str] = None
+
+class AttendanceUpdate(BaseModel):
+    check_in: Optional[str] = None
+    check_out: Optional[str] = None
+    notes: Optional[str] = None
+
 class PayslipCreate(BaseModel):
     employee_id: str
     month: int
@@ -461,6 +473,200 @@ async def get_leave_stats(current_user: dict = Depends(get_current_user)):
     
     return result
 
+@leaves_router.get("/calendar")
+async def get_leaves_calendar(
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all leaves for calendar view - admins see all, employees see approved"""
+    from datetime import datetime
+    
+    now = datetime.now()
+    target_month = month or now.month
+    target_year = year or now.year
+    
+    query = {}
+    
+    # Employees only see approved leaves + their own
+    if current_user["role"] == "employee":
+        query["$or"] = [
+            {"status": "approved"},
+            {"employee_id": current_user["id"]}
+        ]
+    
+    leaves = await db.leaves.find(query, {"_id": 0}).to_list(500)
+    
+    # Filter by month/year
+    calendar_leaves = []
+    for leave in leaves:
+        try:
+            start = datetime.strptime(leave["start_date"], "%Y-%m-%d")
+            end = datetime.strptime(leave["end_date"], "%Y-%m-%d")
+            
+            # Check if leave overlaps with target month
+            if (start.year == target_year and start.month == target_month) or \
+               (end.year == target_year and end.month == target_month):
+                calendar_leaves.append(leave)
+        except:
+            pass
+    
+    return {"leaves": calendar_leaves, "month": target_month, "year": target_year}
+
+# ==================== ATTENDANCE ROUTES ====================
+attendance_router = APIRouter(prefix="/attendance", tags=["Attendance"])
+
+@attendance_router.get("")
+async def list_attendance(
+    date: Optional[str] = None,
+    employee_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    
+    # Employees only see their own attendance
+    if current_user["role"] == "employee":
+        query["employee_id"] = current_user["id"]
+    elif employee_id:
+        query["employee_id"] = employee_id
+    
+    if date:
+        query["date"] = date
+    
+    attendance = await db.attendance.find(query, {"_id": 0}).sort("date", -1).to_list(100)
+    return {"attendance": attendance}
+
+@attendance_router.post("")
+async def create_attendance(
+    attendance: AttendanceCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Record attendance - employees can only record their own"""
+    att_id = str(uuid.uuid4())
+    
+    # Determine employee_id
+    if current_user["role"] == "employee":
+        emp_id = current_user["id"]
+    else:
+        emp_id = attendance.employee_id or current_user["id"]
+    
+    # Get employee name
+    employee = await db.users.find_one({"id": emp_id}, {"_id": 0, "first_name": 1, "last_name": 1})
+    emp_name = f"{employee['first_name']} {employee['last_name']}" if employee else "Unknown"
+    
+    att_doc = {
+        "id": att_id,
+        "employee_id": emp_id,
+        "employee_name": emp_name,
+        "date": attendance.date,
+        "check_in": attendance.check_in,
+        "check_out": attendance.check_out,
+        "notes": attendance.notes,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    
+    await db.attendance.insert_one(att_doc)
+    att_doc.pop("_id", None)
+    return att_doc
+
+@attendance_router.put("/{attendance_id}")
+async def update_attendance(
+    attendance_id: str,
+    update: AttendanceUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    att = await db.attendance.find_one({"id": attendance_id}, {"_id": 0})
+    if not att:
+        raise HTTPException(status_code=404, detail="Attendance not found")
+    
+    # Employees can only update their own
+    if current_user["role"] == "employee" and att["employee_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    update_data = {k: v for k, v in update.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.attendance.update_one({"id": attendance_id}, {"$set": update_data})
+    
+    updated = await db.attendance.find_one({"id": attendance_id}, {"_id": 0})
+    return updated
+
+@attendance_router.post("/check-in")
+async def check_in(current_user: dict = Depends(get_current_user)):
+    """Quick check-in for current user"""
+    from datetime import datetime
+    
+    today = datetime.now().strftime("%Y-%m-%d")
+    now_time = datetime.now().strftime("%H:%M")
+    
+    # Check if already checked in today
+    existing = await db.attendance.find_one({
+        "employee_id": current_user["id"],
+        "date": today
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Already checked in today")
+    
+    att_id = str(uuid.uuid4())
+    att_doc = {
+        "id": att_id,
+        "employee_id": current_user["id"],
+        "employee_name": f"{current_user['first_name']} {current_user['last_name']}",
+        "date": today,
+        "check_in": now_time,
+        "check_out": None,
+        "notes": None,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.attendance.insert_one(att_doc)
+    att_doc.pop("_id", None)
+    return att_doc
+
+@attendance_router.post("/check-out")
+async def check_out(current_user: dict = Depends(get_current_user)):
+    """Quick check-out for current user"""
+    from datetime import datetime
+    
+    today = datetime.now().strftime("%Y-%m-%d")
+    now_time = datetime.now().strftime("%H:%M")
+    
+    # Find today's attendance
+    existing = await db.attendance.find_one({
+        "employee_id": current_user["id"],
+        "date": today
+    })
+    
+    if not existing:
+        raise HTTPException(status_code=400, detail="No check-in found for today")
+    
+    if existing.get("check_out"):
+        raise HTTPException(status_code=400, detail="Already checked out today")
+    
+    await db.attendance.update_one(
+        {"id": existing["id"]},
+        {"$set": {"check_out": now_time, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    updated = await db.attendance.find_one({"id": existing["id"]}, {"_id": 0})
+    return updated
+
+@attendance_router.get("/today")
+async def get_today_attendance(current_user: dict = Depends(get_current_user)):
+    """Get current user's today attendance"""
+    from datetime import datetime
+    
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    attendance = await db.attendance.find_one({
+        "employee_id": current_user["id"],
+        "date": today
+    }, {"_id": 0})
+    
+    return {"attendance": attendance}
+
 # ==================== PAYROLL ROUTES ====================
 @payroll_router.get("")
 async def list_payslips(
@@ -774,6 +980,7 @@ async def root():
 api_router.include_router(auth_router)
 api_router.include_router(employees_router)
 api_router.include_router(leaves_router)
+api_router.include_router(attendance_router)
 api_router.include_router(payroll_router)
 api_router.include_router(performance_router)
 api_router.include_router(communication_router)

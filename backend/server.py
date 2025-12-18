@@ -74,6 +74,15 @@ class Department(str, Enum):
     LEGAL = "juridique"
     CLEANING = "nettoyage"
     SECURITY = "securite"
+    CHAUFFEUR = "chauffeur"
+    TECHNICIEN = "technicien"
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
 
 # ==================== MODELS ====================
 class UserCreate(BaseModel):
@@ -305,6 +314,64 @@ async def update_me(updates: dict, current_user: dict = Depends(get_current_user
     
     updated_user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password": 0})
     return updated_user
+
+@auth_router.post("/forgot-password")
+async def forgot_password(request: PasswordResetRequest):
+    """Send password reset email"""
+    user = await db.users.find_one({"email": request.email}, {"_id": 0})
+    if not user:
+        # Return success even if user not found (security)
+        return {"message": "Si cette adresse existe, un email a été envoyé"}
+    
+    # Generate reset token
+    reset_token = str(uuid.uuid4())
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    await db.password_resets.insert_one({
+        "user_id": user["id"],
+        "email": request.email,
+        "token": reset_token,
+        "expires": expires.isoformat(),
+        "used": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # TODO: Send email with reset link (SendGrid integration)
+    # For now, return token for testing
+    logger.info(f"Password reset token for {request.email}: {reset_token}")
+    
+    return {"message": "Si cette adresse existe, un email de réinitialisation a été envoyé", "token": reset_token}
+
+@auth_router.post("/reset-password")
+async def reset_password(request: PasswordResetConfirm):
+    """Reset password with token"""
+    reset_record = await db.password_resets.find_one({
+        "token": request.token,
+        "used": False
+    }, {"_id": 0})
+    
+    if not reset_record:
+        raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+    
+    # Check expiration
+    expires = datetime.fromisoformat(reset_record["expires"].replace('Z', '+00:00'))
+    if datetime.now(timezone.utc) > expires:
+        raise HTTPException(status_code=400, detail="Token expiré")
+    
+    # Update password
+    hashed_password = get_password_hash(request.new_password)
+    await db.users.update_one(
+        {"id": reset_record["user_id"]},
+        {"$set": {"password": hashed_password}}
+    )
+    
+    # Mark token as used
+    await db.password_resets.update_one(
+        {"token": request.token},
+        {"$set": {"used": True}}
+    )
+    
+    return {"message": "Mot de passe réinitialisé avec succès"}
 
 # ==================== EMPLOYEES ROUTES ====================
 @employees_router.get("")

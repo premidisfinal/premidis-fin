@@ -15,9 +15,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { 
   Calendar as CalendarIcon, Plus, Clock, CheckCircle, XCircle, AlertCircle, 
-  Loader2, ChevronLeft, ChevronRight, LogIn, LogOut, Printer, Download,
-  Users, FileText
+  Loader2, ChevronLeft, ChevronRight, LogIn, LogOut, Download,
+  Users, FileText, Settings
 } from 'lucide-react';
+import { Label } from '../components/ui/label';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addMonths, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import axios from 'axios';
@@ -54,6 +55,8 @@ const TimeManagement = () => {
     check_out: '',
     notes: ''
   });
+  const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState(null);
 
   const leaveTypes = [
     { value: 'annual', label: t('annual'), color: 'bg-blue-500' },
@@ -243,14 +246,45 @@ const TimeManagement = () => {
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handlePrint} data-testid="print-btn">
-              <Printer className="mr-2 h-4 w-4" />
-              Imprimer
-            </Button>
             <Button variant="outline" onClick={handleExport} data-testid="export-btn">
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
+            {isAdmin() && (
+              <Dialog open={adjustDialogOpen} onOpenChange={setAdjustDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" data-testid="adjust-leaves-btn">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Ajuster les congés
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Paramètres des congés</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Quota annuel par défaut (jours)</Label>
+                      <Input type="number" defaultValue="30" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Types de congés</Label>
+                      <div className="space-y-2">
+                        {leaveTypes.map((type) => (
+                          <div key={type.value} className="flex items-center justify-between p-2 border rounded">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${type.color}`} />
+                              <span>{type.label}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <Button className="w-full">Enregistrer</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button data-testid="request-leave-btn">
@@ -387,9 +421,16 @@ const TimeManagement = () => {
           </CardContent>
         </Card>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - CLICKABLE */}
         <div className="grid gap-4 md:grid-cols-3">
-          <Card className="border-l-4 border-l-yellow-500">
+          <Card 
+            className={`border-l-4 border-l-yellow-500 cursor-pointer hover:shadow-lg transition-all ${statusFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''}`}
+            onClick={() => {
+              setStatusFilter(statusFilter === 'pending' ? null : 'pending');
+              setActiveTab('leaves');
+            }}
+            data-testid="stat-pending"
+          >
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -401,7 +442,14 @@ const TimeManagement = () => {
             </CardContent>
           </Card>
           
-          <Card className="border-l-4 border-l-green-500">
+          <Card 
+            className={`border-l-4 border-l-green-500 cursor-pointer hover:shadow-lg transition-all ${statusFilter === 'approved' ? 'ring-2 ring-green-500' : ''}`}
+            onClick={() => {
+              setStatusFilter(statusFilter === 'approved' ? null : 'approved');
+              setActiveTab('leaves');
+            }}
+            data-testid="stat-approved"
+          >
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -413,7 +461,14 @@ const TimeManagement = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-red-500">
+          <Card 
+            className={`border-l-4 border-l-red-500 cursor-pointer hover:shadow-lg transition-all ${statusFilter === 'rejected' ? 'ring-2 ring-red-500' : ''}`}
+            onClick={() => {
+              setStatusFilter(statusFilter === 'rejected' ? null : 'rejected');
+              setActiveTab('leaves');
+            }}
+            data-testid="stat-rejected"
+          >
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>

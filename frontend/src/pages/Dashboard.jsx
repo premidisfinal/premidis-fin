@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -22,6 +23,7 @@ import axios from 'axios';
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const { t } = useLanguage();
   const [stats, setStats] = useState(null);
@@ -46,7 +48,7 @@ const Dashboard = () => {
     {
       title: t('communication'),
       icon: MessageSquare,
-      description: 'Chat interne et annonces officielles',
+      description: 'Discussions et annonces officielles',
       link: '/communication',
       color: 'primary',
       metric: stats?.unread_messages || 0,
@@ -57,7 +59,7 @@ const Dashboard = () => {
     {
       title: t('administration'),
       icon: Users,
-      description: 'Gestion des dossiers et contrats',
+      description: 'Gestion des dossiers employés',
       link: '/administration',
       color: 'secondary',
       metric: stats?.total_employees || 0,
@@ -67,7 +69,7 @@ const Dashboard = () => {
     {
       title: t('timeManagement'),
       icon: Clock,
-      description: 'Présences, absences et congés',
+      description: 'Congés, absences et pointage',
       link: '/time-management',
       color: 'accent',
       metric: isAdmin() ? stats?.pending_leaves : stats?.my_leaves_pending,
@@ -76,21 +78,21 @@ const Dashboard = () => {
     {
       title: t('performance'),
       icon: TrendingUp,
-      description: 'Objectifs et évaluations',
+      description: 'Performance entreprise et individuelle',
       link: '/performance',
       color: 'primary'
     },
     {
       title: t('rules'),
       icon: BookOpen,
-      description: 'Règlement et conformité',
+      description: 'Règlement intérieur',
       link: '/rules',
       color: 'secondary'
     },
     {
       title: t('payroll'),
       icon: Banknote,
-      description: 'Fiches de paie et rémunérations',
+      description: 'Rémunération et avantages',
       link: '/payroll',
       color: 'accent',
       metric: stats?.my_payslips,
@@ -98,10 +100,36 @@ const Dashboard = () => {
     }
   ];
 
-  const quickActions = [
-    { icon: Calendar, label: 'Demander un congé', link: '/time-management' },
-    { icon: FileText, label: 'Voir mes fiches de paie', link: '/payroll' },
-    { icon: Bell, label: 'Voir les annonces', link: '/communication' }
+  // Clickable stat cards for admin
+  const statCards = [
+    {
+      label: t('totalEmployees'),
+      value: stats?.total_employees || 0,
+      icon: Users,
+      color: 'border-l-primary',
+      onClick: () => navigate('/administration')
+    },
+    {
+      label: t('pendingLeaves'),
+      value: stats?.pending_leaves || 0,
+      icon: Clock,
+      color: 'border-l-secondary',
+      onClick: () => navigate('/time-management?tab=leaves&status=pending')
+    },
+    {
+      label: t('announcements'),
+      value: stats?.total_announcements || 0,
+      icon: Bell,
+      color: 'border-l-accent',
+      onClick: () => navigate('/communication?tab=announcements')
+    },
+    {
+      label: t('unreadMessages'),
+      value: stats?.unread_messages || 0,
+      icon: MessageSquare,
+      color: 'border-l-destructive',
+      onClick: () => navigate('/communication?tab=chat')
+    }
   ];
 
   return (
@@ -113,11 +141,11 @@ const Dashboard = () => {
             {t('welcome')}, {user?.first_name} 
           </h1>
           <p className="text-muted-foreground">
-            Voici un aperçu de votre espace RH
+            Tableau de bord PREMIDIS SARL
           </p>
         </div>
 
-        {/* Quick Stats for Admin */}
+        {/* Quick Stats for Admin - CLICKABLE */}
         {isAdmin() && (
           <div className="grid gap-4 md:grid-cols-4">
             {loading ? (
@@ -125,56 +153,75 @@ const Dashboard = () => {
                 <Skeleton key={i} className="h-24" />
               ))
             ) : (
-              <>
-                <Card className="border-l-4 border-l-primary">
+              statCards.map((stat, index) => (
+                <Card 
+                  key={index}
+                  className={`${stat.color} border-l-4 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200`}
+                  onClick={stat.onClick}
+                  data-testid={`stat-card-${index}`}
+                >
                   <CardContent className="pt-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">{t('totalEmployees')}</p>
-                        <p className="text-2xl font-bold">{stats?.total_employees || 0}</p>
+                        <p className="text-sm text-muted-foreground">{stat.label}</p>
+                        <p className="text-2xl font-bold">{stat.value}</p>
                       </div>
-                      <Users className="h-8 w-8 text-primary/50" />
+                      <stat.icon className="h-8 w-8 text-muted-foreground/50" />
                     </div>
                   </CardContent>
                 </Card>
-                
-                <Card className="border-l-4 border-l-secondary">
-                  <CardContent className="pt-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">{t('pendingLeaves')}</p>
-                        <p className="text-2xl font-bold">{stats?.pending_leaves || 0}</p>
-                      </div>
-                      <Clock className="h-8 w-8 text-secondary/50" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-l-4 border-l-accent">
-                  <CardContent className="pt-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">{t('announcements')}</p>
-                        <p className="text-2xl font-bold">{stats?.total_announcements || 0}</p>
-                      </div>
-                      <Bell className="h-8 w-8 text-accent/50" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-l-4 border-l-destructive">
-                  <CardContent className="pt-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">{t('unreadMessages')}</p>
-                        <p className="text-2xl font-bold">{stats?.unread_messages || 0}</p>
-                      </div>
-                      <MessageSquare className="h-8 w-8 text-destructive/50" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </>
+              ))
             )}
+          </div>
+        )}
+
+        {/* Quick Stats for Employee */}
+        {!isAdmin() && (
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card 
+              className="border-l-4 border-l-primary cursor-pointer hover:shadow-lg transition-all"
+              onClick={() => navigate('/time-management')}
+            >
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Mes congés en attente</p>
+                    <p className="text-2xl font-bold">{stats?.my_leaves_pending || 0}</p>
+                  </div>
+                  <Clock className="h-8 w-8 text-primary/50" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card 
+              className="border-l-4 border-l-secondary cursor-pointer hover:shadow-lg transition-all"
+              onClick={() => navigate('/payroll')}
+            >
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Fiches de paie</p>
+                    <p className="text-2xl font-bold">{stats?.my_payslips || 0}</p>
+                  </div>
+                  <Banknote className="h-8 w-8 text-secondary/50" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="border-l-4 border-l-accent cursor-pointer hover:shadow-lg transition-all"
+              onClick={() => navigate('/communication')}
+            >
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Messages non lus</p>
+                    <p className="text-2xl font-bold">{stats?.unread_messages || 0}</p>
+                  </div>
+                  <MessageSquare className="h-8 w-8 text-accent/50" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -194,29 +241,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Quick Actions for Employees */}
-        {!isAdmin() && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Actions rapides</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-3">
-                {quickActions.map((action) => (
-                  <a
-                    key={action.label}
-                    href={action.link}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-                  >
-                    <action.icon className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">{action.label}</span>
-                  </a>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Department Stats for Admin */}
         {isAdmin() && stats?.employees_by_department && (
           <Card>
@@ -226,7 +250,11 @@ const Dashboard = () => {
             <CardContent>
               <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
                 {Object.entries(stats.employees_by_department).map(([dept, count]) => (
-                  <div key={dept} className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                  <div 
+                    key={dept} 
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => navigate(`/administration?department=${dept}`)}
+                  >
                     <span className="text-sm font-medium capitalize">{t(dept) || dept.replace('_', ' ')}</span>
                     <span className="text-lg font-bold text-primary">{count}</span>
                   </div>

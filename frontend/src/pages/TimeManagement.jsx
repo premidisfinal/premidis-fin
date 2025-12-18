@@ -18,7 +18,6 @@ import {
   Loader2, ChevronLeft, ChevronRight, LogIn, LogOut, Download,
   Users, FileText, Settings
 } from 'lucide-react';
-import { Label } from '../components/ui/label';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addMonths, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import axios from 'axios';

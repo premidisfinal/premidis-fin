@@ -71,10 +71,7 @@ const Logo = ({ size = 'default', showText = true }) => {
       </svg>
       
       {showText && (
-        <div className="flex flex-col">
-          <span className={`font-bold text-foreground ${textSize}`}>PREMIDIS</span>
-          <span className="text-xs text-muted-foreground">HR Platform</span>
-        </div>
+        <span className={`font-bold text-foreground ${textSize}`}>PREMIDIS SARL</span>
       )}
     </div>
   );

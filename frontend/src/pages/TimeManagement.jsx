@@ -593,14 +593,19 @@ const TimeManagement = () => {
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                ) : leaves.length === 0 ? (
+                ) : leaves.filter(l => !statusFilter || l.status === statusFilter).length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Aucune demande de congé</p>
+                    <p>Aucune demande de congé {statusFilter ? `(${t(statusFilter)})` : ''}</p>
+                    {statusFilter && (
+                      <Button variant="link" onClick={() => setStatusFilter(null)}>
+                        Voir toutes les demandes
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {leaves.map((leave) => (
+                    {leaves.filter(l => !statusFilter || l.status === statusFilter).map((leave) => (
                       <div
                         key={leave.id}
                         className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors gap-4"

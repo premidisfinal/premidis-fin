@@ -58,8 +58,7 @@ const Login = () => {
               <path d="M70 65 L70 80" stroke="#8B5CF6" strokeWidth="8" strokeLinecap="round"/>
             </svg>
             <div className="text-white">
-              <h1 className="text-2xl font-bold">PREMIDIS</h1>
-              <p className="text-sm opacity-80">HR Platform</p>
+              <h1 className="text-2xl font-bold">PREMIDIS SARL</h1>
             </div>
           </div>
         </div>

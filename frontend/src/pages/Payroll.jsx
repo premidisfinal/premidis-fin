@@ -34,6 +34,10 @@ const Payroll = () => {
   ]);
   const [rewards, setRewards] = useState([]);
   const [benefitDialogOpen, setBenefitDialogOpen] = useState(false);
+  const [rewardDialogOpen, setRewardDialogOpen] = useState(false);
+  const [payslipDialogOpen, setPayslipDialogOpen] = useState(false);
+  const [rewardForm, setRewardForm] = useState({employee:'',title:'',amount:''});
+  const [payslipForm, setPayslipForm] = useState({employee_name:'',department:'',month:'',year:new Date().getFullYear(),base_salary:'',bonuses:'',deductions:''});
 
   const months = [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -194,11 +198,93 @@ const Payroll = () => {
           {/* REMUNERATION TAB */}
           <TabsContent value="remuneration" className="mt-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Fiches de paie {selectedYear}</CardTitle>
-                <CardDescription>
-                  {payslips.length} fiche(s) • Date de paiement : 25 de chaque mois
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Fiches de paie {selectedYear}</CardTitle>
+                  <CardDescription>
+                    {payslips.length} fiche(s) • Date de paiement : 25 de chaque mois
+                  </CardDescription>
+                </div>
+                {isAdmin() && (
+                  <Dialog open={payslipDialogOpen} onOpenChange={setPayslipDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button data-testid="create-payslip-btn">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Créer fiche de paie
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Nouvelle fiche de paie</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Nom de l'employé</Label>
+                          <Input placeholder="Nom complet" value={payslipForm.employee_name} onChange={(e) => setPayslipForm({...payslipForm, employee_name: e.target.value})} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Département</Label>
+                            <Select value={payslipForm.department} onValueChange={(v) => setPayslipForm({...payslipForm, department: v})}>
+                              <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="marketing">Marketing</SelectItem>
+                                <SelectItem value="comptabilite">Comptabilité</SelectItem>
+                                <SelectItem value="administration">Administration</SelectItem>
+                                <SelectItem value="ressources_humaines">RH</SelectItem>
+                                <SelectItem value="securite">Sécurité</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Mois</Label>
+                            <Select value={payslipForm.month} onValueChange={(v) => setPayslipForm({...payslipForm, month: v})}>
+                              <SelectTrigger><SelectValue placeholder="Mois" /></SelectTrigger>
+                              <SelectContent>
+                                {months.map((m, i) => <SelectItem key={i} value={String(i+1)}>{m}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Salaire base (USD)</Label>
+                            <Input type="number" placeholder="0" value={payslipForm.base_salary} onChange={(e) => setPayslipForm({...payslipForm, base_salary: e.target.value})} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Primes (USD)</Label>
+                            <Input type="number" placeholder="0" value={payslipForm.bonuses} onChange={(e) => setPayslipForm({...payslipForm, bonuses: e.target.value})} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Retenues (USD)</Label>
+                            <Input type="number" placeholder="0" value={payslipForm.deductions} onChange={(e) => setPayslipForm({...payslipForm, deductions: e.target.value})} />
+                          </div>
+                        </div>
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">Net à payer</p>
+                          <p className="text-xl font-bold text-secondary">
+                            {formatCurrency((parseFloat(payslipForm.base_salary)||0) + (parseFloat(payslipForm.bonuses)||0) - (parseFloat(payslipForm.deductions)||0))}
+                          </p>
+                        </div>
+                        <Button className="w-full" onClick={async () => {
+                          try {
+                            await axios.post(`${API_URL}/api/payroll`, {
+                              employee_id: user.id,
+                              month: parseInt(payslipForm.month),
+                              year: payslipForm.year,
+                              base_salary: parseFloat(payslipForm.base_salary) || 0,
+                              bonuses: parseFloat(payslipForm.bonuses) || 0,
+                              deductions: parseFloat(payslipForm.deductions) || 0
+                            });
+                            toast.success('Fiche de paie créée');
+                            setPayslipDialogOpen(false);
+                            fetchPayslips();
+                          } catch(e) { toast.error('Erreur'); }
+                        }}>Créer la fiche</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </CardHeader>
               <CardContent>
                 {/* Salary Calculation Explanation */}
@@ -356,9 +442,48 @@ const Payroll = () => {
           {/* RECOMPENSES TAB */}
           <TabsContent value="recompenses" className="mt-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Cadeaux & Récompenses</CardTitle>
-                <CardDescription>Bonus et récompenses exceptionnelles</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Cadeaux & Récompenses</CardTitle>
+                  <CardDescription>Bonus et récompenses exceptionnelles</CardDescription>
+                </div>
+                {isAdmin() && (
+                  <Dialog open={rewardDialogOpen} onOpenChange={setRewardDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button data-testid="add-reward-btn">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Créer récompense
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Nouvelle récompense</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Employé</Label>
+                          <Input placeholder="Nom de l'employé" value={rewardForm.employee} onChange={(e) => setRewardForm({...rewardForm, employee: e.target.value})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Titre de la récompense</Label>
+                          <Input placeholder="Ex: Objectif atteint Q4" value={rewardForm.title} onChange={(e) => setRewardForm({...rewardForm, title: e.target.value})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Montant (USD)</Label>
+                          <Input type="number" placeholder="0.00" value={rewardForm.amount} onChange={(e) => setRewardForm({...rewardForm, amount: e.target.value})} />
+                        </div>
+                        <Button className="w-full" onClick={() => {
+                          if(rewardForm.title && rewardForm.amount) {
+                            setRewards([...rewards, {id: Date.now(), ...rewardForm, date: new Date().toLocaleDateString()}]);
+                            setRewardDialogOpen(false);
+                            setRewardForm({employee:'',title:'',amount:''});
+                            toast.success('Récompense créée');
+                          }
+                        }}>Créer</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </CardHeader>
               <CardContent>
                 {rewards.length === 0 ? (
@@ -374,10 +499,10 @@ const Payroll = () => {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">{reward.title}</p>
-                            <p className="text-sm text-muted-foreground">{reward.date}</p>
+                            <p className="text-sm text-muted-foreground">{reward.employee} • {reward.date}</p>
                           </div>
                           <p className="text-lg font-bold text-primary">
-                            +{formatCurrency(reward.amount)}
+                            +{formatCurrency(parseFloat(reward.amount) || 0)}
                           </p>
                         </div>
                       </div>

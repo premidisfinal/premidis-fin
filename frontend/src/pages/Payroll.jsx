@@ -6,7 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Banknote, Download, FileText, Loader2, TrendingUp, TrendingDown, Printer, Upload } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Separator } from '../components/ui/separator';
+import { 
+  Banknote, Download, FileText, Loader2, TrendingUp, TrendingDown, 
+  Gift, Car, Home, Shield, Calendar, Plus, Info
+} from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 
@@ -18,6 +26,14 @@ const Payroll = () => {
   const [payslips, setPayslips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [activeTab, setActiveTab] = useState('remuneration');
+  const [benefits, setBenefits] = useState([
+    { id: '1', name: 'Transport', type: 'transport', amount: 150, icon: Car },
+    { id: '2', name: 'Assurance santé', type: 'assurance', amount: 200, icon: Shield },
+    { id: '3', name: 'Logement', type: 'logement', amount: 300, icon: Home }
+  ]);
+  const [rewards, setRewards] = useState([]);
+  const [benefitDialogOpen, setBenefitDialogOpen] = useState(false);
 
   const months = [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -35,9 +51,9 @@ const Payroll = () => {
       const response = await axios.get(`${API_URL}/api/payroll`, {
         params: { year: parseInt(selectedYear) }
       });
-      setPayslips(response.data.payslips);
+      setPayslips(response.data.payslips || []);
     } catch (error) {
-      toast.error('Erreur lors du chargement des fiches de paie');
+      toast.error('Erreur lors du chargement');
     } finally {
       setLoading(false);
     }
@@ -48,12 +64,14 @@ const Payroll = () => {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2
-    }).format(amount);
+    }).format(amount || 0);
   };
 
   const calculateTotal = () => {
     return payslips.reduce((sum, p) => sum + p.net_salary, 0);
   };
+
+  const totalBenefits = benefits.reduce((sum, b) => sum + b.amount, 0);
 
   const getLatestPayslip = () => {
     if (payslips.length === 0) return null;
@@ -66,29 +84,27 @@ const Payroll = () => {
 
   const latestPayslip = getLatestPayslip();
 
+  const handleExport = () => {
+    const csv = payslips.map(p => `${p.month}/${p.year},${p.base_salary},${p.bonuses},${p.deductions},${p.net_salary}`).join('\n');
+    const blob = new Blob([`Mois,Base,Primes,Retenues,Net\n${csv}`], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `remuneration_${selectedYear}.csv`;
+    a.click();
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6" data-testid="payroll-page">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t('payroll')}</h1>
-            <p className="text-muted-foreground">Consultez vos fiches de paie</p>
+            <h1 className="text-3xl font-bold tracking-tight">Rémunération</h1>
+            <p className="text-muted-foreground">Salaire, avantages et récompenses</p>
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => window.print()} data-testid="print-payroll-btn">
-              <Printer className="mr-2 h-4 w-4" />
-              Imprimer
-            </Button>
-            <Button variant="outline" onClick={() => {
-              const csv = payslips.map(p => `${p.month}/${p.year},${p.base_salary},${p.bonuses},${p.deductions},${p.net_salary}`).join('\n');
-              const blob = new Blob([`Mois,Base,Primes,Retenues,Net\n${csv}`], { type: 'text/csv' });
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `fiches_paie_${selectedYear}.csv`;
-              a.click();
-            }} data-testid="export-payroll-btn">
+            <Button variant="outline" onClick={handleExport} data-testid="export-payroll-btn">
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
@@ -124,8 +140,8 @@ const Payroll = () => {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">{t('bonuses')}</p>
-                    <p className="text-xl font-bold text-green-600">+{formatCurrency(latestPayslip.bonuses)}</p>
+                    <p className="text-sm text-muted-foreground">Avantages</p>
+                    <p className="text-xl font-bold text-green-600">+{formatCurrency(totalBenefits)}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-green-500/50" />
                 </div>
@@ -136,7 +152,7 @@ const Payroll = () => {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">{t('deductions')}</p>
+                    <p className="text-sm text-muted-foreground">Retenues</p>
                     <p className="text-xl font-bold text-red-600">-{formatCurrency(latestPayslip.deductions)}</p>
                   </div>
                   <TrendingDown className="h-8 w-8 text-red-500/50" />
@@ -149,7 +165,7 @@ const Payroll = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Salaire net</p>
-                    <p className="text-xl font-bold text-secondary">{formatCurrency(latestPayslip.net_salary)}</p>
+                    <p className="text-xl font-bold text-secondary">{formatCurrency(latestPayslip.net_salary + totalBenefits)}</p>
                   </div>
                   <Banknote className="h-8 w-8 text-secondary/50" />
                 </div>
@@ -158,104 +174,238 @@ const Payroll = () => {
           </div>
         )}
 
-        {/* Payslips List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Fiches de paie {selectedYear}</CardTitle>
-            <CardDescription>
-              {payslips.length} fiche(s) pour l'année {selectedYear}
-              {payslips.length > 0 && ` • Total: ${formatCurrency(calculateTotal())}`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : payslips.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Aucune fiche de paie pour {selectedYear}</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {payslips
-                  .sort((a, b) => b.month - a.month)
-                  .map((payslip) => (
-                    <div
-                      key={payslip.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors gap-4"
-                      data-testid={`payslip-${payslip.id}`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <FileText className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">
-                            {months[payslip.month - 1]} {payslip.year}
-                          </h3>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>Base: {formatCurrency(payslip.base_salary)}</span>
-                            {payslip.bonuses > 0 && (
-                              <span className="text-green-600">+{formatCurrency(payslip.bonuses)}</span>
-                            )}
-                            {payslip.deductions > 0 && (
-                              <span className="text-red-600">-{formatCurrency(payslip.deductions)}</span>
-                            )}
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+            <TabsTrigger value="remuneration" className="flex items-center gap-2">
+              <Banknote className="h-4 w-4" />
+              Fiches de paie
+            </TabsTrigger>
+            <TabsTrigger value="avantages" className="flex items-center gap-2">
+              <Gift className="h-4 w-4" />
+              Avantages
+            </TabsTrigger>
+            <TabsTrigger value="recompenses" className="flex items-center gap-2">
+              <Gift className="h-4 w-4" />
+              Récompenses
+            </TabsTrigger>
+          </TabsList>
+
+          {/* REMUNERATION TAB */}
+          <TabsContent value="remuneration" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Fiches de paie {selectedYear}</CardTitle>
+                <CardDescription>
+                  {payslips.length} fiche(s) • Date de paiement : 25 de chaque mois
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Salary Calculation Explanation */}
+                <div className="mb-6 p-4 rounded-lg bg-muted/50 border">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <h4 className="font-medium mb-2">Calcul du salaire</h4>
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Salaire Net</strong> = Salaire de Base + Primes + Avantages - Retenues (INSS, IPR, etc.)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : payslips.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Aucune fiche de paie pour {selectedYear}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {payslips
+                      .sort((a, b) => b.month - a.month)
+                      .map((payslip) => (
+                        <div
+                          key={payslip.id}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors gap-4"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <FileText className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium">
+                                {months[payslip.month - 1]} {payslip.year}
+                              </h3>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <span>Base: {formatCurrency(payslip.base_salary)}</span>
+                                {payslip.bonuses > 0 && (
+                                  <span className="text-green-600">+{formatCurrency(payslip.bonuses)}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="text-sm text-muted-foreground">Net à payer</p>
+                              <p className="text-lg font-bold text-secondary">
+                                {formatCurrency(payslip.net_salary)}
+                              </p>
+                            </div>
+                            <Button variant="outline" size="sm">
+                              <Download className="h-4 w-4 mr-1" />
+                              PDF
+                            </Button>
                           </div>
                         </div>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* AVANTAGES TAB */}
+          <TabsContent value="avantages" className="mt-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Avantages</CardTitle>
+                  <CardDescription>Vos avantages mensuels</CardDescription>
+                </div>
+                {isAdmin() && (
+                  <Dialog open={benefitDialogOpen} onOpenChange={setBenefitDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button data-testid="add-benefit-btn">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Ajouter
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Ajouter un avantage</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Type d'avantage</Label>
+                          <Select>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="transport">Transport</SelectItem>
+                              <SelectItem value="logement">Logement</SelectItem>
+                              <SelectItem value="assurance">Assurance</SelectItem>
+                              <SelectItem value="repas">Repas</SelectItem>
+                              <SelectItem value="autre">Autre</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Montant (USD)</Label>
+                          <Input type="number" placeholder="0.00" />
+                        </div>
+                        <Button className="w-full">Ajouter</Button>
                       </div>
-                      
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground">Net à payer</p>
-                          <p className="text-lg font-bold text-secondary">
-                            {formatCurrency(payslip.net_salary)}
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {benefits.map((benefit) => {
+                    const Icon = benefit.icon;
+                    return (
+                      <div
+                        key={benefit.id}
+                        className="flex items-center justify-between p-4 rounded-lg border"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                            <Icon className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{benefit.name}</p>
+                            <p className="text-sm text-muted-foreground capitalize">{benefit.type}</p>
+                          </div>
+                        </div>
+                        <p className="text-lg font-bold text-green-600">
+                          +{formatCurrency(benefit.amount)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <Separator className="my-6" />
+
+                <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-900/20">
+                  <p className="font-medium">Total des avantages</p>
+                  <p className="text-xl font-bold text-green-600">
+                    +{formatCurrency(totalBenefits)}/mois
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* RECOMPENSES TAB */}
+          <TabsContent value="recompenses" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Cadeaux & Récompenses</CardTitle>
+                <CardDescription>Bonus et récompenses exceptionnelles</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {rewards.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Gift className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Aucune récompense pour le moment</p>
+                    <p className="text-sm mt-2">Les récompenses et bonus exceptionnels apparaîtront ici</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {rewards.map((reward) => (
+                      <div key={reward.id} className="p-4 rounded-lg border">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{reward.title}</p>
+                            <p className="text-sm text-muted-foreground">{reward.date}</p>
+                          </div>
+                          <p className="text-lg font-bold text-primary">
+                            +{formatCurrency(reward.amount)}
                           </p>
                         </div>
-                        <Button variant="outline" size="sm" data-testid={`download-${payslip.id}`}>
-                          <Download className="h-4 w-4 mr-1" />
-                          PDF
-                        </Button>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Payment Info */}
+        <Card className="bg-gradient-to-br from-primary/5 to-secondary/5">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-primary/10">
+                <Calendar className="h-6 w-6 text-primary" />
               </div>
-            )}
+              <div>
+                <h3 className="font-semibold">Date de paiement</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Le salaire est versé le <strong>25 de chaque mois</strong>. 
+                  En cas de jour férié, le paiement est effectué le jour ouvrable précédent.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
-        {/* Annual Summary */}
-        {payslips.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Récapitulatif annuel</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="p-4 rounded-lg bg-muted">
-                  <p className="text-sm text-muted-foreground">Total brut</p>
-                  <p className="text-xl font-bold">
-                    {formatCurrency(payslips.reduce((sum, p) => sum + p.base_salary, 0))}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted">
-                  <p className="text-sm text-muted-foreground">Total primes</p>
-                  <p className="text-xl font-bold text-green-600">
-                    +{formatCurrency(payslips.reduce((sum, p) => sum + p.bonuses, 0))}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-secondary/20 to-transparent">
-                  <p className="text-sm text-muted-foreground">Total net</p>
-                  <p className="text-xl font-bold text-secondary">
-                    {formatCurrency(calculateTotal())}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </DashboardLayout>
   );

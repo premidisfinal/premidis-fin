@@ -52,7 +52,9 @@ const Administration = () => {
     { value: 'ressources_humaines', label: 'Ressources Humaines' },
     { value: 'juridique', label: 'Juridique' },
     { value: 'nettoyage', label: 'Nettoyage' },
-    { value: 'securite', label: 'Sécurité' }
+    { value: 'securite', label: 'Sécurité' },
+    { value: 'chauffeur', label: 'Chauffeur' },
+    { value: 'technicien', label: 'Technicien' }
   ];
 
   const contractTypes = ['CDI', 'CDD', 'Stage', 'Consultant'];

@@ -535,15 +535,29 @@ const Administration = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                          onClick={() => handleDelete(employee.id)}
-                          data-testid={`delete-${employee.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              data-testid={`delete-${employee.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleDelete(employee.id, false)}>
+                              Désactiver
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(employee.id, true)}
+                              className="text-destructive"
+                            >
+                              Supprimer définitivement
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </>
                     )}
                   </div>

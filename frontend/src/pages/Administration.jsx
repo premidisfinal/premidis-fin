@@ -243,13 +243,33 @@ const Administration = () => {
           </div>
           
           {canEdit() && (
-            <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-              <DialogTrigger asChild>
-                <Button data-testid="add-employee-btn">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Ajouter un employé
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              {/* Hidden file input for import */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".csv"
+                onChange={handleImport}
+                className="hidden"
+              />
+              
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()} data-testid="import-btn">
+                <Upload className="mr-2 h-4 w-4" />
+                Importer
+              </Button>
+              
+              <Button variant="outline" onClick={handleExport} data-testid="export-btn">
+                <Download className="mr-2 h-4 w-4" />
+                Exporter
+              </Button>
+              
+              <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+                <DialogTrigger asChild>
+                  <Button data-testid="add-employee-btn">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Ajouter
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>

@@ -407,6 +407,36 @@ const EmployeeProfile = () => {
                       <p className="font-medium">{employee.contract_type}</p>
                     </div>
                   </div>
+                  
+                  {/* Salary section - visible only to employee (own) or admin */}
+                  {(isOwnProfile || isAdmin()) && (
+                    <div className="mt-6 pt-6 border-t">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-muted-foreground">Salaire mensuel</Label>
+                          <p className="text-2xl font-bold text-primary">
+                            {employee.salary ? `${employee.salary.toLocaleString()} FC` : 'Non défini'}
+                          </p>
+                        </div>
+                        {isAdmin() && !isOwnProfile && (
+                          <Button variant="outline" size="sm" onClick={() => {
+                            const newSalary = prompt('Nouveau salaire:', employee.salary || '0');
+                            if (newSalary) {
+                              axios.put(`${API_URL}/api/employees/${employee.id}/salary?salary=${newSalary}`)
+                                .then(() => {
+                                  toast.success('Salaire mis à jour');
+                                  fetchEmployeeData();
+                                })
+                                .catch(err => toast.error('Erreur'));
+                            }
+                          }}>
+                            <Edit className="h-4 w-4 mr-1" />
+                            Modifier
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -431,18 +461,7 @@ const EmployeeProfile = () => {
             </div>
           </TabsContent>
 
-          {/* CV Tab */}
-          <TabsContent value="cv" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Curriculum Vitae</CardTitle>
-                <CardDescription>Parcours professionnel et formation</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <Label className="text-muted-foreground">Formation</Label>
-                  <p className="text-muted-foreground italic">Non renseigné</p>
-                </div>
+          {/* Documents Tab */}
                 <Separator />
                 <div>
                   <Label className="text-muted-foreground">Expérience professionnelle</Label>

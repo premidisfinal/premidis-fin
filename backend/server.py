@@ -884,6 +884,7 @@ api_router.include_router(leaves_router)
 api_router.include_router(calendar_router)
 api_router.include_router(hr_router)
 api_router.include_router(config_router)
+api_router.include_router(attendance_router)
 
 app.include_router(api_router)
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -13,10 +13,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { 
   Users, Plus, Search, Filter, Loader2, Mail, Phone, 
-  Building2, Calendar, Briefcase, Edit, Trash2, Eye
+  Building2, Calendar, Briefcase, Edit, Trash2, Eye, Download, Upload
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 

@@ -18,7 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { 
   Briefcase, User, Award, FileText, Banknote, Settings, 
   Mail, Phone, Building2, Calendar, MapPin, Upload, Download,
-  Edit, ArrowLeft, Plus, Clock, Target, CheckCircle, Loader2
+  Edit, ArrowLeft, Plus, Clock, Target, CheckCircle, Loader2,
+  ThumbsUp, ThumbsDown, UserCheck, Camera
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';

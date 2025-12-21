@@ -413,6 +413,7 @@ async def create_employee(
         "phone": employee.phone,
         "hire_date": employee.hire_date,
         "salary": employee.salary,
+        "salary_currency": employee.salary_currency or "USD",
         "birth_date": None,
         "is_active": True,
         "status": "active",

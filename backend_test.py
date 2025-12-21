@@ -120,24 +120,42 @@ class PremidisHRTester:
             self.log_test("Employee - Create leave request", True, 
                         f"Leave ID: {leave_id}, Working days: {working_days}")
             
-            # Test secretary CANNOT approve (critical test)
+            # CRITICAL BUG FIX TEST: Secretary CAN NOW approve leaves (was previously blocked)
             if leave_id:
                 success, response, status = self.make_request(
                     'PUT', f'leaves/{leave_id}', role='secretary', 
-                    data={"status": "approved"}, expected_status=403
-                )
-                self.log_test("Secretary CANNOT approve leaves", success, 
-                            f"Expected 403, got {status}")
-                
-                # Test admin CAN approve
-                success, response, status = self.make_request(
-                    'PUT', f'leaves/{leave_id}', role='admin', 
                     data={"status": "approved"}, expected_status=200
                 )
-                self.log_test("Admin CAN approve leaves", success, 
+                self.log_test("Secretary CAN approve leaves (BUG FIX)", success, 
+                            f"Status: {status}, Leave status: {response.get('status', 'unknown')}")
+                
+                # Test admin CAN also approve
+                success, response, status = self.make_request(
+                    'PUT', f'leaves/{leave_id}', role='admin', 
+                    data={"status": "rejected"}, expected_status=200
+                )
+                self.log_test("Admin CAN approve/reject leaves", success, 
                             f"Status: {response.get('status', 'unknown')}")
         else:
             self.log_test("Employee - Create leave request", False, f"Status: {status}")
+
+    def test_leave_rules_visibility(self):
+        """Test that employees can see leave rules clearly before submitting request"""
+        print("\n📋 Testing Leave Rules Visibility...")
+        
+        for role in ['admin', 'secretary', 'employee']:
+            success, response, status = self.make_request('GET', 'leaves/rules', role=role)
+            
+            if success:
+                rules = response.get('rules', {})
+                leave_types = response.get('leave_types', [])
+                has_annual_days = 'annual_days' in rules
+                has_leave_types = len(leave_types) > 0
+                
+                self.log_test(f"{role} - Leave rules access", has_annual_days and has_leave_types, 
+                            f"Rules: {list(rules.keys())}, Leave types: {len(leave_types)}")
+            else:
+                self.log_test(f"{role} - Leave rules access", False, f"Status: {status}")
 
     def test_leave_balance(self):
         """Test leave balance calculation"""

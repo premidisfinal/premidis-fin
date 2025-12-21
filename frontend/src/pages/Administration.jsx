@@ -109,16 +109,18 @@ const Administration = () => {
   const handleEdit = (employee) => {
     setEditEmployee(employee);
     setFormData({
-      first_name: employee.first_name,
-      last_name: employee.last_name,
-      email: employee.email,
+      first_name: employee.first_name || '',
+      last_name: employee.last_name || '',
+      email: employee.email || '',
       phone: employee.phone || '',
-      department: employee.department,
-      position: employee.position,
-      hire_date: employee.hire_date,
-      salary: employee.salary.toString(),
-      contract_type: employee.contract_type,
-      country: employee.country
+      department: employee.department || 'administration',
+      position: employee.position || '',
+      hire_date: employee.hire_date || '',
+      salary: employee.salary ? employee.salary.toString() : '',
+      role: employee.role || 'employee',
+      category: employee.category || 'agent',
+      contract_type: employee.contract_type || 'CDI',
+      country: employee.country || 'RDC'
     });
     setDialogOpen(true);
   };

@@ -227,22 +227,84 @@ const Settings = () => {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Authentification à deux facteurs</p>
-                <p className="text-sm text-muted-foreground">Ajouter une couche de sécurité supplémentaire</p>
-              </div>
-              <Button variant="outline" size="sm">
-                Configurer
-              </Button>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="font-medium">Changer le mot de passe</p>
                 <p className="text-sm text-muted-foreground">Mettre à jour votre mot de passe</p>
               </div>
-              <Button variant="outline" size="sm">
-                Modifier
-              </Button>
+              <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Lock className="mr-2 h-4 w-4" />
+                    Modifier
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Changer le mot de passe</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Mot de passe actuel</Label>
+                      <Input
+                        type="password"
+                        value={passwordData.current_password}
+                        onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nouveau mot de passe</Label>
+                      <Input
+                        type="password"
+                        value={passwordData.new_password}
+                        onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Confirmer le nouveau mot de passe</Label>
+                      <Input
+                        type="password"
+                        value={passwordData.confirm_password}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={passwordLoading}>
+                      {passwordLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Enregistrer
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Theme Section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Palette className="h-5 w-5 text-primary" />
+              <CardTitle>Apparence</CardTitle>
+            </div>
+            <CardDescription>Personnalisez l'apparence de l'application</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                <div>
+                  <p className="font-medium">Mode sombre</p>
+                  <p className="text-sm text-muted-foreground">
+                    {theme === 'dark' ? 'Activé' : 'Désactivé'}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={theme === 'dark'}
+                onCheckedChange={toggleTheme}
+              />
             </div>
           </CardContent>
         </Card>

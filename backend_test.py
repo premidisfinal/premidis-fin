@@ -402,6 +402,9 @@ class PremidisHRTester:
             return False
         
         self.test_role_permissions()
+        self.test_employee_creation()
+        self.test_behavior_tracking()
+        self.test_leave_types()
         self.test_leave_management()
         self.test_leave_balance()
         self.test_attendance_tracking()

@@ -398,7 +398,7 @@ const Communication = () => {
 
           {/* ANNOUNCEMENTS TAB */}
           <TabsContent value="announcements" className="mt-6 space-y-4">
-            {isAdmin() && (
+            {canEdit() && (
               <div className="flex justify-end">
                 <Dialog open={announcementDialog} onOpenChange={setAnnouncementDialog}>
                   <DialogTrigger asChild>

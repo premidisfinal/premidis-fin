@@ -125,15 +125,21 @@ const Administration = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet employé ?')) return;
+  const handleDelete = async (id, permanent = false) => {
+    const confirmMsg = permanent 
+      ? 'ATTENTION: Cette action supprimera définitivement l\'employé et toutes ses données. Continuer ?'
+      : 'Désactiver cet employé ? Il pourra être réactivé plus tard.';
+    
+    if (!window.confirm(confirmMsg)) return;
     
     try {
-      await axios.delete(`${API_URL}/api/employees/${id}`);
-      toast.success('Employé supprimé');
+      await axios.delete(`${API_URL}/api/employees/${id}`, {
+        params: { permanent }
+      });
+      toast.success(permanent ? 'Employé supprimé définitivement' : 'Employé désactivé');
       fetchEmployees();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
     }
   };
 

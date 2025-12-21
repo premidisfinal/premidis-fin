@@ -208,81 +208,101 @@ const Communication = () => {
           </Card>
         </div>
 
-        {/* Announcements List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Megaphone className="h-5 w-5" />
+        {/* Tabs for Announcements and Chat */}
+        <Tabs defaultValue="announcements" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="announcements" className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4" />
               Annonces
-            </CardTitle>
-            <CardDescription>
-              Toutes les communications officielles
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : announcements.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Megaphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Aucune annonce</p>
-                {canEdit() && (
-                  <p className="text-sm mt-2">Cliquez sur "Nouvelle annonce" pour en créer une</p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {announcements.map((announcement) => {
-                  const config = getPriorityConfig(announcement.priority);
-                  const IconComponent = config.icon;
-                  
-                  return (
-                    <div
-                      key={announcement.id}
-                      className={`p-4 rounded-lg border-l-4 ${config.bg} transition-all hover:shadow-md`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3 flex-1">
-                          <IconComponent className={`h-5 w-5 mt-0.5 ${
-                            announcement.priority === 'urgent' ? 'text-red-500' :
-                            announcement.priority === 'important' ? 'text-orange-500' : 'text-blue-500'
-                          }`} />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold">{announcement.title}</h3>
-                              <Badge variant={config.color}>{config.label}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Live Chat
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="announcements" className="mt-6">
+            {/* Announcements List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Megaphone className="h-5 w-5" />
+                  Annonces
+                </CardTitle>
+                <CardDescription>
+                  Toutes les communications officielles
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : announcements.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Megaphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Aucune annonce</p>
+                    {canEdit() && (
+                      <p className="text-sm mt-2">Cliquez sur "Nouvelle annonce" pour en créer une</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {announcements.map((announcement) => {
+                      const config = getPriorityConfig(announcement.priority);
+                      const IconComponent = config.icon;
+                      
+                      return (
+                        <div
+                          key={announcement.id}
+                          className={`p-4 rounded-lg border-l-4 ${config.bg} transition-all hover:shadow-md`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3 flex-1">
+                              <IconComponent className={`h-5 w-5 mt-0.5 ${
+                                announcement.priority === 'urgent' ? 'text-red-500' :
+                                announcement.priority === 'important' ? 'text-orange-500' : 'text-blue-500'
+                              }`} />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-semibold">{announcement.title}</h3>
+                                  <Badge variant={config.color}>{config.label}</Badge>
+                                </div>
+                                <p className="text-sm text-foreground whitespace-pre-wrap">{announcement.content}</p>
+                                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                                  <span>Par {announcement.author_name}</span>
+                                  <span>•</span>
+                                  <span>
+                                    {format(new Date(announcement.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <p className="text-sm text-foreground whitespace-pre-wrap">{announcement.content}</p>
-                            <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                              <span>Par {announcement.author_name}</span>
-                              <span>•</span>
-                              <span>
-                                {format(new Date(announcement.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
-                              </span>
-                            </div>
+                            
+                            {isAdmin() && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(announcement.id)}
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
-                        
-                        {isAdmin() && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(announcement.id)}
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="chat" className="mt-6">
+            <LiveChat />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

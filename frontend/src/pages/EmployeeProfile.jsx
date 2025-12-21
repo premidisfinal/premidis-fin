@@ -361,17 +361,13 @@ const EmployeeProfile = () => {
               <User className="h-4 w-4" />
               CV
             </TabsTrigger>
-            <TabsTrigger value="certifications" className="flex items-center gap-2">
-              <Award className="h-4 w-4" />
-              Certifications
-            </TabsTrigger>
-            <TabsTrigger value="personnel" className="flex items-center gap-2">
+            <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Personnel
+              Documents
             </TabsTrigger>
-            <TabsTrigger value="paie" className="flex items-center gap-2">
-              <Banknote className="h-4 w-4" />
-              Paie
+            <TabsTrigger value="comportement" className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              Comportement
             </TabsTrigger>
             <TabsTrigger value="objectifs" className="flex items-center gap-2">
               <Target className="h-4 w-4" />

@@ -80,6 +80,7 @@ class UserCreate(BaseModel):
     phone: Optional[str] = None
     hire_date: Optional[str] = None
     salary: Optional[float] = None
+    salary_currency: Optional[str] = "USD"  # USD or FC
 
 class UserLogin(BaseModel):
     email: EmailStr

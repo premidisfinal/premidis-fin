@@ -56,6 +56,8 @@ const TimeManagement = () => {
   });
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState(null);
+  const [leaveRules, setLeaveRules] = useState(null);
+  const [leaveBalance, setLeaveBalance] = useState({});
 
   const leaveTypes = [
     { value: 'annual', label: 'Congé annuel', color: 'bg-blue-500' },
@@ -88,6 +90,18 @@ const TimeManagement = () => {
       // Fetch stats
       const statsRes = await axios.get(`${API_URL}/api/leaves/stats`);
       setStats(statsRes.data);
+
+      // Fetch leave rules
+      try {
+        const rulesRes = await axios.get(`${API_URL}/api/leaves/rules`);
+        setLeaveRules(rulesRes.data);
+      } catch {}
+
+      // Fetch leave balance
+      try {
+        const balanceRes = await axios.get(`${API_URL}/api/leaves/balance`);
+        setLeaveBalance(balanceRes.data);
+      } catch {}
 
       // Fetch attendance
       const attRes = await axios.get(`${API_URL}/api/attendance`);

@@ -46,11 +46,12 @@ class LeaveStatus(str, Enum):
     REJECTED = "rejected"
 
 class LeaveType(str, Enum):
-    ANNUAL = "annual"           # Congé annuel
-    SICK = "sick"               # Congé maladie
-    EXCEPTIONAL = "exceptional" # Autorisation exceptionnelle
-    MATERNITY = "maternity"     # Congé maternité
-    PUBLIC = "public"           # Jours fériés
+    ANNUAL = "annual"           # Congé annuel (ex: 26 jours)
+    SICK = "sick"               # Congé maladie (ex: 2 jours)
+    EXCEPTIONAL = "exceptional" # Autorisation exceptionnelle (ex: 15 jours)
+    MATERNITY = "maternity"     # Congé maternité (3 mois = 90 jours)
+    PUBLIC = "public"           # Jours fériés (configurable)
+    PATERNITY = "paternity"     # Congé paternité
 
 class EmployeeCategory(str, Enum):
     CADRE = "cadre"
@@ -108,10 +109,12 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 class LeaveRuleConfig(BaseModel):
-    annual_days: int = 26          # Congé annuel par défaut
-    sick_days: int = 15            # Congé maladie
-    exceptional_days: int = 15     # Autorisation exceptionnelle
+    annual_days: int = 26          # Congé annuel par défaut (individuel: 4 jours minimum)
+    sick_days: int = 2             # Congé maladie (ex: 2 jours)
+    exceptional_days: int = 15     # Autorisation exceptionnelle (ex: 15 jours)
     maternity_days: int = 90       # Congé maternité (3 mois)
+    paternity_days: int = 10       # Congé paternité
+    public_holidays: int = 12      # Jours fériés par an (configurable)
 
 class LeaveRequest(BaseModel):
     leave_type: str

@@ -50,13 +50,11 @@ const Login = () => {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center gap-3 bg-white/10 backdrop-blur-xl rounded-2xl px-6 py-3 border border-white/20">
-            {/* PREMIDIS Logo SVG */}
-            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M25 80 C10 80 10 50 25 35 C35 25 55 25 55 45 C55 60 40 60 35 55 C30 50 35 40 45 40" stroke="#14B8A6" strokeWidth="8" strokeLinecap="round" fill="none"/>
-              <path d="M30 35 L30 20" stroke="#14B8A6" strokeWidth="8" strokeLinecap="round"/>
-              <path d="M75 20 C90 20 90 50 75 65 C65 75 45 75 45 55 C45 40 60 40 65 45 C70 50 65 60 55 60" stroke="#8B5CF6" strokeWidth="8" strokeLinecap="round" fill="none"/>
-              <path d="M70 65 L70 80" stroke="#8B5CF6" strokeWidth="8" strokeLinecap="round"/>
-            </svg>
+            <img 
+              src="/logo.webp" 
+              alt="PREMIDIS Logo" 
+              className="h-12 w-12 object-contain rounded-lg"
+            />
             <div className="text-white">
               <h1 className="text-2xl font-bold">PREMIDIS SARL</h1>
             </div>

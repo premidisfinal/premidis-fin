@@ -107,6 +107,14 @@ const TimeManagement = () => {
         setLeaveBalance(balanceRes.data);
       } catch {}
 
+      // Fetch employees for admin/secretary
+      if (isAdmin() || canEdit()) {
+        try {
+          const empRes = await axios.get(`${API_URL}/api/employees`);
+          setEmployees(empRes.data.employees || []);
+        } catch {}
+      }
+
       // Fetch attendance
       const attRes = await axios.get(`${API_URL}/api/attendance`);
       setAttendance(attRes.data.attendance || []);

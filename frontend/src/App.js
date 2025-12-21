@@ -9,6 +9,7 @@ import { Toaster } from './components/ui/sonner';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Communication from './pages/Communication';
 import Administration from './pages/Administration';

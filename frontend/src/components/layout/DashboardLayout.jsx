@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
@@ -18,14 +19,15 @@ import {
   Users,
   Clock,
   TrendingUp,
-  BookOpen,
-  Banknote,
   Settings,
   LogOut,
   Menu,
   ChevronDown,
   Globe,
-  User
+  User,
+  UserCheck,
+  Moon,
+  Sun
 } from 'lucide-react';
 import VoiceAssistant from '../VoiceAssistant';
 import NotificationCenter from '../NotificationCenter';

@@ -118,12 +118,27 @@ const Settings = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center gap-6">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={user?.avatar_url} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                  {user?.first_name?.[0]}{user?.last_name?.[0]}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={user?.avatar_url} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                    {user?.first_name?.[0]}{user?.last_name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <label className="absolute bottom-0 right-0 p-1.5 bg-primary text-white rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  {avatarLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                </label>
+              </div>
               <div>
                 <h3 className="font-semibold text-lg">{user?.first_name} {user?.last_name}</h3>
                 <p className="text-muted-foreground">{user?.email}</p>

@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { User, Globe, Bell, Shield, Palette, Loader2, Moon, Sun, Lock } from 'lucide-react';
+import { User, Globe, Bell, Shield, Palette, Loader2, Moon, Sun, Lock, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 

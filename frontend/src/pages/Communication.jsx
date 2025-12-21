@@ -10,13 +10,15 @@ import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { 
-  Megaphone, Plus, Loader2, AlertTriangle, Info, Bell, Trash2
+  Megaphone, Plus, Loader2, AlertTriangle, Info, Bell, Trash2, MessageCircle
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import LiveChat from '../components/LiveChat';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 

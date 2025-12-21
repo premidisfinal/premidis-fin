@@ -250,6 +250,121 @@ class PremidisHRTester:
             else:
                 self.log_test(f"{role} - Dashboard stats", False, f"Status: {status}")
 
+    def test_employee_creation(self):
+        """Test employee creation by Admin and Secretary"""
+        print("\n👥 Testing Employee Creation...")
+        
+        # Test data for new employee
+        new_employee = {
+            "first_name": "Test",
+            "last_name": "Employee",
+            "email": f"test.employee.{datetime.now().strftime('%H%M%S')}@premierdis.com",
+            "password": "TestPass123!",
+            "phone": "+243123456789",
+            "department": "administration",
+            "position": "Test Position",
+            "hire_date": datetime.now().strftime("%Y-%m-%d"),
+            "salary": 1000.0,
+            "role": "employee",
+            "category": "agent"
+        }
+        
+        # Test Admin can create employee
+        success, response, status = self.make_request(
+            'POST', 'employees', role='admin', data=new_employee, expected_status=201
+        )
+        
+        if success:
+            created_id = response.get('id')
+            self.log_test("Admin - Create employee", True, f"Employee ID: {created_id}")
+        else:
+            self.log_test("Admin - Create employee", False, f"Status: {status}, Response: {response}")
+        
+        # Test Secretary can create employee
+        new_employee['email'] = f"test.secretary.{datetime.now().strftime('%H%M%S')}@premierdis.com"
+        success, response, status = self.make_request(
+            'POST', 'employees', role='secretary', data=new_employee, expected_status=201
+        )
+        
+        if success:
+            created_id = response.get('id')
+            self.log_test("Secretary - Create employee", True, f"Employee ID: {created_id}")
+        else:
+            self.log_test("Secretary - Create employee", False, f"Status: {status}, Response: {response}")
+        
+        # Test Employee CANNOT create employee
+        new_employee['email'] = f"test.fail.{datetime.now().strftime('%H%M%S')}@premierdis.com"
+        success, response, status = self.make_request(
+            'POST', 'employees', role='employee', data=new_employee, expected_status=403
+        )
+        self.log_test("Employee CANNOT create employee", success, f"Status: {status}")
+
+    def test_behavior_tracking(self):
+        """Test behavior tracking functionality"""
+        print("\n📝 Testing Behavior Tracking...")
+        
+        # Get employee ID for behavior note
+        employee_id = self.users.get('employee', {}).get('id')
+        if not employee_id:
+            self.log_test("Behavior tracking", False, "No employee ID available")
+            return
+        
+        # Test Admin can create behavior note
+        behavior_data = {
+            "employee_id": employee_id,
+            "type": "positive",
+            "note": "Excellent performance on project delivery",
+            "date": datetime.now().strftime("%Y-%m-%d")
+        }
+        
+        success, response, status = self.make_request(
+            'POST', 'behavior', role='admin', data=behavior_data, expected_status=201
+        )
+        
+        if success:
+            behavior_id = response.get('id')
+            self.log_test("Admin - Create behavior note", True, f"Behavior ID: {behavior_id}")
+        else:
+            self.log_test("Admin - Create behavior note", False, f"Status: {status}, Response: {response}")
+        
+        # Test Employee can view their own behavior history
+        success, response, status = self.make_request(
+            'GET', f'behavior/{employee_id}', role='employee'
+        )
+        
+        if success:
+            behaviors = response.get('behaviors', [])
+            self.log_test("Employee - View own behavior history", True, f"Behaviors found: {len(behaviors)}")
+        else:
+            self.log_test("Employee - View own behavior history", False, f"Status: {status}")
+        
+        # Test Employee CANNOT create behavior note
+        success, response, status = self.make_request(
+            'POST', 'behavior', role='employee', data=behavior_data, expected_status=403
+        )
+        self.log_test("Employee CANNOT create behavior note", success, f"Status: {status}")
+
+    def test_leave_types(self):
+        """Test simplified leave types"""
+        print("\n📋 Testing Leave Types...")
+        
+        valid_leave_types = ["annual", "sick", "maternity", "exceptional", "public"]
+        
+        for leave_type in valid_leave_types:
+            leave_data = {
+                "leave_type": leave_type,
+                "start_date": (datetime.now() + timedelta(days=14)).strftime("%Y-%m-%d"),
+                "end_date": (datetime.now() + timedelta(days=15)).strftime("%Y-%m-%d"),
+                "reason": f"Test {leave_type} leave"
+            }
+            
+            success, response, status = self.make_request(
+                'POST', 'leaves', role='employee', data=leave_data, expected_status=201
+            )
+            
+            self.log_test(f"Leave type '{leave_type}' accepted", success, 
+                        f"Status: {status}, Leave ID: {response.get('id', 'N/A')}")
+
     def test_employee_data_isolation(self):
         """Test that employees can only access their own data"""
         print("\n🔒 Testing Employee Data Isolation...")

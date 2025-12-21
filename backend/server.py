@@ -710,6 +710,102 @@ async def get_employee_hr_actions(
     actions = await db.hr_actions.find({"employee_id": employee_id}, {"_id": 0}).to_list(100)
     return {"actions": actions}
 
+# ==================== ATTENDANCE ROUTES ====================
+attendance_router = APIRouter(prefix="/attendance", tags=["Pointage"])
+
+@attendance_router.get("")
+async def list_attendance(current_user: dict = Depends(get_current_user)):
+    """List attendance records"""
+    query = {}
+    if current_user["role"] == "employee":
+        query["employee_id"] = current_user["id"]
+    
+    attendance = await db.attendance.find(query, {"_id": 0}).sort("date", -1).to_list(100)
+    return {"attendance": attendance}
+
+@attendance_router.get("/today")
+async def get_today_attendance(current_user: dict = Depends(get_current_user)):
+    """Get today's attendance for current user"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    attendance = await db.attendance.find_one(
+        {"employee_id": current_user["id"], "date": today},
+        {"_id": 0}
+    )
+    return {"attendance": attendance}
+
+@attendance_router.post("/check-in")
+async def check_in(current_user: dict = Depends(get_current_user)):
+    """Record check-in time"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    now_time = datetime.now(timezone.utc).strftime("%H:%M")
+    
+    existing = await db.attendance.find_one({"employee_id": current_user["id"], "date": today})
+    if existing and existing.get("check_in"):
+        raise HTTPException(status_code=400, detail="Pointage d'entrée déjà enregistré")
+    
+    attendance_doc = {
+        "id": str(uuid.uuid4()),
+        "employee_id": current_user["id"],
+        "employee_name": f"{current_user['first_name']} {current_user['last_name']}",
+        "date": today,
+        "check_in": now_time,
+        "check_out": None,
+        "notes": "",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.attendance.insert_one(attendance_doc)
+    attendance_doc.pop("_id", None)
+    return attendance_doc
+
+@attendance_router.post("/check-out")
+async def check_out(current_user: dict = Depends(get_current_user)):
+    """Record check-out time"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    now_time = datetime.now(timezone.utc).strftime("%H:%M")
+    
+    existing = await db.attendance.find_one({"employee_id": current_user["id"], "date": today})
+    if not existing:
+        raise HTTPException(status_code=400, detail="Aucun pointage d'entrée trouvé")
+    if existing.get("check_out"):
+        raise HTTPException(status_code=400, detail="Pointage de sortie déjà enregistré")
+    
+    await db.attendance.update_one(
+        {"employee_id": current_user["id"], "date": today},
+        {"$set": {"check_out": now_time}}
+    )
+    
+    updated = await db.attendance.find_one({"employee_id": current_user["id"], "date": today}, {"_id": 0})
+    return updated
+
+@attendance_router.post("")
+async def create_attendance_manual(
+    employee_id: str,
+    date: str,
+    check_in: Optional[str] = None,
+    check_out: Optional[str] = None,
+    notes: Optional[str] = "",
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Manually create attendance record (admin/secretary only)"""
+    employee = await db.users.find_one({"id": employee_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    attendance_doc = {
+        "id": str(uuid.uuid4()),
+        "employee_id": employee_id,
+        "employee_name": f"{employee['first_name']} {employee['last_name']}",
+        "date": date,
+        "check_in": check_in,
+        "check_out": check_out,
+        "notes": notes,
+        "created_by": current_user["id"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.attendance.insert_one(attendance_doc)
+    attendance_doc.pop("_id", None)
+    return attendance_doc
+
 # ==================== CONFIG ROUTES (Admin Only) ====================
 @config_router.get("/leave-rules")
 async def get_leave_rules(current_user: dict = Depends(require_roles(["admin"]))):

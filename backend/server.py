@@ -463,12 +463,28 @@ async def update_employee(
     return employee
 
 @employees_router.delete("/{employee_id}")
-async def deactivate_employee(
+async def delete_employee(
     employee_id: str,
+    permanent: bool = False,
     current_user: dict = Depends(require_roles(["admin"]))
 ):
-    await db.users.update_one({"id": employee_id}, {"$set": {"is_active": False}})
-    return {"message": "Employé désactivé"}
+    """Delete or deactivate an employee"""
+    employee = await db.users.find_one({"id": employee_id})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    if permanent:
+        # Permanent deletion - also delete related data
+        await db.users.delete_one({"id": employee_id})
+        await db.leaves.delete_many({"employee_id": employee_id})
+        await db.behaviors.delete_many({"employee_id": employee_id})
+        await db.documents.delete_many({"employee_id": employee_id})
+        await db.attendance.delete_many({"employee_id": employee_id})
+        return {"message": "Employé supprimé définitivement"}
+    else:
+        # Soft delete - just deactivate
+        await db.users.update_one({"id": employee_id}, {"$set": {"is_active": False, "status": "inactive"}})
+        return {"message": "Employé désactivé"}
 
 # ==================== LEAVE MANAGEMENT ROUTES ====================
 @leaves_router.get("")

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -9,17 +10,29 @@ import { Label } from '../components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Switch } from '../components/ui/switch';
-import { User, Globe, Bell, Shield, Palette, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { User, Globe, Bell, Shield, Palette, Loader2, Moon, Sun, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Settings = () => {
   const { user, updateUser } = useAuth();
   const { t, language, setLanguage, availableLanguages } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const [formData, setFormData] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     phone: user?.phone || ''
+  });
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
   });
 
   const handleSave = async () => {
@@ -31,6 +44,35 @@ const Settings = () => {
       toast.error('Erreur lors de la mise à jour');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      toast.error('Les mots de passe ne correspondent pas');
+      return;
+    }
+    
+    if (passwordData.new_password.length < 6) {
+      toast.error('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+    
+    setPasswordLoading(true);
+    try {
+      await axios.put(`${API_URL}/api/auth/change-password`, {
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password
+      });
+      toast.success('Mot de passe modifié avec succès');
+      setPasswordDialogOpen(false);
+      setPasswordData({ current_password: '', new_password: '', confirm_password: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors du changement de mot de passe');
+    } finally {
+      setPasswordLoading(false);
     }
   };
 

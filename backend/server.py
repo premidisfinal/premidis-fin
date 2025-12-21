@@ -1061,6 +1061,70 @@ async def get_categories(current_user: dict = Depends(get_current_user)):
         ]
     }
 
+# Default permissions
+DEFAULT_PERMISSIONS = {
+    "admin": {
+        "can_manage_employees": True,
+        "can_approve_leaves": True,
+        "can_post_announcements": True,
+        "can_post_behavior": True,
+        "can_view_salaries": True,
+        "can_edit_salaries": True,
+        "can_delete_employees": True,
+        "can_manage_permissions": True,
+        "can_view_all_performance": True
+    },
+    "secretary": {
+        "can_manage_employees": True,
+        "can_approve_leaves": True,
+        "can_post_announcements": True,
+        "can_post_behavior": False,
+        "can_view_salaries": False,
+        "can_edit_salaries": False,
+        "can_delete_employees": False,
+        "can_manage_permissions": False,
+        "can_view_all_performance": False
+    },
+    "employee": {
+        "can_manage_employees": False,
+        "can_approve_leaves": False,
+        "can_post_announcements": False,
+        "can_post_behavior": False,
+        "can_view_salaries": False,
+        "can_edit_salaries": False,
+        "can_delete_employees": False,
+        "can_manage_permissions": False,
+        "can_view_all_performance": False
+    }
+}
+
+@config_router.get("/permissions")
+async def get_permissions(current_user: dict = Depends(get_current_user)):
+    """Get role permissions"""
+    permissions = await db.permissions.find_one({"type": "roles"}, {"_id": 0})
+    if not permissions:
+        permissions = {"type": "roles", "permissions": DEFAULT_PERMISSIONS}
+    return permissions
+
+@config_router.put("/permissions")
+async def update_permissions(
+    data: dict,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Update role permissions (admin only)"""
+    permissions_doc = {
+        "type": "roles",
+        "permissions": data.get("permissions", DEFAULT_PERMISSIONS),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"]
+    }
+    await db.permissions.update_one(
+        {"type": "roles"},
+        {"$set": permissions_doc},
+        upsert=True
+    )
+    return {"message": "Permissions mises à jour", "permissions": permissions_doc["permissions"]}
+
 # ==================== BEHAVIOR TRACKING ROUTES ====================
 @behavior_router.get("")
 async def list_behaviors(current_user: dict = Depends(get_current_user)):

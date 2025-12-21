@@ -1,0 +1,184 @@
+<analysis>**original_problem_statement:**
+The user wants to build a comprehensive, multi-lingual (French, Swahili, English) Human Resources PWA for their company, PREMIERDIs sarl.
+
+The project has undergone several iterations and the latest, definitive set of requirements is to refactor the existing application, now codenamed Prometheus. The frontend UI/UX should NOT be changed, but the internal logic, permissions, and workflows must be rebuilt to focus ONLY on a specific set of client-validated features.
+
+**PRODUCT REQUIREMENTS (Based on the final user request - Prometheus brief):**
+
+1.  **Strict Role-Based Access:**
+    *   **Administrator:** Full access. Configures leave rules, manages employees, approves/rejects leave.
+    *   **Secretary:** View access. Can create/manage leave requests. Limited editing.
+    *   **Employee:** Read-only access to their own profile, leave balance, and calendar. Can submit leave requests.
+
+2.  **Core Features:**
+    *   **Leave Management:** Centralized system with global and individual lists, detailed views, status workflows (pending/approved/rejected), and full calendar synchronization. Must automatically calculate working days and handle various leave types (Annual, Sick, Exceptional, Maternity, Public Holidays).
+    *   **Individualized Leave Rules:** Admins must be able to configure leave durations for different types (e.g., Maternity = 3 months).
+    *   **Personnel Management:** Manage employee details (personal, function, salary, hire date). Handle HR actions like salary advances, contract management, bonuses, and exit authorizations.
+    *   **Categorization:** Implement employee categories that affect leave rules and other HR logic.
+
+3.  **UI & Visuals:**
+    *   The existing visual design and color system must be preserved.
+    *   Colors should be used intentionally to differentiate statuses (pending, approved, rejected) and leave types to improve clarity.
+
+4.  **Technical Requirements:**
+    *   The application must be stable, scalable, and production-ready.
+    *   Preserve multi-language support.
+    *   Remove any features not specified in this final brief.
+
+**User's preferred language**: French (fr)
+
+**what currently exists?**
+A full-stack HR application has been built with a FastAPI backend and a React frontend. It includes modules for authentication, user management, time tracking, payroll, and more. Multiple iterations have added features like a detailed employee profile, a time management calendar, and import/export buttons. However, the last set of major changes introduced a build error, and the frontend is currently broken and does not render.
+
+**Last working item**:
+- Last item agent was working: The agent was attempting to debug a critical frontend build failure after implementing a large set of user-requested features. The user reported that the application was no longer visible. The agent identified a duplicate import in  as a potential cause but was interrupted by further user messages before fully resolving the issue.
+- Status: IN PROGRESS
+- Agent Testing Done: N
+- Which testing method agent to use? frontend testing agent
+- User Testing Done: N
+
+**All Pending/In progress Issue list**:
+- Issue 1: Frontend build is failing, preventing the application from rendering. (Priority: P0)
+
+Issues Detail:
+- Issue 1:
+    - Attempted fixes: The agent found a duplicate  in  but did not get to apply the fix and verify. The root cause is likely a syntax error introduced during the last batch of edits.
+    - Next debug checklist:
+        1.  Verify and fix the duplicate import in .
+        2.  Run yarn install v1.22.22
+[1/4] Resolving packages...
+success Already up-to-date.
+Done in 0.02s. in  to ensure all dependencies are correctly installed.
+        3.  Run yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. (or ) and analyze the output for the specific error message.
+        4.  Review all recently modified files, especially overwritten ones like , , , and , for syntax errors.
+        5.  Fix any identified errors until the build succeeds and the application renders.
+    - Why fix this issue and what will be achieved with the fix? This is a critical, blocking issue. Fixing it will restore the application's visibility, allowing development and testing to resume.
+    - Status: IN PROGRESS
+    - Is recurring issue? N
+    - Should Test frontend/backend/both after fix? Frontend
+    - Blocked on other issue: None
+
+**In progress Task List**:
+None. The agent is blocked by the build error.
+
+**Upcoming and Future Tasks**
+Once the build is fixed, the primary task is to refactor the entire application according to the Prometheus brief (from user message #184).
+
+- **Upcoming Tasks (P0):**
+    1.  **Refactor Backend Logic:**
+        -   Implement strict, non-bypassable role permissions for Admin, Secretary, and Employee roles in .
+        -   Rebuild the leave management logic to handle automatic working-day calculations, various leave types, and balance tracking.
+        -   Create endpoints for Admins to configure leave rules (e.g., duration for maternity leave).
+    2.  **Refactor Frontend Logic:**
+        -   Connect frontend components to the new, refactored backend endpoints.
+        -   Ensure UI elements are displayed or hidden based on the user's role.
+        -   Disable or remove all features and UI elements not mentioned in the Prometheus brief.
+        -   Ensure status colors (pending, approved, rejected) are used consistently in the UI.
+
+- **Future Tasks (P1):**
+    1.  **Implement Personnel Management Actions:** Add backend and frontend logic for salary advances, contract management, bonuses, and exit authorizations.
+    2.  **Implement Categorization:** Add backend models and logic for employee categories and apply them to the HR rules.
+    3.  **End-to-End Testing:** After refactoring, run the testing agent to perform a full regression test covering all roles and features.
+
+**Completed work in this session**
+- Initial application scaffolding with all major modules (Auth, Admin, Time, Payroll, etc.).
+- JWT-based authentication and user registration.
+- Integration of OpenAI (Whisper/TTS) for voice features and SendGrid for emails.
+- Phase 1: Basic dashboard with module tiles.
+- Phase 2: Implemented a detailed employee profile page, added a company logo, and a notification center.
+- Phase 3: Added a calendar and clock-in/out functionality to the Time Management page (this likely introduced the breaking error).
+
+**Earlier issues found/mentioned but not fixed**
+- **Non-functional buttons:** The user repeatedly reported that Modify, Add, and Import buttons across various modules (Certifications, Personnel documents, etc.) were not working. These will be addressed by the complete Prometheus refactoring, which redefines the required functionality.
+- **Biometric Machine Connection:** The user requested a connection to a biometric machine for clock-in data. This is not part of the final Prometheus brief and should be considered out of scope for now.
+
+**Known issue recurrence from previous fork**
+- None.
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+- **Frontend:** React, Tailwind CSS, Shadcn/UI components, Axios
+- **Backend:** FastAPI, Python
+- **Database:** MongoDB
+- **Authentication:** JWT (JSON Web Tokens)
+- **Architecture:** PWA (Progressive Web App)
+
+**key DB schema**
+- **users:** {email, password_hash, role, department, country, contract_type}
+- **employees:** {user_id, personal_info, work_info, documents, objectives}
+- **leaves:** {employee_id, type, start_date, end_date, status, reason}
+- **announcements:** {title, content, priority, created_by}
+- **clock_events:** {employee_id, timestamp, event_type: 'in'/'out'}
+
+**changes in tech stack**
+- None.
+
+**All files of reference**
+*   **/app/frontend/src/pages/TimeManagement.jsx**: Recently overwritten and edited; suspected source of the build error due to a duplicate import.
+*   **/app/frontend/src/pages/EmployeeProfile.jsx**: Recently edited; has a lint warning about a missing  dependency.
+*   **/app/frontend/src/pages/Dashboard.jsx**: Recently overwritten to make stats clickable.
+*   **/app/frontend/src/pages/Communication.jsx**: Recently overwritten with a new layout.
+*   **/app/frontend/src/pages/Payroll.jsx**: Recently overwritten to change its function to 'Remuneration'.
+*   **/app/frontend/src/pages/Performance.jsx**: Recently overwritten with a new 3-module structure.
+*   **/app/backend/server.py**: Recently modified to add backend logic for new features, including leaves and clock-in/out functionality.
+*   **/app/frontend/src/App.js**: Recently edited to add new routes and update layout components.
+
+**Areas that need refactoring**:
+- The entire application logic (backend and frontend) needs to be refactored to align with the Prometheus brief (user message #184). This involves simplifying features, enforcing strict role-based permissions, and removing anything not explicitly requested in the final brief.
+
+**key api endpoints**
+- 
+- 
+- 
+-  (CRUD)
+-  (CRUD)
+- , 
+- 
+- , 
+
+**Critical Info for New Agent**
+- **The project has pivoted.** Disregard all previous user requests and feature lists. The single source of truth for the project is the Prometheus brief in user message #184.
+- **The immediate priority is to fix the broken frontend build.** The application is currently not rendering. The most likely cause is a syntax error in one of the recently overwritten React components.
+- Once the build is fixed, do not add new features. Your task is to refactor and simplify the existing codebase to match the Prometheus brief, focusing on permissions and core HR workflows.
+
+**documents and test_reports created in this job**
+- /app/requirements.md
+- /app/test_reports/iteration_1.json
+- /app/test_reports/iteration_2.json
+- /app/test_reports/iteration_3.json
+- /app/design_guidelines.json
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **[#185]** Je vais refactorer l'application pour correspondre exactement aux spécifications client. Commençons par le backend et le frontend :
+2.  **[#184]** (The Prometheus Brief) A complete refactoring request focusing on core HR features and strict role permissions, asking to keep the UI intact but rebuild the logic.
+3.  **[#180]** Je vais corriger tous ces problèmes. Commençons :
+4.  **[#179]** A list of new feature requests and fixes, including creating payslips, creating objectives, adjusting leave calculations, and adding profile pictures.
+5.  **[#176]** Je vais d'abord corriger l'erreur technique, puis appeler le Deployer Agent :
+6.  **[#175]** A long, unstructured re-iteration of the major refactoring request from message #137.
+7.  **[#173]** D'abord, laissez-moi corriger l'erreur de syntaxe dans TimeManagement.jsx, puis lancer le health check :
+8.  **[#168]** aide moi a corriger cette erreur qui cause a se que je ne voit pas mon application arranger cette erreur technique a gauche de lecrant (Help me fix the technical error that is preventing me from seeing my application).
+9.  **[#138]** Je vais implémenter toutes ces modifications en plusieurs étapes. Commençons par la Partie 1 :
+10. **[#137]** The first very long, three-part prompt detailing a massive overhaul of the entire application.
+
+**Project Health Check:**
+- **Broken**: The frontend build process () is failing, so the application cannot be rendered or tested.
+
+**3rd Party Integrations**
+- **OpenAI Whisper & TTS:** For voice AI features. Uses Emergent LLM Key.
+- **SendGrid:** For email functionalities (e.g., password reset). Requires a user-provided API key.
+
+**Testing status**
+- Testing agent used after significant changes: YES (but not after the last set of changes that broke the app).
+- Troubleshoot agent used after agent stuck in loop: NO
+- Test files created: None.
+- Known regressions: The entire frontend is non-functional.
+
+**Credentials to test flow:**
+- A  account was created with . The password is not specified but could be recreated or found in the agent's previous actions if needed.
+
+**What agent forgot to execute**
+- The agent failed to test the application after making a large number of simultaneous changes, which led to the current broken state. It should have adopted a more incremental approach with testing after each smaller change.
+- The agent got distracted by new user requests instead of focusing on fixing the critical build error first.</analysis>

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -9,11 +9,9 @@ from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-import bcrypt
-import base64
 from enum import Enum
 
 ROOT_DIR = Path(__file__).parent
@@ -25,31 +23,19 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # JWT Settings
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'premierdis-secret-key')
-JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', 480))
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'premidis-secret-key-2025')
+JWT_ALGORITHM = 'HS256'
+ACCESS_TOKEN_EXPIRE_MINUTES = 480
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
 # Create the main app
-app = FastAPI(title="PREMIERDIs HR API", version="1.0.0")
-
-# Create routers
-api_router = APIRouter(prefix="/api")
-auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
-employees_router = APIRouter(prefix="/employees", tags=["Employees"])
-leaves_router = APIRouter(prefix="/leaves", tags=["Leaves"])
-payroll_router = APIRouter(prefix="/payroll", tags=["Payroll"])
-performance_router = APIRouter(prefix="/performance", tags=["Performance"])
-communication_router = APIRouter(prefix="/communication", tags=["Communication"])
-rules_router = APIRouter(prefix="/rules", tags=["Rules"])
-voice_router = APIRouter(prefix="/voice", tags=["Voice AI"])
+app = FastAPI(title="PREMIDIS SARL - HR Platform", version="2.0.0")
 
 # ==================== ENUMS ====================
 class UserRole(str, Enum):
-    SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     SECRETARY = "secretary"
     EMPLOYEE = "employee"
@@ -60,29 +46,26 @@ class LeaveStatus(str, Enum):
     REJECTED = "rejected"
 
 class LeaveType(str, Enum):
-    ANNUAL = "annual"
-    SICK = "sick"
-    MATERNITY = "maternity"
-    PATERNITY = "paternity"
-    UNPAID = "unpaid"
+    ANNUAL = "annual"           # Congé annuel
+    SICK = "sick"               # Congé maladie
+    EXCEPTIONAL = "exceptional" # Autorisation exceptionnelle
+    MATERNITY = "maternity"     # Congé maternité
+    PUBLIC = "public"           # Jours fériés
+
+class EmployeeCategory(str, Enum):
+    CADRE = "cadre"
+    AGENT = "agent"
+    STAGIAIRE = "stagiaire"
 
 class Department(str, Enum):
     MARKETING = "marketing"
-    ACCOUNTING = "comptabilite"
+    COMPTABILITE = "comptabilite"
     ADMINISTRATION = "administration"
-    HR = "ressources_humaines"
-    LEGAL = "juridique"
-    CLEANING = "nettoyage"
-    SECURITY = "securite"
+    RH = "ressources_humaines"
+    JURIDIQUE = "juridique"
+    SECURITE = "securite"
+    TECHNIQUE = "technique"
     CHAUFFEUR = "chauffeur"
-    TECHNICIEN = "technicien"
-
-class PasswordResetRequest(BaseModel):
-    email: EmailStr
-
-class PasswordResetConfirm(BaseModel):
-    token: str
-    new_password: str
 
 # ==================== MODELS ====================
 class UserCreate(BaseModel):
@@ -92,6 +75,11 @@ class UserCreate(BaseModel):
     last_name: str
     department: str = "administration"
     role: str = "employee"
+    category: str = "agent"
+    position: str = ""
+    phone: Optional[str] = None
+    hire_date: Optional[str] = None
+    salary: Optional[float] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -105,37 +93,25 @@ class UserResponse(BaseModel):
     last_name: str
     role: str
     department: str
+    category: str
+    position: Optional[str] = None
+    phone: Optional[str] = None
+    hire_date: Optional[str] = None
+    salary: Optional[float] = None
     is_active: bool
     created_at: str
     avatar_url: Optional[str] = None
-    phone: Optional[str] = None
-    position: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
 
-class EmployeeCreate(BaseModel):
-    first_name: str
-    last_name: str
-    email: EmailStr
-    phone: Optional[str] = None
-    department: str
-    position: str
-    hire_date: str
-    salary: float
-    contract_type: str = "CDI"
-    country: str = "RDC"
-
-class EmployeeUpdate(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone: Optional[str] = None
-    department: Optional[str] = None
-    position: Optional[str] = None
-    salary: Optional[float] = None
-    contract_type: Optional[str] = None
+class LeaveRuleConfig(BaseModel):
+    annual_days: int = 26          # Congé annuel par défaut
+    sick_days: int = 15            # Congé maladie
+    exceptional_days: int = 15     # Autorisation exceptionnelle
+    maternity_days: int = 90       # Congé maternité (3 mois)
 
 class LeaveRequest(BaseModel):
     leave_type: str
@@ -147,54 +123,34 @@ class LeaveUpdate(BaseModel):
     status: str
     admin_comment: Optional[str] = None
 
-class AttendanceCreate(BaseModel):
-    employee_id: Optional[str] = None
+class EmployeeUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+    department: Optional[str] = None
+    position: Optional[str] = None
+    category: Optional[str] = None
+    salary: Optional[float] = None
+    hire_date: Optional[str] = None
+
+class SalaryAdvance(BaseModel):
+    employee_id: str
+    amount: float
+    reason: str
+    repayment_date: str
+
+class Bonus(BaseModel):
+    employee_id: str
+    amount: float
+    reason: str
     date: str
-    check_in: Optional[str] = None
-    check_out: Optional[str] = None
-    notes: Optional[str] = None
 
-class AttendanceUpdate(BaseModel):
-    check_in: Optional[str] = None
-    check_out: Optional[str] = None
-    notes: Optional[str] = None
-
-class PayslipCreate(BaseModel):
+class ExitAuthorization(BaseModel):
     employee_id: str
-    month: int
-    year: int
-    base_salary: float
-    bonuses: float = 0
-    deductions: float = 0
-    net_salary: Optional[float] = None
-
-class PerformanceCreate(BaseModel):
-    employee_id: str
-    period: str
-    objectives: List[Dict[str, Any]]
-    rating: float
-    comments: Optional[str] = None
-
-class AnnouncementCreate(BaseModel):
-    title: str
-    content: str
-    priority: str = "normal"
-    target_departments: List[str] = []
-
-class MessageCreate(BaseModel):
-    receiver_id: str
-    content: str
-
-class RuleCreate(BaseModel):
-    title: str
-    content: str
-    category: str
-    effective_date: str
-
-class VoiceRequest(BaseModel):
-    audio_base64: Optional[str] = None
-    text: Optional[str] = None
-    language: str = "fr"
+    date: str
+    departure_time: str
+    return_time: Optional[str] = None
+    reason: str
 
 # ==================== AUTH HELPERS ====================
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -215,31 +171,67 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise HTTPException(status_code=401, detail="Token invalide")
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Token invalide")
     
     user = await db.users.find_one({"id": user_id}, {"_id": 0})
     if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
     return user
 
 def require_roles(allowed_roles: List[str]):
     async def role_checker(current_user: dict = Depends(get_current_user)):
         if current_user["role"] not in allowed_roles:
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
+            raise HTTPException(status_code=403, detail="Permissions insuffisantes")
         return current_user
     return role_checker
+
+def calculate_working_days(start_date: str, end_date: str) -> int:
+    """Calculate working days between two dates (excluding weekends)"""
+    start = datetime.strptime(start_date, "%Y-%m-%d").date()
+    end = datetime.strptime(end_date, "%Y-%m-%d").date()
+    
+    working_days = 0
+    current = start
+    while current <= end:
+        if current.weekday() < 5:  # Monday = 0, Friday = 4
+            working_days += 1
+        current += timedelta(days=1)
+    
+    return working_days
+
+def calculate_age(birth_date: str) -> int:
+    """Calculate age from birth date"""
+    if not birth_date:
+        return 0
+    birth = datetime.strptime(birth_date, "%Y-%m-%d").date()
+    today = date.today()
+    return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+
+# ==================== ROUTERS ====================
+api_router = APIRouter(prefix="/api")
+auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
+employees_router = APIRouter(prefix="/employees", tags=["Personnel"])
+leaves_router = APIRouter(prefix="/leaves", tags=["Congés"])
+calendar_router = APIRouter(prefix="/calendar", tags=["Calendrier"])
+hr_router = APIRouter(prefix="/hr", tags=["RH Actions"])
+config_router = APIRouter(prefix="/config", tags=["Configuration"])
 
 # ==================== AUTH ROUTES ====================
 @auth_router.post("/register", response_model=TokenResponse)
 async def register(user_data: UserCreate):
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Email déjà enregistré")
     
     user_id = str(uuid.uuid4())
     hashed_password = get_password_hash(user_data.password)
+    
+    # Get default leave rules
+    leave_rules = await db.leave_rules.find_one({"type": "default"}, {"_id": 0})
+    if not leave_rules:
+        leave_rules = LeaveRuleConfig().model_dump()
     
     user_doc = {
         "id": user_id,
@@ -249,11 +241,27 @@ async def register(user_data: UserCreate):
         "last_name": user_data.last_name,
         "role": user_data.role,
         "department": user_data.department,
+        "category": user_data.category,
+        "position": user_data.position,
+        "phone": user_data.phone,
+        "hire_date": user_data.hire_date,
+        "salary": user_data.salary,
         "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "avatar_url": None,
-        "phone": None,
-        "position": None
+        # Leave balances
+        "leave_balance": {
+            "annual": leave_rules.get("annual_days", 26),
+            "sick": leave_rules.get("sick_days", 15),
+            "exceptional": leave_rules.get("exceptional_days", 15),
+            "maternity": leave_rules.get("maternity_days", 90)
+        },
+        "leave_taken": {
+            "annual": 0,
+            "sick": 0,
+            "exceptional": 0,
+            "maternity": 0
+        }
     }
     
     await db.users.insert_one(user_doc)
@@ -267,6 +275,8 @@ async def register(user_data: UserCreate):
         last_name=user_data.last_name,
         role=user_data.role,
         department=user_data.department,
+        category=user_data.category,
+        position=user_data.position,
         is_active=True,
         created_at=user_doc["created_at"]
     )
@@ -277,211 +287,97 @@ async def register(user_data: UserCreate):
 async def login(credentials: UserLogin):
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
     if not user or not verify_password(credentials.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Identifiants invalides")
     
     if not user.get("is_active", True):
-        raise HTTPException(status_code=403, detail="Account is inactive")
+        raise HTTPException(status_code=403, detail="Compte désactivé")
     
     access_token = create_access_token(data={"sub": user["id"], "role": user["role"]})
     
-    user_response = UserResponse(
-        id=user["id"],
-        email=user["email"],
-        first_name=user["first_name"],
-        last_name=user["last_name"],
-        role=user["role"],
-        department=user["department"],
-        is_active=user["is_active"],
-        created_at=user["created_at"],
-        avatar_url=user.get("avatar_url"),
-        phone=user.get("phone"),
-        position=user.get("position")
-    )
+    user_response = UserResponse(**{k: v for k, v in user.items() if k != "password"})
     
     return TokenResponse(access_token=access_token, user=user_response)
 
-@auth_router.get("/me", response_model=UserResponse)
+@auth_router.get("/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
-    return UserResponse(**current_user)
-
-@auth_router.put("/me")
-async def update_me(updates: dict, current_user: dict = Depends(get_current_user)):
-    allowed_fields = ["first_name", "last_name", "phone", "avatar_url"]
-    update_data = {k: v for k, v in updates.items() if k in allowed_fields}
-    
-    if update_data:
-        await db.users.update_one({"id": current_user["id"]}, {"$set": update_data})
-    
-    updated_user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password": 0})
-    return updated_user
-
-@auth_router.post("/forgot-password")
-async def forgot_password(request: PasswordResetRequest):
-    """Send password reset email"""
-    user = await db.users.find_one({"email": request.email}, {"_id": 0})
-    if not user:
-        # Return success even if user not found (security)
-        return {"message": "Si cette adresse existe, un email a été envoyé"}
-    
-    # Generate reset token
-    reset_token = str(uuid.uuid4())
-    expires = datetime.now(timezone.utc) + timedelta(hours=1)
-    
-    await db.password_resets.insert_one({
-        "user_id": user["id"],
-        "email": request.email,
-        "token": reset_token,
-        "expires": expires.isoformat(),
-        "used": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
-    
-    # TODO: Send email with reset link (SendGrid integration)
-    # For now, return token for testing
-    logger.info(f"Password reset token for {request.email}: {reset_token}")
-    
-    return {"message": "Si cette adresse existe, un email de réinitialisation a été envoyé", "token": reset_token}
-
-@auth_router.post("/reset-password")
-async def reset_password(request: PasswordResetConfirm):
-    """Reset password with token"""
-    reset_record = await db.password_resets.find_one({
-        "token": request.token,
-        "used": False
-    }, {"_id": 0})
-    
-    if not reset_record:
-        raise HTTPException(status_code=400, detail="Token invalide ou expiré")
-    
-    # Check expiration
-    expires = datetime.fromisoformat(reset_record["expires"].replace('Z', '+00:00'))
-    if datetime.now(timezone.utc) > expires:
-        raise HTTPException(status_code=400, detail="Token expiré")
-    
-    # Update password
-    hashed_password = get_password_hash(request.new_password)
-    await db.users.update_one(
-        {"id": reset_record["user_id"]},
-        {"$set": {"password": hashed_password}}
-    )
-    
-    # Mark token as used
-    await db.password_resets.update_one(
-        {"token": request.token},
-        {"$set": {"used": True}}
-    )
-    
-    return {"message": "Mot de passe réinitialisé avec succès"}
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password": 0})
+    return user
 
 # ==================== EMPLOYEES ROUTES ====================
 @employees_router.get("")
 async def list_employees(
     department: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 50,
-    current_user: dict = Depends(require_roles(["super_admin", "admin", "secretary"]))
+    category: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
 ):
+    # Employees can only see themselves
+    if current_user["role"] == "employee":
+        user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password": 0})
+        return {"employees": [user], "total": 1}
+    
     query = {}
     if department:
         query["department"] = department
+    if category:
+        query["category"] = category
     
-    employees = await db.employees.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
-    total = await db.employees.count_documents(query)
-    
-    return {"employees": employees, "total": total}
-
-@employees_router.post("")
-async def create_employee(
-    employee: EmployeeCreate,
-    current_user: dict = Depends(require_roles(["super_admin", "admin", "secretary"]))
-):
-    employee_id = str(uuid.uuid4())
-    employee_doc = {
-        "id": employee_id,
-        **employee.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": current_user["id"]
-    }
-    
-    await db.employees.insert_one(employee_doc)
-    employee_doc.pop("_id", None)
-    return employee_doc
+    employees = await db.users.find(query, {"_id": 0, "password": 0}).to_list(500)
+    return {"employees": employees, "total": len(employees)}
 
 @employees_router.get("/{employee_id}")
 async def get_employee(employee_id: str, current_user: dict = Depends(get_current_user)):
-    employee = await db.employees.find_one({"id": employee_id}, {"_id": 0})
+    # Employees can only view themselves
+    if current_user["role"] == "employee" and current_user["id"] != employee_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    employee = await db.users.find_one({"id": employee_id}, {"_id": 0, "password": 0})
     if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
     return employee
 
 @employees_router.put("/{employee_id}")
 async def update_employee(
     employee_id: str,
     updates: EmployeeUpdate,
-    current_user: dict = Depends(require_roles(["super_admin", "admin"]))
+    current_user: dict = Depends(require_roles(["admin"]))
 ):
     update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
     
     if update_data:
-        await db.employees.update_one({"id": employee_id}, {"$set": update_data})
+        await db.users.update_one({"id": employee_id}, {"$set": update_data})
     
-    employee = await db.employees.find_one({"id": employee_id}, {"_id": 0})
+    employee = await db.users.find_one({"id": employee_id}, {"_id": 0, "password": 0})
     if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
     return employee
 
 @employees_router.delete("/{employee_id}")
-async def delete_employee(
+async def deactivate_employee(
     employee_id: str,
-    current_user: dict = Depends(require_roles(["super_admin"]))
+    current_user: dict = Depends(require_roles(["admin"]))
 ):
-    result = await db.employees.delete_one({"id": employee_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Employee not found")
-    return {"message": "Employee deleted"}
+    await db.users.update_one({"id": employee_id}, {"$set": {"is_active": False}})
+    return {"message": "Employé désactivé"}
 
-@employees_router.get("/{employee_id}/documents")
-async def get_employee_documents(employee_id: str, current_user: dict = Depends(get_current_user)):
-    # Employees can only see their own documents
-    if current_user["role"] == "employee" and current_user["id"] != employee_id:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    documents = await db.documents.find({"employee_id": employee_id}, {"_id": 0}).to_list(100)
-    return {"documents": documents}
-
-@employees_router.post("/{employee_id}/documents")
-async def upload_employee_document(
-    employee_id: str,
-    name: str,
-    doc_type: str,
-    current_user: dict = Depends(require_roles(["super_admin", "admin", "secretary"]))
-):
-    doc_id = str(uuid.uuid4())
-    doc = {
-        "id": doc_id,
-        "employee_id": employee_id,
-        "name": name,
-        "type": doc_type,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": current_user["id"]
-    }
-    await db.documents.insert_one(doc)
-    doc.pop("_id", None)
-    return doc
-
-# ==================== LEAVES ROUTES ====================
+# ==================== LEAVE MANAGEMENT ROUTES ====================
 @leaves_router.get("")
 async def list_leaves(
     status: Optional[str] = None,
+    leave_type: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
+    
+    # Employees see only their own leaves
     if current_user["role"] == "employee":
         query["employee_id"] = current_user["id"]
+    
     if status:
         query["status"] = status
+    if leave_type:
+        query["leave_type"] = leave_type
     
-    leaves = await db.leaves.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    leaves = await db.leaves.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
     return {"leaves": leaves}
 
 @leaves_router.post("")
@@ -489,570 +385,348 @@ async def create_leave_request(
     leave: LeaveRequest,
     current_user: dict = Depends(get_current_user)
 ):
+    # Validate dates
+    try:
+        start = datetime.strptime(leave.start_date, "%Y-%m-%d")
+        end = datetime.strptime(leave.end_date, "%Y-%m-%d")
+        if end < start:
+            raise HTTPException(status_code=400, detail="La date de fin doit être après la date de début")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Format de date invalide")
+    
+    # Calculate working days
+    working_days = calculate_working_days(leave.start_date, leave.end_date)
+    
+    # Check leave balance
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+    leave_balance = user.get("leave_balance", {})
+    leave_taken = user.get("leave_taken", {})
+    
+    available = leave_balance.get(leave.leave_type, 0) - leave_taken.get(leave.leave_type, 0)
+    
+    if working_days > available and leave.leave_type != "public":
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Solde insuffisant. Disponible: {available} jours, Demandé: {working_days} jours"
+        )
+    
+    # Check for overlapping leaves
+    existing = await db.leaves.find_one({
+        "employee_id": current_user["id"],
+        "status": {"$ne": "rejected"},
+        "$or": [
+            {"start_date": {"$lte": leave.end_date}, "end_date": {"$gte": leave.start_date}}
+        ]
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Chevauchement avec une demande existante")
+    
     leave_id = str(uuid.uuid4())
     leave_doc = {
         "id": leave_id,
         "employee_id": current_user["id"],
         "employee_name": f"{current_user['first_name']} {current_user['last_name']}",
-        **leave.model_dump(),
+        "department": current_user.get("department", ""),
+        "leave_type": leave.leave_type,
+        "start_date": leave.start_date,
+        "end_date": leave.end_date,
+        "working_days": working_days,
+        "reason": leave.reason,
         "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "admin_comment": None
+        "admin_comment": None,
+        "approved_by": None,
+        "approved_at": None
     }
     
     await db.leaves.insert_one(leave_doc)
     leave_doc.pop("_id", None)
     return leave_doc
 
+@leaves_router.get("/balance")
+async def get_leave_balance(current_user: dict = Depends(get_current_user)):
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+    
+    leave_balance = user.get("leave_balance", {})
+    leave_taken = user.get("leave_taken", {})
+    
+    balance = {}
+    for leave_type in ["annual", "sick", "exceptional", "maternity"]:
+        total = leave_balance.get(leave_type, 0)
+        taken = leave_taken.get(leave_type, 0)
+        balance[leave_type] = {
+            "total": total,
+            "taken": taken,
+            "remaining": total - taken
+        }
+    
+    return balance
+
 @leaves_router.put("/{leave_id}")
 async def update_leave_status(
     leave_id: str,
     update: LeaveUpdate,
-    current_user: dict = Depends(require_roles(["super_admin", "admin"]))
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
 ):
+    # Secretary can only update to pending, admin can approve/reject
+    if current_user["role"] == "secretary" and update.status in ["approved", "rejected"]:
+        raise HTTPException(status_code=403, detail="Seul l'administrateur peut approuver ou rejeter")
+    
+    leave = await db.leaves.find_one({"id": leave_id}, {"_id": 0})
+    if not leave:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
     update_data = {
         "status": update.status,
         "admin_comment": update.admin_comment,
-        "updated_by": current_user["id"],
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "approved_by": current_user["id"],
+        "approved_at": datetime.now(timezone.utc).isoformat()
     }
     
-    result = await db.leaves.update_one({"id": leave_id}, {"$set": update_data})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Leave request not found")
+    await db.leaves.update_one({"id": leave_id}, {"$set": update_data})
     
+    # Update leave balance if approved
+    if update.status == "approved" and leave["status"] != "approved":
+        await db.users.update_one(
+            {"id": leave["employee_id"]},
+            {"$inc": {f"leave_taken.{leave['leave_type']}": leave["working_days"]}}
+        )
+    # Restore balance if rejected after approval
+    elif update.status == "rejected" and leave["status"] == "approved":
+        await db.users.update_one(
+            {"id": leave["employee_id"]},
+            {"$inc": {f"leave_taken.{leave['leave_type']}": -leave["working_days"]}}
+        )
+    
+    # Add to calendar if approved
+    if update.status == "approved":
+        calendar_entry = {
+            "id": str(uuid.uuid4()),
+            "employee_id": leave["employee_id"],
+            "employee_name": leave["employee_name"],
+            "type": "leave",
+            "leave_type": leave["leave_type"],
+            "leave_id": leave_id,
+            "start_date": leave["start_date"],
+            "end_date": leave["end_date"],
+            "title": f"Congé {leave['leave_type']} - {leave['employee_name']}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.calendar.insert_one(calendar_entry)
+    
+    updated = await db.leaves.find_one({"id": leave_id}, {"_id": 0})
+    return updated
+
+@leaves_router.get("/{leave_id}")
+async def get_leave_details(leave_id: str, current_user: dict = Depends(get_current_user)):
     leave = await db.leaves.find_one({"id": leave_id}, {"_id": 0})
+    if not leave:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Employees can only see their own
+    if current_user["role"] == "employee" and leave["employee_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
     return leave
 
-@leaves_router.get("/stats")
-async def get_leave_stats(current_user: dict = Depends(get_current_user)):
-    employee_id = current_user["id"]
-    
-    pipeline = [
-        {"$match": {"employee_id": employee_id}},
-        {"$group": {"_id": "$status", "count": {"$sum": 1}}}
-    ]
-    
-    stats = await db.leaves.aggregate(pipeline).to_list(10)
-    result = {"pending": 0, "approved": 0, "rejected": 0}
-    for stat in stats:
-        result[stat["_id"]] = stat["count"]
-    
-    return result
-
-@leaves_router.get("/calendar")
-async def get_leaves_calendar(
+# ==================== CALENDAR ROUTES ====================
+@calendar_router.get("")
+async def get_calendar(
     month: Optional[int] = None,
     year: Optional[int] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all leaves for calendar view - admins see all, employees see approved"""
-    from datetime import datetime
-    
     now = datetime.now()
     target_month = month or now.month
     target_year = year or now.year
     
     query = {}
     
-    # Employees only see approved leaves + their own
+    # Employees see only their calendar
     if current_user["role"] == "employee":
         query["$or"] = [
-            {"status": "approved"},
-            {"employee_id": current_user["id"]}
+            {"employee_id": current_user["id"]},
+            {"type": "public_holiday"}
         ]
     
-    leaves = await db.leaves.find(query, {"_id": 0}).to_list(500)
+    entries = await db.calendar.find(query, {"_id": 0}).to_list(500)
     
-    # Filter by month/year
-    calendar_leaves = []
-    for leave in leaves:
+    # Filter by month
+    filtered = []
+    for entry in entries:
         try:
-            start = datetime.strptime(leave["start_date"], "%Y-%m-%d")
-            end = datetime.strptime(leave["end_date"], "%Y-%m-%d")
-            
-            # Check if leave overlaps with target month
-            if (start.year == target_year and start.month == target_month) or \
-               (end.year == target_year and end.month == target_month):
-                calendar_leaves.append(leave)
+            start = datetime.strptime(entry["start_date"], "%Y-%m-%d")
+            if start.month == target_month and start.year == target_year:
+                filtered.append(entry)
         except:
             pass
     
-    return {"leaves": calendar_leaves, "month": target_month, "year": target_year}
+    return {"entries": filtered, "month": target_month, "year": target_year}
 
-# ==================== ATTENDANCE ROUTES ====================
-attendance_router = APIRouter(prefix="/attendance", tags=["Attendance"])
-
-@attendance_router.get("")
-async def list_attendance(
-    date: Optional[str] = None,
-    employee_id: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
+@calendar_router.post("/holiday")
+async def add_public_holiday(
+    date: str,
+    name: str,
+    current_user: dict = Depends(require_roles(["admin"]))
 ):
-    query = {}
-    
-    # Employees only see their own attendance
-    if current_user["role"] == "employee":
-        query["employee_id"] = current_user["id"]
-    elif employee_id:
-        query["employee_id"] = employee_id
-    
-    if date:
-        query["date"] = date
-    
-    attendance = await db.attendance.find(query, {"_id": 0}).sort("date", -1).to_list(100)
-    return {"attendance": attendance}
-
-@attendance_router.post("")
-async def create_attendance(
-    attendance: AttendanceCreate,
-    current_user: dict = Depends(get_current_user)
-):
-    """Record attendance - employees can only record their own"""
-    att_id = str(uuid.uuid4())
-    
-    # Determine employee_id
-    if current_user["role"] == "employee":
-        emp_id = current_user["id"]
-    else:
-        emp_id = attendance.employee_id or current_user["id"]
-    
-    # Get employee name
-    employee = await db.users.find_one({"id": emp_id}, {"_id": 0, "first_name": 1, "last_name": 1})
-    emp_name = f"{employee['first_name']} {employee['last_name']}" if employee else "Unknown"
-    
-    att_doc = {
-        "id": att_id,
-        "employee_id": emp_id,
-        "employee_name": emp_name,
-        "date": attendance.date,
-        "check_in": attendance.check_in,
-        "check_out": attendance.check_out,
-        "notes": attendance.notes,
+    holiday = {
+        "id": str(uuid.uuid4()),
+        "type": "public_holiday",
+        "start_date": date,
+        "end_date": date,
+        "title": name,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": current_user["id"]
     }
-    
-    await db.attendance.insert_one(att_doc)
-    att_doc.pop("_id", None)
-    return att_doc
+    await db.calendar.insert_one(holiday)
+    holiday.pop("_id", None)
+    return holiday
 
-@attendance_router.put("/{attendance_id}")
-async def update_attendance(
-    attendance_id: str,
-    update: AttendanceUpdate,
+# ==================== HR ACTIONS ROUTES ====================
+@hr_router.post("/salary-advance")
+async def create_salary_advance(
+    advance: SalaryAdvance,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    advance_id = str(uuid.uuid4())
+    advance_doc = {
+        "id": advance_id,
+        "type": "salary_advance",
+        **advance.model_dump(),
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    await db.hr_actions.insert_one(advance_doc)
+    advance_doc.pop("_id", None)
+    return advance_doc
+
+@hr_router.post("/bonus")
+async def create_bonus(
+    bonus: Bonus,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    bonus_id = str(uuid.uuid4())
+    bonus_doc = {
+        "id": bonus_id,
+        "type": "bonus",
+        **bonus.model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    await db.hr_actions.insert_one(bonus_doc)
+    bonus_doc.pop("_id", None)
+    return bonus_doc
+
+@hr_router.post("/exit-authorization")
+async def create_exit_authorization(
+    auth: ExitAuthorization,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    auth_id = str(uuid.uuid4())
+    auth_doc = {
+        "id": auth_id,
+        "type": "exit_authorization",
+        **auth.model_dump(),
+        "status": "approved",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    await db.hr_actions.insert_one(auth_doc)
+    auth_doc.pop("_id", None)
+    return auth_doc
+
+@hr_router.get("/actions/{employee_id}")
+async def get_employee_hr_actions(
+    employee_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    att = await db.attendance.find_one({"id": attendance_id}, {"_id": 0})
-    if not att:
-        raise HTTPException(status_code=404, detail="Attendance not found")
+    # Employees can only see their own
+    if current_user["role"] == "employee" and current_user["id"] != employee_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Employees can only update their own
-    if current_user["role"] == "employee" and att["employee_id"] != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    update_data = {k: v for k, v in update.model_dump().items() if v is not None}
-    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
-    
-    await db.attendance.update_one({"id": attendance_id}, {"$set": update_data})
-    
-    updated = await db.attendance.find_one({"id": attendance_id}, {"_id": 0})
-    return updated
+    actions = await db.hr_actions.find({"employee_id": employee_id}, {"_id": 0}).to_list(100)
+    return {"actions": actions}
 
-@attendance_router.post("/check-in")
-async def check_in(current_user: dict = Depends(get_current_user)):
-    """Quick check-in for current user"""
-    from datetime import datetime
-    
-    today = datetime.now().strftime("%Y-%m-%d")
-    now_time = datetime.now().strftime("%H:%M")
-    
-    # Check if already checked in today
-    existing = await db.attendance.find_one({
-        "employee_id": current_user["id"],
-        "date": today
-    })
-    
-    if existing:
-        raise HTTPException(status_code=400, detail="Already checked in today")
-    
-    att_id = str(uuid.uuid4())
-    att_doc = {
-        "id": att_id,
-        "employee_id": current_user["id"],
-        "employee_name": f"{current_user['first_name']} {current_user['last_name']}",
-        "date": today,
-        "check_in": now_time,
-        "check_out": None,
-        "notes": None,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    await db.attendance.insert_one(att_doc)
-    att_doc.pop("_id", None)
-    return att_doc
+# ==================== CONFIG ROUTES (Admin Only) ====================
+@config_router.get("/leave-rules")
+async def get_leave_rules(current_user: dict = Depends(require_roles(["admin"]))):
+    rules = await db.leave_rules.find_one({"type": "default"}, {"_id": 0})
+    if not rules:
+        rules = LeaveRuleConfig().model_dump()
+        rules["type"] = "default"
+        await db.leave_rules.insert_one(rules)
+    return rules
 
-@attendance_router.post("/check-out")
-async def check_out(current_user: dict = Depends(get_current_user)):
-    """Quick check-out for current user"""
-    from datetime import datetime
+@config_router.put("/leave-rules")
+async def update_leave_rules(
+    rules: LeaveRuleConfig,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    rules_doc = rules.model_dump()
+    rules_doc["type"] = "default"
+    rules_doc["updated_at"] = datetime.now(timezone.utc).isoformat()
+    rules_doc["updated_by"] = current_user["id"]
     
-    today = datetime.now().strftime("%Y-%m-%d")
-    now_time = datetime.now().strftime("%H:%M")
-    
-    # Find today's attendance
-    existing = await db.attendance.find_one({
-        "employee_id": current_user["id"],
-        "date": today
-    })
-    
-    if not existing:
-        raise HTTPException(status_code=400, detail="No check-in found for today")
-    
-    if existing.get("check_out"):
-        raise HTTPException(status_code=400, detail="Already checked out today")
-    
-    await db.attendance.update_one(
-        {"id": existing["id"]},
-        {"$set": {"check_out": now_time, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    await db.leave_rules.update_one(
+        {"type": "default"},
+        {"$set": rules_doc},
+        upsert=True
     )
-    
-    updated = await db.attendance.find_one({"id": existing["id"]}, {"_id": 0})
-    return updated
+    return rules_doc
 
-@attendance_router.get("/today")
-async def get_today_attendance(current_user: dict = Depends(get_current_user)):
-    """Get current user's today attendance"""
-    from datetime import datetime
-    
-    today = datetime.now().strftime("%Y-%m-%d")
-    
-    attendance = await db.attendance.find_one({
-        "employee_id": current_user["id"],
-        "date": today
-    }, {"_id": 0})
-    
-    return {"attendance": attendance}
-
-# ==================== PAYROLL ROUTES ====================
-@payroll_router.get("")
-async def list_payslips(
-    month: Optional[int] = None,
-    year: Optional[int] = None,
-    current_user: dict = Depends(get_current_user)
-):
-    query = {}
-    if current_user["role"] == "employee":
-        query["employee_id"] = current_user["id"]
-    if month:
-        query["month"] = month
-    if year:
-        query["year"] = year
-    
-    payslips = await db.payslips.find(query, {"_id": 0}).sort([("year", -1), ("month", -1)]).to_list(100)
-    return {"payslips": payslips}
-
-@payroll_router.post("")
-async def create_payslip(
-    payslip: PayslipCreate,
-    current_user: dict = Depends(require_roles(["super_admin", "admin", "secretary"]))
-):
-    payslip_id = str(uuid.uuid4())
-    net_salary = payslip.net_salary or (payslip.base_salary + payslip.bonuses - payslip.deductions)
-    
-    payslip_doc = {
-        "id": payslip_id,
-        **payslip.model_dump(),
-        "net_salary": net_salary,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": current_user["id"]
-    }
-    
-    await db.payslips.insert_one(payslip_doc)
-    payslip_doc.pop("_id", None)
-    return payslip_doc
-
-@payroll_router.get("/{payslip_id}")
-async def get_payslip(payslip_id: str, current_user: dict = Depends(get_current_user)):
-    query = {"id": payslip_id}
-    if current_user["role"] == "employee":
-        query["employee_id"] = current_user["id"]
-    
-    payslip = await db.payslips.find_one(query, {"_id": 0})
-    if not payslip:
-        raise HTTPException(status_code=404, detail="Payslip not found")
-    return payslip
-
-# ==================== PERFORMANCE ROUTES ====================
-@performance_router.get("")
-async def list_evaluations(current_user: dict = Depends(get_current_user)):
-    query = {}
-    if current_user["role"] == "employee":
-        query["employee_id"] = current_user["id"]
-    
-    evaluations = await db.evaluations.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
-    return {"evaluations": evaluations}
-
-@performance_router.post("")
-async def create_evaluation(
-    evaluation: PerformanceCreate,
-    current_user: dict = Depends(require_roles(["super_admin", "admin"]))
-):
-    eval_id = str(uuid.uuid4())
-    eval_doc = {
-        "id": eval_id,
-        **evaluation.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": current_user["id"]
-    }
-    
-    await db.evaluations.insert_one(eval_doc)
-    eval_doc.pop("_id", None)
-    return eval_doc
-
-# ==================== COMMUNICATION ROUTES ====================
-@communication_router.get("/announcements")
-async def list_announcements(current_user: dict = Depends(get_current_user)):
-    query = {
-        "$or": [
-            {"target_departments": {"$size": 0}},
-            {"target_departments": current_user["department"]}
+@config_router.get("/categories")
+async def get_categories(current_user: dict = Depends(get_current_user)):
+    return {
+        "categories": [
+            {"id": "cadre", "name": "Cadre", "leave_multiplier": 1.2},
+            {"id": "agent", "name": "Agent", "leave_multiplier": 1.0},
+            {"id": "stagiaire", "name": "Stagiaire", "leave_multiplier": 0.5}
         ]
     }
-    announcements = await db.announcements.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
-    return {"announcements": announcements}
-
-@communication_router.post("/announcements")
-async def create_announcement(
-    announcement: AnnouncementCreate,
-    current_user: dict = Depends(require_roles(["super_admin", "admin"]))
-):
-    ann_id = str(uuid.uuid4())
-    ann_doc = {
-        "id": ann_id,
-        **announcement.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": current_user["id"],
-        "author_name": f"{current_user['first_name']} {current_user['last_name']}"
-    }
-    
-    await db.announcements.insert_one(ann_doc)
-    ann_doc.pop("_id", None)
-    return ann_doc
-
-@communication_router.get("/messages")
-async def list_messages(current_user: dict = Depends(get_current_user)):
-    query = {
-        "$or": [
-            {"sender_id": current_user["id"]},
-            {"receiver_id": current_user["id"]}
-        ]
-    }
-    messages = await db.messages.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
-    return {"messages": messages}
-
-@communication_router.post("/messages")
-async def send_message(
-    message: MessageCreate,
-    current_user: dict = Depends(get_current_user)
-):
-    msg_id = str(uuid.uuid4())
-    msg_doc = {
-        "id": msg_id,
-        "sender_id": current_user["id"],
-        "sender_name": f"{current_user['first_name']} {current_user['last_name']}",
-        **message.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "read": False
-    }
-    
-    await db.messages.insert_one(msg_doc)
-    msg_doc.pop("_id", None)
-    return msg_doc
-
-@communication_router.get("/contacts")
-async def list_contacts(current_user: dict = Depends(get_current_user)):
-    users = await db.users.find(
-        {"id": {"$ne": current_user["id"]}, "is_active": True},
-        {"_id": 0, "password": 0}
-    ).to_list(500)
-    return {"contacts": users}
-
-# ==================== RULES ROUTES ====================
-@rules_router.get("")
-async def list_rules(current_user: dict = Depends(get_current_user)):
-    rules = await db.rules.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
-    return {"rules": rules}
-
-@rules_router.post("")
-async def create_rule(
-    rule: RuleCreate,
-    current_user: dict = Depends(require_roles(["super_admin", "admin"]))
-):
-    rule_id = str(uuid.uuid4())
-    rule_doc = {
-        "id": rule_id,
-        **rule.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": current_user["id"]
-    }
-    
-    await db.rules.insert_one(rule_doc)
-    rule_doc.pop("_id", None)
-    return rule_doc
-
-@rules_router.get("/{rule_id}")
-async def get_rule(rule_id: str, current_user: dict = Depends(get_current_user)):
-    rule = await db.rules.find_one({"id": rule_id}, {"_id": 0})
-    if not rule:
-        raise HTTPException(status_code=404, detail="Rule not found")
-    return rule
-
-# ==================== VOICE AI ROUTES ====================
-@voice_router.post("/transcribe")
-async def transcribe_audio(request: VoiceRequest, current_user: dict = Depends(get_current_user)):
-    try:
-        from emergentintegrations.llm.openai import OpenAISpeechToText
-        import tempfile
-        
-        api_key = os.environ.get('EMERGENT_LLM_KEY')
-        if not api_key:
-            raise HTTPException(status_code=500, detail="Voice AI not configured")
-        
-        if not request.audio_base64:
-            raise HTTPException(status_code=400, detail="Audio data required")
-        
-        audio_bytes = base64.b64decode(request.audio_base64)
-        
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            tmp.write(audio_bytes)
-            tmp_path = tmp.name
-        
-        stt = OpenAISpeechToText(api_key=api_key)
-        
-        with open(tmp_path, "rb") as audio_file:
-            response = await stt.transcribe(
-                file=audio_file,
-                model="whisper-1",
-                language=request.language[:2] if request.language else "fr"
-            )
-        
-        os.unlink(tmp_path)
-        
-        return {"text": response.text, "language": request.language}
-    except Exception as e:
-        logging.error(f"Transcription error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@voice_router.post("/speak")
-async def text_to_speech(request: VoiceRequest, current_user: dict = Depends(get_current_user)):
-    try:
-        from emergentintegrations.llm.openai import OpenAITextToSpeech
-        
-        api_key = os.environ.get('EMERGENT_LLM_KEY')
-        if not api_key:
-            raise HTTPException(status_code=500, detail="Voice AI not configured")
-        
-        if not request.text:
-            raise HTTPException(status_code=400, detail="Text required")
-        
-        tts = OpenAITextToSpeech(api_key=api_key)
-        audio_bytes = await tts.generate_speech(
-            text=request.text,
-            model="tts-1",
-            voice="nova"
-        )
-        
-        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
-        return {"audio_base64": audio_base64}
-    except Exception as e:
-        logging.error(f"TTS error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@voice_router.post("/chat")
-async def voice_chat(request: VoiceRequest, current_user: dict = Depends(get_current_user)):
-    try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        api_key = os.environ.get('EMERGENT_LLM_KEY')
-        if not api_key:
-            raise HTTPException(status_code=500, detail="Voice AI not configured")
-        
-        text = request.text
-        if not text:
-            raise HTTPException(status_code=400, detail="Text required")
-        
-        lang_prompts = {
-            "fr": "Tu es un assistant RH pour PREMIERDIs sarl. Réponds en français de manière concise et professionnelle.",
-            "en": "You are an HR assistant for PREMIERDIs sarl. Respond in English concisely and professionally.",
-            "sw": "Wewe ni msaidizi wa HR wa PREMIERDIs sarl. Jibu kwa Kiswahili kwa ufupi na kitaalamu.",
-            "hi": "आप PREMIERDIs sarl के HR सहायक हैं। हिंदी में संक्षिप्त और पेशेवर तरीके से जवाब दें।"
-        }
-        
-        system_msg = lang_prompts.get(request.language, lang_prompts["fr"])
-        
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"hr-voice-{current_user['id']}",
-            system_message=system_msg
-        ).with_model("openai", "gpt-5.1")
-        
-        user_message = UserMessage(text=text)
-        response = await chat.send_message(user_message)
-        
-        return {"response": response, "language": request.language}
-    except Exception as e:
-        logging.error(f"Chat error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 # ==================== DASHBOARD STATS ====================
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     stats = {}
     
-    if current_user["role"] in ["super_admin", "admin"]:
-        stats["total_employees"] = await db.employees.count_documents({})
+    if current_user["role"] in ["admin", "secretary"]:
+        stats["total_employees"] = await db.users.count_documents({"is_active": True})
         stats["pending_leaves"] = await db.leaves.count_documents({"status": "pending"})
-        stats["total_announcements"] = await db.announcements.count_documents({})
-        stats["unread_messages"] = await db.messages.count_documents({
-            "receiver_id": current_user["id"],
-            "read": False
-        })
+        stats["approved_leaves"] = await db.leaves.count_documents({"status": "approved"})
+        stats["rejected_leaves"] = await db.leaves.count_documents({"status": "rejected"})
         
+        # Department breakdown
         dept_pipeline = [
+            {"$match": {"is_active": True}},
             {"$group": {"_id": "$department", "count": {"$sum": 1}}}
         ]
-        dept_stats = await db.employees.aggregate(dept_pipeline).to_list(20)
-        stats["employees_by_department"] = {d["_id"]: d["count"] for d in dept_stats}
+        dept_stats = await db.users.aggregate(dept_pipeline).to_list(20)
+        stats["employees_by_department"] = {d["_id"]: d["count"] for d in dept_stats if d["_id"]}
     else:
-        stats["my_leaves_pending"] = await db.leaves.count_documents({
+        # Employee sees only their stats
+        user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+        stats["leave_balance"] = user.get("leave_balance", {})
+        stats["leave_taken"] = user.get("leave_taken", {})
+        stats["pending_requests"] = await db.leaves.count_documents({
             "employee_id": current_user["id"],
             "status": "pending"
-        })
-        stats["my_payslips"] = await db.payslips.count_documents({
-            "employee_id": current_user["id"]
-        })
-        stats["unread_messages"] = await db.messages.count_documents({
-            "receiver_id": current_user["id"],
-            "read": False
         })
     
     return stats
 
 @api_router.get("/")
 async def root():
-    return {"message": "PREMIERDIs HR API", "version": "1.0.0"}
+    return {"message": "PREMIDIS SARL - HR Platform", "version": "2.0.0"}
 
 # ==================== INCLUDE ROUTERS ====================
 api_router.include_router(auth_router)
 api_router.include_router(employees_router)
 api_router.include_router(leaves_router)
-api_router.include_router(attendance_router)
-api_router.include_router(payroll_router)
-api_router.include_router(performance_router)
-api_router.include_router(communication_router)
-api_router.include_router(rules_router)
-api_router.include_router(voice_router)
+api_router.include_router(calendar_router)
+api_router.include_router(hr_router)
+api_router.include_router(config_router)
 
 app.include_router(api_router)
 
@@ -1064,22 +738,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
-    # Create indexes
     await db.users.create_index("email", unique=True)
     await db.users.create_index("id", unique=True)
-    await db.employees.create_index("id", unique=True)
-    await db.employees.create_index("department")
     await db.leaves.create_index("employee_id")
-    await db.payslips.create_index([("employee_id", 1), ("year", -1), ("month", -1)])
-    logger.info("Database indexes created")
+    await db.leaves.create_index("status")
+    await db.calendar.create_index("start_date")
+    
+    # Initialize default leave rules
+    existing_rules = await db.leave_rules.find_one({"type": "default"})
+    if not existing_rules:
+        default_rules = LeaveRuleConfig().model_dump()
+        default_rules["type"] = "default"
+        await db.leave_rules.insert_one(default_rules)
+    
+    logger.info("PREMIDIS SARL HR Platform started")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

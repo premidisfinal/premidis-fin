@@ -139,14 +139,31 @@ const TimeManagement = () => {
 
     setSubmitting(true);
     try {
-      await axios.post(`${API_URL}/api/leaves`, {
-        ...formData,
+      const payload = {
+        leave_type: formData.leave_type,
         start_date: format(formData.start_date, 'yyyy-MM-dd'),
-        end_date: format(formData.end_date, 'yyyy-MM-dd')
-      });
-      toast.success('Demande de congé soumise');
+        end_date: format(formData.end_date, 'yyyy-MM-dd'),
+        reason: formData.reason,
+        employee_id: formData.employee_id || null,
+        for_all_employees: formData.for_all_employees
+      };
+      
+      const response = await axios.post(`${API_URL}/api/leaves`, payload);
+      
+      if (response.data.count) {
+        toast.success(`Jour férié créé pour ${response.data.count} employés`);
+      } else {
+        toast.success('Demande de congé soumise');
+      }
       setDialogOpen(false);
-      setFormData({ leave_type: 'annual', start_date: null, end_date: null, reason: '' });
+      setFormData({ 
+        leave_type: 'annual', 
+        start_date: null, 
+        end_date: null, 
+        reason: '',
+        employee_id: '',
+        for_all_employees: false
+      });
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erreur');

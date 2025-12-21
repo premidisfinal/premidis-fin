@@ -458,7 +458,7 @@ async def get_leave_balance(current_user: dict = Depends(get_current_user)):
     leave_taken = user.get("leave_taken", {})
     
     balance = {}
-    for leave_type in ["annual", "sick", "exceptional", "maternity"]:
+    for leave_type in ["annual", "sick", "exceptional", "maternity", "paternity"]:
         total = leave_balance.get(leave_type, 0)
         taken = leave_taken.get(leave_type, 0)
         balance[leave_type] = {

@@ -438,6 +438,33 @@ class PremidisHRTester:
         success, response, status = self.make_request(
             'POST', 'communication/announcements', role='secretary', 
             data=announcement_data, expected_status=201
+        )
+        
+        if success:
+            announcement_id = response.get('id')
+            self.log_test("Secretary - Create announcement (BUG FIX)", True, f"Announcement ID: {announcement_id}")
+        else:
+            self.log_test("Secretary - Create announcement (BUG FIX)", False, f"Status: {status}, Response: {response}")
+        
+        # Test Employee CANNOT create announcements
+        success, response, status = self.make_request(
+            'POST', 'communication/announcements', role='employee', 
+            data=announcement_data, expected_status=403
+        )
+        self.log_test("Employee CANNOT create announcements", success, f"Status: {status}")
+        
+        # Test announcement listing
+        for role in ['admin', 'secretary', 'employee']:
+            success, response, status = self.make_request(
+                'GET', 'communication/announcements', role=role
+            )
+            
+            if success:
+                announcements = response.get('announcements', [])
+                self.log_test(f"{role} - View announcements", True, f"Announcements visible: {len(announcements)}")
+            else:
+                self.log_test(f"{role} - View announcements", False, f"Status: {status}")
+
     def test_employee_data_isolation(self):
         """Test that employees can only access their own data"""
         print("\n🔒 Testing Employee Data Isolation...")

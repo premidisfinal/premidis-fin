@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from './components/ui/sonner';
 
 // Pages
@@ -13,8 +14,7 @@ import Communication from './pages/Communication';
 import Administration from './pages/Administration';
 import TimeManagement from './pages/TimeManagement';
 import Performance from './pages/Performance';
-import Rules from './pages/Rules';
-import Payroll from './pages/Payroll';
+import Behavior from './pages/Behavior';
 import Settings from './pages/Settings';
 import EmployeeProfile from './pages/EmployeeProfile';
 

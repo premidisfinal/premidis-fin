@@ -27,7 +27,8 @@ import {
   User,
   UserCheck,
   Moon,
-  Sun
+  Sun,
+  Shield
 } from 'lucide-react';
 import VoiceAssistant from '../VoiceAssistant';
 import NotificationCenter from '../NotificationCenter';

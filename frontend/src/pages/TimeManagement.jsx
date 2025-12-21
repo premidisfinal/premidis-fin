@@ -44,8 +44,12 @@ const TimeManagement = () => {
     leave_type: 'annual',
     start_date: null,
     end_date: null,
-    reason: ''
+    reason: '',
+    employee_id: '',
+    for_all_employees: false
   });
+
+  const [employees, setEmployees] = useState([]);
 
   const [attendanceForm, setAttendanceForm] = useState({
     employee_id: '',

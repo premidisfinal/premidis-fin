@@ -59,8 +59,8 @@ const DashboardLayout = ({ children }) => {
   const NavContent = () => (
     <nav className="flex flex-col gap-2 p-4">
       {navItems.map((item) => {
-        if (item.adminOnly && !isAdmin()) return null;
-        if (item.employeeOnly && isAdmin()) return null;
+        if (item.canManage && !canManageEmployees()) return null;
+        if (item.employeeOnly && (isAdmin() || canManageEmployees())) return null;
         const isActive = location.pathname.startsWith(item.path);
         
         return (

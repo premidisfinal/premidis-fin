@@ -335,7 +335,11 @@ async def list_employees(
         user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password": 0})
         return {"employees": [user], "total": 1}
     
+    # Secretary can see employees in their department only
     query = {}
+    if current_user["role"] == "secretary":
+        query["department"] = current_user.get("department")
+    
     if department:
         query["department"] = department
     if category:
@@ -343,6 +347,62 @@ async def list_employees(
     
     employees = await db.users.find(query, {"_id": 0, "password": 0}).to_list(500)
     return {"employees": employees, "total": len(employees)}
+
+@employees_router.post("", status_code=status.HTTP_201_CREATED)
+async def create_employee(
+    employee: UserCreate,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Create a new employee (admin and secretary)"""
+    existing = await db.users.find_one({"email": employee.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email déjà enregistré")
+    
+    user_id = str(uuid.uuid4())
+    hashed_password = get_password_hash(employee.password)
+    
+    # Get default leave rules
+    leave_rules = await db.leave_rules.find_one({"type": "default"}, {"_id": 0})
+    if not leave_rules:
+        leave_rules = LeaveRuleConfig().model_dump()
+    
+    user_doc = {
+        "id": user_id,
+        "email": employee.email,
+        "password": hashed_password,
+        "first_name": employee.first_name,
+        "last_name": employee.last_name,
+        "role": employee.role,
+        "department": employee.department,
+        "category": employee.category,
+        "position": employee.position,
+        "phone": employee.phone,
+        "hire_date": employee.hire_date,
+        "salary": employee.salary,
+        "birth_date": None,
+        "is_active": True,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"],
+        "avatar_url": None,
+        "leave_balance": {
+            "annual": leave_rules.get("annual_days", 26),
+            "sick": leave_rules.get("sick_days", 2),
+            "exceptional": leave_rules.get("exceptional_days", 15),
+            "maternity": leave_rules.get("maternity_days", 90)
+        },
+        "leave_taken": {
+            "annual": 0,
+            "sick": 0,
+            "exceptional": 0,
+            "maternity": 0
+        }
+    }
+    
+    await db.users.insert_one(user_doc)
+    user_doc.pop("_id", None)
+    user_doc.pop("password", None)
+    return user_doc
 
 @employees_router.get("/{employee_id}")
 async def get_employee(employee_id: str, current_user: dict = Depends(get_current_user)):

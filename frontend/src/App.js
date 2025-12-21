@@ -79,8 +79,7 @@ function AppRoutes() {
       <Route path="/communication" element={<ProtectedRoute><Communication /></ProtectedRoute>} />
       <Route path="/time-management" element={<ProtectedRoute><TimeManagement /></ProtectedRoute>} />
       <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
-      <Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />
-      <Route path="/payroll" element={<ProtectedRoute><Payroll /></ProtectedRoute>} />
+      <Route path="/behavior" element={<ProtectedRoute><Behavior /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       
       {/* Admin Only Routes */}

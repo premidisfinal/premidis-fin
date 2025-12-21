@@ -34,7 +34,7 @@ import NotificationCenter from '../NotificationCenter';
 import Logo from '../Logo';
 
 const DashboardLayout = ({ children }) => {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, canManageEmployees } = useAuth();
   const { t, language, setLanguage, availableLanguages } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
@@ -44,7 +44,7 @@ const DashboardLayout = ({ children }) => {
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'dashboard' },
     { path: '/communication', icon: MessageSquare, label: 'communication' },
-    { path: '/administration', icon: Users, label: 'Gestion Personnel', adminOnly: true },
+    { path: '/administration', icon: Users, label: 'Gestion Personnel', canManage: true },
     { path: '/time-management', icon: Clock, label: 'Congés' },
     { path: '/performance', icon: TrendingUp, label: 'Performances' },
     { path: '/behavior', icon: UserCheck, label: 'Comportement' },

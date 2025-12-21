@@ -457,35 +457,6 @@ const EmployeeProfile = () => {
                 {canModify && (
                   <Button variant="outline" className="mt-4">
                     <Upload className="mr-2 h-4 w-4" />
-                    Importer CV
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Certifications Tab */}
-          <TabsContent value="certifications" className="mt-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Certifications</CardTitle>
-                  <CardDescription>Diplômes et certifications professionnelles</CardDescription>
-                </div>
-                {canModify && (
-                  <Button variant="outline" size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Ajouter
-                  </Button>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Aucune certification enregistrée</p>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Documents Tab */}
@@ -494,7 +465,7 @@ const EmployeeProfile = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-lg">Documents</CardTitle>
-                  <CardDescription>Certificats, CV, pièces d'identité</CardDescription>
+                  <CardDescription>Certificats, pièces d'identité, autres documents</CardDescription>
                 </div>
                 {(isOwnProfile || canModify) && (
                   <label className="cursor-pointer">

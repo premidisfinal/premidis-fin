@@ -581,12 +581,17 @@ class PremidisHRTester:
         self.test_employee_creation()
         self.test_behavior_tracking()
         self.test_leave_types()
+        self.test_leave_rules_visibility()
         self.test_leave_management()
         self.test_leave_balance()
+        self.test_calendar_approved_leaves_only()
         self.test_attendance_tracking()
         self.test_working_day_calculation()
         self.test_calendar_access()
         self.test_dashboard_stats()
+        self.test_file_upload_functionality()
+        self.test_communication_features()
+        self.test_document_upload_in_profile()
         self.test_employee_data_isolation()
         
         # Print summary

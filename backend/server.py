@@ -386,6 +386,61 @@ async def list_leaves(
     leaves = await db.leaves.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
     return {"leaves": leaves}
 
+@leaves_router.get("/stats")
+async def get_leave_stats(current_user: dict = Depends(get_current_user)):
+    """Get leave statistics"""
+    query = {}
+    if current_user["role"] == "employee":
+        query["employee_id"] = current_user["id"]
+    
+    pending = await db.leaves.count_documents({**query, "status": "pending"})
+    approved = await db.leaves.count_documents({**query, "status": "approved"})
+    rejected = await db.leaves.count_documents({**query, "status": "rejected"})
+    
+    return {"pending": pending, "approved": approved, "rejected": rejected}
+
+@leaves_router.get("/calendar")
+async def get_leaves_for_calendar(
+    month: int = None,
+    year: int = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get approved leaves for calendar display"""
+    now = datetime.now()
+    target_month = month or now.month
+    target_year = year or now.year
+    
+    # Build query based on role
+    query = {"status": "approved"}
+    if current_user["role"] == "employee":
+        # Employee sees only their leaves + public holidays
+        query = {"$or": [
+            {"employee_id": current_user["id"], "status": "approved"},
+            {"leave_type": "public"}
+        ]}
+    
+    leaves = await db.leaves.find(query, {"_id": 0}).to_list(500)
+    
+    # Filter by month
+    filtered = []
+    for leave in leaves:
+        try:
+            start = datetime.strptime(leave["start_date"], "%Y-%m-%d")
+            end = datetime.strptime(leave["end_date"], "%Y-%m-%d")
+            # Check if leave overlaps with target month
+            month_start = datetime(target_year, target_month, 1)
+            if target_month == 12:
+                month_end = datetime(target_year + 1, 1, 1) - timedelta(days=1)
+            else:
+                month_end = datetime(target_year, target_month + 1, 1) - timedelta(days=1)
+            
+            if start <= month_end and end >= month_start:
+                filtered.append(leave)
+        except:
+            pass
+    
+    return {"leaves": filtered, "month": target_month, "year": target_year}
+
 @leaves_router.post("")
 async def create_leave_request(
     leave: LeaveRequest,

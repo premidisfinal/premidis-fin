@@ -357,6 +357,136 @@ async def change_password(
     
     return {"message": "Mot de passe modifié avec succès"}
 
+# ==================== FORGOT PASSWORD ====================
+import secrets
+import asyncio
+
+# Try to import resend, but don't fail if not available
+try:
+    import resend
+    RESEND_AVAILABLE = True
+except ImportError:
+    RESEND_AVAILABLE = False
+
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://prometheus-hr.preview.emergentagent.com')
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+@auth_router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    """Send password reset email"""
+    user = await db.users.find_one({"email": request.email}, {"_id": 0})
+    
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "Si cette adresse email existe, un lien de réinitialisation a été envoyé."}
+    
+    # Generate reset token
+    reset_token = secrets.token_urlsafe(32)
+    token_expiry = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    # Store reset token
+    await db.password_resets.delete_many({"email": request.email})  # Remove old tokens
+    await db.password_resets.insert_one({
+        "id": str(uuid.uuid4()),
+        "email": request.email,
+        "token": reset_token,
+        "expires_at": token_expiry.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Send email if Resend is configured
+    reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
+    
+    if RESEND_AVAILABLE and RESEND_API_KEY:
+        resend.api_key = RESEND_API_KEY
+        try:
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #333;">Réinitialisation de mot de passe</h2>
+                <p>Bonjour {user['first_name']},</p>
+                <p>Vous avez demandé la réinitialisation de votre mot de passe pour votre compte PREMIDIS.</p>
+                <p style="margin: 30px 0;">
+                    <a href="{reset_link}" 
+                       style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                        Réinitialiser mon mot de passe
+                    </a>
+                </p>
+                <p>Ce lien expire dans 1 heure.</p>
+                <p>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
+                <hr style="margin-top: 30px; border: none; border-top: 1px solid #eee;">
+                <p style="color: #666; font-size: 12px;">PREMIDIS SARL - Plateforme RH</p>
+            </div>
+            """
+            
+            params = {
+                "from": SENDER_EMAIL,
+                "to": [request.email],
+                "subject": "Réinitialisation de votre mot de passe - PREMIDIS",
+                "html": html_content
+            }
+            
+            await asyncio.to_thread(resend.Emails.send, params)
+            logging.info(f"Password reset email sent to {request.email}")
+        except Exception as e:
+            logging.error(f"Failed to send password reset email: {str(e)}")
+            # Don't fail the request, just log the error
+    else:
+        logging.warning(f"Email not sent - Resend not configured. Reset link: {reset_link}")
+    
+    return {"message": "Si cette adresse email existe, un lien de réinitialisation a été envoyé."}
+
+@auth_router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest):
+    """Reset password using token"""
+    # Find valid token
+    reset_record = await db.password_resets.find_one({"token": request.token}, {"_id": 0})
+    
+    if not reset_record:
+        raise HTTPException(status_code=400, detail="Lien de réinitialisation invalide ou expiré")
+    
+    # Check expiry
+    expiry = datetime.fromisoformat(reset_record["expires_at"].replace('Z', '+00:00'))
+    if datetime.now(timezone.utc) > expiry:
+        await db.password_resets.delete_one({"token": request.token})
+        raise HTTPException(status_code=400, detail="Lien de réinitialisation expiré")
+    
+    # Update password
+    hashed_password = get_password_hash(request.new_password)
+    result = await db.users.update_one(
+        {"email": reset_record["email"]},
+        {"$set": {"password": hashed_password}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Delete used token
+    await db.password_resets.delete_one({"token": request.token})
+    
+    return {"message": "Mot de passe réinitialisé avec succès"}
+
+@auth_router.get("/verify-reset-token")
+async def verify_reset_token(token: str):
+    """Verify if a reset token is valid"""
+    reset_record = await db.password_resets.find_one({"token": token}, {"_id": 0})
+    
+    if not reset_record:
+        raise HTTPException(status_code=400, detail="Token invalide")
+    
+    expiry = datetime.fromisoformat(reset_record["expires_at"].replace('Z', '+00:00'))
+    if datetime.now(timezone.utc) > expiry:
+        raise HTTPException(status_code=400, detail="Token expiré")
+    
+    return {"valid": True, "email": reset_record["email"]}
+
 # ==================== EMPLOYEES ROUTES ====================
 @employees_router.get("")
 async def list_employees(

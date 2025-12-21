@@ -81,6 +81,8 @@ const translations = {
     maternity: "Congé maternité",
     paternity: "Congé paternité",
     unpaid: "Congé sans solde",
+    exceptional: "Autorisation exceptionnelle",
+    public: "Jour férié",
     
     // Departments
     marketing: "Marketing",

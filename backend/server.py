@@ -140,6 +140,7 @@ class EmployeeUpdate(BaseModel):
     position: Optional[str] = None
     category: Optional[str] = None
     salary: Optional[float] = None
+    salary_currency: Optional[str] = None
     hire_date: Optional[str] = None
 
 class SalaryAdvance(BaseModel):

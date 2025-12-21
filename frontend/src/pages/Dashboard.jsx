@@ -183,15 +183,15 @@ const Dashboard = () => {
             
             <Card 
               className="border-l-4 border-l-secondary cursor-pointer hover:shadow-lg transition-all"
-              onClick={() => navigate('/payroll')}
+              onClick={() => navigate('/behavior')}
             >
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Fiches de paie</p>
-                    <p className="text-2xl font-bold">{stats?.my_payslips || 0}</p>
+                    <p className="text-sm text-muted-foreground">Mon comportement</p>
+                    <p className="text-2xl font-bold">{stats?.behavior_notes || 0}</p>
                   </div>
-                  <Banknote className="h-8 w-8 text-secondary/50" />
+                  <UserCheck className="h-8 w-8 text-secondary/50" />
                 </div>
               </CardContent>
             </Card>

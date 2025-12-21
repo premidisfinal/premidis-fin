@@ -438,6 +438,30 @@ class PremidisHRTester:
         success, response, status = self.make_request(
             'POST', 'communication/announcements', role='secretary', 
             data=announcement_data, expected_status=201
+    def test_employee_data_isolation(self):
+        """Test that employees can only access their own data"""
+        print("\n🔒 Testing Employee Data Isolation...")
+        
+        # Get employee's own ID
+        employee_id = self.users.get('employee', {}).get('id')
+        if not employee_id:
+            self.log_test("Employee data isolation", False, "No employee ID available")
+            return
+        
+        # Test employee can access their own data
+        success, response, status = self.make_request(
+            'GET', f'employees/{employee_id}', role='employee'
+        )
+        self.log_test("Employee - Access own profile", success, f"Status: {status}")
+        
+        # Test employee cannot access admin's data (if we have admin ID)
+        admin_id = self.users.get('admin', {}).get('id')
+        if admin_id and admin_id != employee_id:
+            success, response, status = self.make_request(
+                'GET', f'employees/{admin_id}', role='employee', expected_status=403
+            )
+            self.log_test("Employee CANNOT access other profiles", success, f"Status: {status}")
+
         )
         
         if success:

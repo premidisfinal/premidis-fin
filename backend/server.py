@@ -234,6 +234,8 @@ calendar_router = APIRouter(prefix="/calendar", tags=["Calendrier"])
 hr_router = APIRouter(prefix="/hr", tags=["RH Actions"])
 config_router = APIRouter(prefix="/config", tags=["Configuration"])
 behavior_router = APIRouter(prefix="/behavior", tags=["Comportement"])
+communication_router = APIRouter(prefix="/communication", tags=["Communication"])
+upload_router = APIRouter(prefix="/upload", tags=["Upload"])
 
 # ==================== AUTH ROUTES ====================
 @auth_router.post("/register", response_model=TokenResponse)

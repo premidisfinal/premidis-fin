@@ -91,13 +91,15 @@ const Performance = () => {
           <p className="text-muted-foreground">Suivi des performances de l'entreprise</p>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs - Employees do NOT see Company tab */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 max-w-lg">
-            <TabsTrigger value="company" className="flex items-center gap-2" data-testid="tab-company">
-              <Building2 className="h-4 w-4" />
-              Entreprise
-            </TabsTrigger>
+          <TabsList className={`grid w-full ${isAdmin() ? 'grid-cols-3' : 'grid-cols-2'} max-w-lg`}>
+            {isAdmin() && (
+              <TabsTrigger value="company" className="flex items-center gap-2" data-testid="tab-company">
+                <Building2 className="h-4 w-4" />
+                Entreprise
+              </TabsTrigger>
+            )}
             <TabsTrigger value="department" className="flex items-center gap-2" data-testid="tab-department">
               <Users className="h-4 w-4" />
               Département
@@ -108,7 +110,8 @@ const Performance = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* COMPANY PERFORMANCE TAB */}
+          {/* COMPANY PERFORMANCE TAB - ADMIN ONLY */}
+          {isAdmin() && (
           <TabsContent value="company" className="mt-6 space-y-6">
             {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-4">

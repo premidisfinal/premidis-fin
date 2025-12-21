@@ -1237,6 +1237,7 @@ async def get_employee_salary(
         "employee_id": employee_id,
         "employee_name": f"{employee['first_name']} {employee['last_name']}",
         "salary": employee.get("salary", 0),
+        "salary_currency": employee.get("salary_currency", "USD"),
         "category": employee.get("category", "agent")
     }
 
@@ -1244,14 +1245,19 @@ async def get_employee_salary(
 async def update_employee_salary(
     employee_id: str,
     salary: float,
+    currency: str = "USD",
     current_user: dict = Depends(require_roles(["admin"]))
 ):
     """Update salary (admin only)"""
     await db.users.update_one(
         {"id": employee_id},
-        {"$set": {"salary": salary, "salary_updated_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {
+            "salary": salary, 
+            "salary_currency": currency,
+            "salary_updated_at": datetime.now(timezone.utc).isoformat()
+        }}
     )
-    return {"message": "Salaire mis à jour", "salary": salary}
+    return {"message": "Salaire mis à jour", "salary": salary, "salary_currency": currency}
 
 # ==================== COMMUNICATION ROUTES ====================
 @communication_router.get("/announcements")

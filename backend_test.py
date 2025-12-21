@@ -22,7 +22,7 @@ class PremidisHRTester:
         # Test credentials
         self.credentials = {
             "admin": {"email": "rh@premierdis.com", "password": "Admin123!"},
-            "secretary": {"email": "secretaire@premierdis.com", "password": "Sec123!"},
+            "secretary": {"email": "secretaire2@premierdis.com", "password": "Secret123!"},
             "employee": {"email": "employe@premierdis.com", "password": "Emp123!"}
         }
 

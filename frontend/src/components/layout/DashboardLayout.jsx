@@ -144,6 +144,21 @@ const DashboardLayout = ({ children }) => {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Dark Mode Toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="rounded-full"
+                data-testid="theme-toggle"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </Button>
+
               {/* Language Selector */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

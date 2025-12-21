@@ -589,7 +589,7 @@ async def get_leave_balance(current_user: dict = Depends(get_current_user)):
     leave_taken = user.get("leave_taken", {})
     
     balance = {}
-    for leave_type in ["annual", "sick", "exceptional", "maternity", "paternity"]:
+    for leave_type in ["annual", "sick", "exceptional", "maternity"]:
         total = leave_balance.get(leave_type, 0)
         taken = leave_taken.get(leave_type, 0)
         balance[leave_type] = {
@@ -599,6 +599,58 @@ async def get_leave_balance(current_user: dict = Depends(get_current_user)):
         }
     
     return balance
+
+@leaves_router.get("/rules")
+async def get_leave_rules(current_user: dict = Depends(get_current_user)):
+    """Get leave rules - visible to all employees"""
+    rules = await db.leave_rules.find_one({"type": "default"}, {"_id": 0})
+    if not rules:
+        rules = {
+            "annual_days": 26,
+            "sick_days": 2,
+            "exceptional_days": 15,
+            "maternity_days": 90
+        }
+    
+    leave_types = [
+        {
+            "type": "annual",
+            "name": "Congé annuel",
+            "max_days": rules.get("annual_days", 26),
+            "description": "Congé annuel de repos",
+            "can_request": True
+        },
+        {
+            "type": "sick",
+            "name": "Congé maladie",
+            "max_days": rules.get("sick_days", 2),
+            "description": "Congé pour raison médicale",
+            "can_request": True
+        },
+        {
+            "type": "exceptional",
+            "name": "Autorisation exceptionnelle",
+            "max_days": rules.get("exceptional_days", 15),
+            "description": "Congé pour circonstances exceptionnelles (mariage, décès, etc.)",
+            "can_request": True
+        },
+        {
+            "type": "maternity",
+            "name": "Congé maternité",
+            "max_days": rules.get("maternity_days", 90),
+            "description": "Congé maternité (3 mois)",
+            "can_request": True
+        },
+        {
+            "type": "public",
+            "name": "Jour férié",
+            "max_days": 0,
+            "description": "Jours fériés officiels (configurés par l'administration)",
+            "can_request": False
+        }
+    ]
+    
+    return {"rules": rules, "leave_types": leave_types}
 
 @leaves_router.put("/{leave_id}")
 async def update_leave_status(

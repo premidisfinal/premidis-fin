@@ -57,7 +57,7 @@ const Dashboard = () => {
       badgeVariant: 'destructive'
     },
     {
-      title: t('administration'),
+      title: 'Gestion Personnel',
       icon: Users,
       description: 'Gestion des dossiers employés',
       link: '/administration',
@@ -67,36 +67,28 @@ const Dashboard = () => {
       adminOnly: true
     },
     {
-      title: t('timeManagement'),
+      title: 'Congés',
       icon: Clock,
-      description: 'Congés, absences et pointage',
+      description: 'Demandes et calendrier des congés',
       link: '/time-management',
       color: 'accent',
       metric: isAdmin() ? stats?.pending_leaves : stats?.my_leaves_pending,
       metricLabel: 'en attente'
     },
     {
-      title: t('performance'),
+      title: 'Performances',
       icon: TrendingUp,
-      description: 'Performance entreprise et individuelle',
+      description: isAdmin() ? 'Performance entreprise' : 'Performance individuelle et département',
       link: '/performance',
-      color: 'primary'
+      color: 'primary',
+      adminOnly: false
     },
     {
-      title: t('rules'),
-      icon: BookOpen,
-      description: 'Règlement intérieur',
-      link: '/rules',
+      title: 'Comportement',
+      icon: UserCheck,
+      description: isAdmin() ? 'Suivi du comportement des employés' : 'Mon historique de comportement',
+      link: '/behavior',
       color: 'secondary'
-    },
-    {
-      title: t('payroll'),
-      icon: Banknote,
-      description: 'Rémunération et avantages',
-      link: '/payroll',
-      color: 'accent',
-      metric: stats?.my_payslips,
-      metricLabel: 'fiches'
     }
   ];
 

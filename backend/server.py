@@ -368,10 +368,6 @@ try:
 except ImportError:
     RESEND_AVAILABLE = False
 
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://prometheus-hr.preview.emergentagent.com')
-
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
@@ -382,6 +378,11 @@ class ResetPasswordRequest(BaseModel):
 @auth_router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
     """Send password reset email"""
+    # Re-read env vars to ensure they're loaded after restart
+    resend_api_key = os.environ.get('RESEND_API_KEY', '')
+    sender_email = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://hrportal-39.preview.emergentagent.com')
+    
     user = await db.users.find_one({"email": request.email}, {"_id": 0})
     
     # Always return success to prevent email enumeration

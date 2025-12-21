@@ -26,7 +26,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Communication = () => {
   const [searchParams] = useSearchParams();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, canEdit } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'discussions');
   const [announcements, setAnnouncements] = useState([]);

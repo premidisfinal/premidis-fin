@@ -404,10 +404,10 @@ async def forgot_password(request: ForgotPasswordRequest):
     })
     
     # Send email if Resend is configured
-    reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
+    reset_link = f"{frontend_url}/reset-password?token={reset_token}"
     
-    if RESEND_AVAILABLE and RESEND_API_KEY:
-        resend.api_key = RESEND_API_KEY
+    if RESEND_AVAILABLE and resend_api_key:
+        resend.api_key = resend_api_key
         try:
             html_content = f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -428,7 +428,7 @@ async def forgot_password(request: ForgotPasswordRequest):
             """
             
             params = {
-                "from": SENDER_EMAIL,
+                "from": sender_email,
                 "to": [request.email],
                 "subject": "Réinitialisation de votre mot de passe - PREMIDIS",
                 "html": html_content

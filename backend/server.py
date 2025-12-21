@@ -1043,6 +1043,158 @@ async def update_employee_salary(
     )
     return {"message": "Salaire mis à jour", "salary": salary}
 
+# ==================== COMMUNICATION ROUTES ====================
+@communication_router.get("/announcements")
+async def list_announcements(current_user: dict = Depends(get_current_user)):
+    """List all announcements"""
+    announcements = await db.announcements.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"announcements": announcements}
+
+@communication_router.post("/announcements", status_code=status.HTTP_201_CREATED)
+async def create_announcement(
+    title: str,
+    content: str,
+    priority: str = "normal",
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Create announcement (admin/secretary only)"""
+    announcement = {
+        "id": str(uuid.uuid4()),
+        "title": title,
+        "content": content,
+        "priority": priority,
+        "author_id": current_user["id"],
+        "author_name": f"{current_user['first_name']} {current_user['last_name']}",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.announcements.insert_one(announcement)
+    announcement.pop("_id", None)
+    return announcement
+
+@communication_router.get("/messages")
+async def list_messages(current_user: dict = Depends(get_current_user)):
+    """List user's messages"""
+    messages = await db.messages.find({
+        "$or": [
+            {"sender_id": current_user["id"]},
+            {"receiver_id": current_user["id"]}
+        ]
+    }, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return {"messages": messages}
+
+@communication_router.post("/messages", status_code=status.HTTP_201_CREATED)
+async def send_message(
+    receiver_id: str,
+    content: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Send a message to another user"""
+    message = {
+        "id": str(uuid.uuid4()),
+        "sender_id": current_user["id"],
+        "sender_name": f"{current_user['first_name']} {current_user['last_name']}",
+        "receiver_id": receiver_id,
+        "content": content,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.messages.insert_one(message)
+    message.pop("_id", None)
+    return message
+
+@communication_router.get("/contacts")
+async def list_contacts(current_user: dict = Depends(get_current_user)):
+    """List all users as contacts"""
+    contacts = await db.users.find(
+        {"id": {"$ne": current_user["id"]}, "is_active": True},
+        {"_id": 0, "password": 0}
+    ).to_list(200)
+    return {"contacts": contacts}
+
+# ==================== FILE UPLOAD ROUTES ====================
+from fastapi import UploadFile, File
+import base64
+import os
+
+UPLOAD_DIR = "/app/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@upload_router.post("/file")
+async def upload_file(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a file (PDF, JPEG, PNG)"""
+    allowed_types = ["application/pdf", "image/jpeg", "image/jpg", "image/png", "image/webp"]
+    
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"Type de fichier non supporté. Utilisez PDF, JPEG ou PNG.")
+    
+    # Generate unique filename
+    file_id = str(uuid.uuid4())
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'bin'
+    filename = f"{file_id}.{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    
+    # Save file
+    content = await file.read()
+    with open(filepath, 'wb') as f:
+        f.write(content)
+    
+    # Return URL
+    file_url = f"/uploads/{filename}"
+    
+    return {
+        "success": True,
+        "file_id": file_id,
+        "filename": file.filename,
+        "url": file_url,
+        "content_type": file.content_type,
+        "size": len(content)
+    }
+
+@upload_router.post("/avatar/{employee_id}")
+async def upload_avatar(
+    employee_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload profile picture"""
+    # Users can upload their own avatar, admin can upload for anyone
+    if current_user["role"] not in ["admin", "secretary"] and current_user["id"] != employee_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Utilisez JPEG, PNG ou WebP pour la photo de profil")
+    
+    # Generate unique filename
+    file_id = str(uuid.uuid4())
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+    filename = f"avatar_{employee_id}_{file_id}.{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    
+    # Save file
+    content = await file.read()
+    with open(filepath, 'wb') as f:
+        f.write(content)
+    
+    # Update user avatar URL
+    avatar_url = f"/uploads/{filename}"
+    await db.users.update_one(
+        {"id": employee_id},
+        {"$set": {"avatar_url": avatar_url}}
+    )
+    
+    return {
+        "success": True,
+        "avatar_url": avatar_url,
+        "message": "Photo de profil mise à jour"
+    }
+
+# Serve uploaded files
+from fastapi.staticfiles import StaticFiles
+
 # ==================== DASHBOARD STATS ====================
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):

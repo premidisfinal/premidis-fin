@@ -75,7 +75,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = () => hasRole(['super_admin', 'admin']);
+  const isSecretary = () => hasRole(['secretary']);
   const canEdit = () => hasRole(['super_admin', 'admin', 'secretary']);
+  const canManageEmployees = () => hasRole(['super_admin', 'admin', 'secretary']);
 
   return (
     <AuthContext.Provider value={{

@@ -334,16 +334,57 @@ const TimeManagement = () => {
                   Demander un congé
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>Nouvelle demande de congé</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmitLeave} className="space-y-4">
+                  {/* Admin/Secretary can select employee or apply to all */}
+                  {canEdit() && (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Pour qui ?</Label>
+                        <Select
+                          value={formData.for_all_employees ? 'all' : (formData.employee_id || 'self')}
+                          onValueChange={(value) => {
+                            if (value === 'all') {
+                              setFormData({ ...formData, for_all_employees: true, employee_id: '', leave_type: 'public' });
+                            } else if (value === 'self') {
+                              setFormData({ ...formData, for_all_employees: false, employee_id: '' });
+                            } else {
+                              setFormData({ ...formData, for_all_employees: false, employee_id: value });
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="self">Pour moi-même</SelectItem>
+                            <SelectItem value="all">🎉 Jour férié (tous les employés)</SelectItem>
+                            {employees.map((emp) => (
+                              <SelectItem key={emp.id} value={emp.id}>
+                                {emp.first_name} {emp.last_name} - {emp.department}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {formData.for_all_employees && (
+                        <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm text-green-700 dark:text-green-300">
+                          ⚠️ Ce jour férié sera appliqué à <strong>tous les employés</strong> et automatiquement approuvé.
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   <div className="space-y-2">
                     <Label>Type de congé</Label>
                     <Select
                       value={formData.leave_type}
                       onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                      disabled={formData.for_all_employees}
                     >
                       <SelectTrigger>
                         <SelectValue />

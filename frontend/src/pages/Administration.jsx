@@ -375,14 +375,29 @@ const Administration = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Salaire (USD)</Label>
-                      <Input
-                        type="number"
-                        value={formData.salary}
-                        onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-                        required
-                        data-testid="emp-salary"
-                      />
+                      <Label>Salaire</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          value={formData.salary}
+                          onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                          required
+                          className="flex-1"
+                          data-testid="emp-salary"
+                        />
+                        <Select
+                          value={formData.salary_currency || 'USD'}
+                          onValueChange={(value) => setFormData({ ...formData, salary_currency: value })}
+                        >
+                          <SelectTrigger className="w-24" data-testid="emp-currency">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="FC">FC</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
 

@@ -218,7 +218,7 @@ const Dashboard = () => {
           <h2 className="text-xl font-semibold mb-4">Modules</h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 stagger-children">
             {modules.map((module, index) => {
-              if (module.adminOnly && !isAdmin()) return null;
+              if (module.canManageOnly && !canManageEmployees()) return null;
               return (
                 <ModuleTile
                   key={module.title}

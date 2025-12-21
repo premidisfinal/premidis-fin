@@ -249,21 +249,24 @@ async def register(user_data: UserCreate):
         "phone": user_data.phone,
         "hire_date": user_data.hire_date,
         "salary": user_data.salary,
+        "birth_date": None,
         "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "avatar_url": None,
-        # Leave balances
+        # Leave balances based on rules
         "leave_balance": {
             "annual": leave_rules.get("annual_days", 26),
-            "sick": leave_rules.get("sick_days", 15),
+            "sick": leave_rules.get("sick_days", 2),
             "exceptional": leave_rules.get("exceptional_days", 15),
-            "maternity": leave_rules.get("maternity_days", 90)
+            "maternity": leave_rules.get("maternity_days", 90),
+            "paternity": leave_rules.get("paternity_days", 10)
         },
         "leave_taken": {
             "annual": 0,
             "sick": 0,
             "exceptional": 0,
-            "maternity": 0
+            "maternity": 0,
+            "paternity": 0
         }
     }
     

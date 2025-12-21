@@ -30,7 +30,6 @@ import {
   Sun,
   Shield
 } from 'lucide-react';
-import VoiceAssistant from '../VoiceAssistant';
 import NotificationCenter from '../NotificationCenter';
 import Logo from '../Logo';
 
@@ -231,8 +230,6 @@ const DashboardLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* Voice Assistant FAB */}
-      <VoiceAssistant />
     </div>
   );
 };

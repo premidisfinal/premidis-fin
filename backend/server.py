@@ -606,10 +606,7 @@ async def update_leave_status(
     update: LeaveUpdate,
     current_user: dict = Depends(require_roles(["admin", "secretary"]))
 ):
-    # Secretary can only update to pending, admin can approve/reject
-    if current_user["role"] == "secretary" and update.status in ["approved", "rejected"]:
-        raise HTTPException(status_code=403, detail="Seul l'administrateur peut approuver ou rejeter")
-    
+    """Update leave status - Both admin and secretary can approve/reject"""
     leave = await db.leaves.find_one({"id": leave_id}, {"_id": 0})
     if not leave:
         raise HTTPException(status_code=404, detail="Demande non trouvée")

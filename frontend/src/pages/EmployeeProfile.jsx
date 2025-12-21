@@ -279,12 +279,30 @@ const EmployeeProfile = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={employee.avatar_url} />
-                <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                  {employee.first_name?.[0]}{employee.last_name?.[0]}
-                </AvatarFallback>
-              </Avatar>
+              {/* Avatar with upload option */}
+              <div className="relative">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={employee.avatar_url} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                    {employee.first_name?.[0]}{employee.last_name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                {(isOwnProfile || canModify) && (
+                  <label className="absolute bottom-0 right-0 p-1.5 bg-primary text-white rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                    {uploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
+                  </label>
+                )}
+              </div>
               
               <div className="flex-1 space-y-3">
                 <div>
@@ -320,12 +338,12 @@ const EmployeeProfile = () => {
               {/* Quick Stats */}
               <div className="grid grid-cols-2 gap-4 min-w-[200px]">
                 <div className="text-center p-3 rounded-lg bg-muted">
-                  <p className="text-2xl font-bold text-primary">{payslips.length}</p>
-                  <p className="text-xs text-muted-foreground">Fiches de paie</p>
+                  <p className="text-2xl font-bold text-primary">{documents.length}</p>
+                  <p className="text-xs text-muted-foreground">Documents</p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-muted">
-                  <p className="text-2xl font-bold text-secondary">{objectives.length}</p>
-                  <p className="text-xs text-muted-foreground">Évaluations</p>
+                  <p className="text-2xl font-bold text-secondary">{behaviors.length}</p>
+                  <p className="text-xs text-muted-foreground">Notes comportement</p>
                 </div>
               </div>
             </div>

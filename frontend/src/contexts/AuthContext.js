@@ -90,7 +90,9 @@ export const AuthProvider = ({ children }) => {
       updateUser,
       hasRole,
       isAdmin,
+      isSecretary,
       canEdit,
+      canManageEmployees,
       isAuthenticated: !!user
     }}>
       {children}

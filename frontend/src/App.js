@@ -17,6 +17,7 @@ import Performance from './pages/Performance';
 import Behavior from './pages/Behavior';
 import Settings from './pages/Settings';
 import EmployeeProfile from './pages/EmployeeProfile';
+import PermissionsManagement from './pages/PermissionsManagement';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {

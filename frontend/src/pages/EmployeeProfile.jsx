@@ -38,8 +38,10 @@ const EmployeeProfile = () => {
   const [documents, setDocuments] = useState([]);
   const [payslips, setPayslips] = useState([]);
   const [objectives, setObjectives] = useState([]);
+  const [behaviors, setBehaviors] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
+  const [uploading, setUploading] = useState(false);
   
   // For creating objectives (admin only)
   const [objectiveDialog, setObjectiveDialog] = useState(false);
@@ -83,16 +85,24 @@ const EmployeeProfile = () => {
       }
 
       // Fetch payslips
-      const payslipsResponse = await axios.get(`${API_URL}/api/payroll`, {
-        params: { employee_id: employeeId }
-      });
-      setPayslips(payslipsResponse.data.payslips || []);
+      try {
+        const payslipsResponse = await axios.get(`${API_URL}/api/payroll`, {
+          params: { employee_id: employeeId }
+        });
+        setPayslips(payslipsResponse.data.payslips || []);
+      } catch {
+        setPayslips([]);
+      }
 
       // Fetch objectives/evaluations
-      const evalResponse = await axios.get(`${API_URL}/api/performance`);
-      setObjectives(evalResponse.data.evaluations || []);
+      try {
+        const evalResponse = await axios.get(`${API_URL}/api/performance`);
+        setObjectives(evalResponse.data.evaluations || []);
+      } catch {
+        setObjectives([]);
+      }
 
-      // Fetch documents (if endpoint exists)
+      // Fetch documents
       try {
         const docsResponse = await axios.get(`${API_URL}/api/employees/${employeeId}/documents`);
         setDocuments(docsResponse.data.documents || []);
@@ -100,10 +110,73 @@ const EmployeeProfile = () => {
         setDocuments([]);
       }
 
+      // Fetch behavior notes
+      try {
+        const behaviorResponse = await axios.get(`${API_URL}/api/behavior/${employeeId}`);
+        setBehaviors(behaviorResponse.data.behaviors || []);
+      } catch {
+        setBehaviors([]);
+      }
+
     } catch (error) {
       console.error('Error fetching employee data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Upload profile picture
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const employeeId = id || user?.id;
+      const response = await axios.post(`${API_URL}/api/upload/avatar/${employeeId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('Photo de profil mise à jour');
+      fetchEmployeeData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'upload');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Upload document
+  const handleDocumentUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      // First upload the file
+      const uploadResponse = await axios.post(`${API_URL}/api/upload/file`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      // Then save the document reference
+      const employeeId = id || user?.id;
+      await axios.post(`${API_URL}/api/employees/${employeeId}/documents`, {
+        name: file.name,
+        type: file.type.includes('pdf') ? 'pdf' : 'image',
+        url: uploadResponse.data.url
+      });
+      
+      toast.success('Document ajouté avec succès');
+      fetchEmployeeData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'upload');
+    } finally {
+      setUploading(false);
     }
   };
 

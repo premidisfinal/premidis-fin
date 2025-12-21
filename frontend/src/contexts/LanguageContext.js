@@ -171,6 +171,8 @@ const translations = {
     maternity: "Maternity Leave",
     paternity: "Paternity Leave",
     unpaid: "Unpaid Leave",
+    exceptional: "Exceptional Authorization",
+    public: "Public Holiday",
     marketing: "Marketing",
     comptabilite: "Accounting",
     administration_dept: "Administration",

@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const TimeManagement = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, canEdit } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('calendar');
   const [leaves, setLeaves] = useState([]);

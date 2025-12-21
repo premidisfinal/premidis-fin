@@ -1287,8 +1287,13 @@ api_router.include_router(hr_router)
 api_router.include_router(config_router)
 api_router.include_router(attendance_router)
 api_router.include_router(behavior_router)
+api_router.include_router(communication_router)
+api_router.include_router(upload_router)
 
 app.include_router(api_router)
+
+# Mount uploads folder
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,

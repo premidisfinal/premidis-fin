@@ -58,11 +58,12 @@ const TimeManagement = () => {
   const [statusFilter, setStatusFilter] = useState(null);
 
   const leaveTypes = [
-    { value: 'annual', label: t('annual'), color: 'bg-blue-500' },
-    { value: 'sick', label: t('sick'), color: 'bg-red-500' },
-    { value: 'maternity', label: t('maternity'), color: 'bg-pink-500' },
-    { value: 'paternity', label: t('paternity'), color: 'bg-purple-500' },
-    { value: 'unpaid', label: t('unpaid'), color: 'bg-gray-500' }
+    { value: 'annual', label: t('annual'), color: 'bg-blue-500', days: 26 },
+    { value: 'sick', label: t('sick'), color: 'bg-red-500', days: 2 },
+    { value: 'exceptional', label: 'Autorisation exceptionnelle', color: 'bg-orange-500', days: 15 },
+    { value: 'maternity', label: t('maternity'), color: 'bg-pink-500', days: 90 },
+    { value: 'paternity', label: t('paternity'), color: 'bg-purple-500', days: 10 },
+    { value: 'public', label: 'Jour férié', color: 'bg-green-500', days: 0 }
   ];
 
   useEffect(() => {

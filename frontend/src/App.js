@@ -81,6 +81,7 @@ function AppRoutes() {
       <Route path="/time-management" element={<ProtectedRoute><TimeManagement /></ProtectedRoute>} />
       <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
       <Route path="/behavior" element={<ProtectedRoute><Behavior /></ProtectedRoute>} />
+      <Route path="/permissions" element={<ProtectedRoute><PermissionsManagement /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       
       {/* Admin Only Routes */}

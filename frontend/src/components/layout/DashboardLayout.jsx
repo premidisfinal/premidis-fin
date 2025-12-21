@@ -36,6 +36,7 @@ import Logo from '../Logo';
 const DashboardLayout = ({ children }) => {
   const { user, logout, isAdmin } = useAuth();
   const { t, language, setLanguage, availableLanguages } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -43,11 +44,10 @@ const DashboardLayout = ({ children }) => {
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'dashboard' },
     { path: '/communication', icon: MessageSquare, label: 'communication' },
-    { path: '/administration', icon: Users, label: 'administration', adminOnly: true },
-    { path: '/time-management', icon: Clock, label: 'timeManagement' },
-    { path: '/performance', icon: TrendingUp, label: 'performance' },
-    { path: '/rules', icon: BookOpen, label: 'rules' },
-    { path: '/payroll', icon: Banknote, label: 'payroll' },
+    { path: '/administration', icon: Users, label: 'Gestion Personnel', adminOnly: true },
+    { path: '/time-management', icon: Clock, label: 'Congés' },
+    { path: '/performance', icon: TrendingUp, label: 'Performances' },
+    { path: '/behavior', icon: UserCheck, label: 'Comportement' },
     { path: '/my-profile', icon: User, label: 'Mon Dossier', employeeOnly: true },
   ];
 

@@ -1099,19 +1099,22 @@ async def list_announcements(current_user: dict = Depends(get_current_user)):
     announcements = await db.announcements.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return {"announcements": announcements}
 
+class AnnouncementCreate(BaseModel):
+    title: str
+    content: str
+    priority: str = "normal"
+
 @communication_router.post("/announcements", status_code=status.HTTP_201_CREATED)
 async def create_announcement(
-    title: str,
-    content: str,
-    priority: str = "normal",
+    announcement_data: AnnouncementCreate,
     current_user: dict = Depends(require_roles(["admin", "secretary"]))
 ):
     """Create announcement (admin/secretary only)"""
     announcement = {
         "id": str(uuid.uuid4()),
-        "title": title,
-        "content": content,
-        "priority": priority,
+        "title": announcement_data.title,
+        "content": announcement_data.content,
+        "priority": announcement_data.priority,
         "author_id": current_user["id"],
         "author_name": f"{current_user['first_name']} {current_user['last_name']}",
         "created_at": datetime.now(timezone.utc).isoformat()

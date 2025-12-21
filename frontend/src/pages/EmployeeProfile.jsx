@@ -415,14 +415,18 @@ const EmployeeProfile = () => {
                         <div>
                           <Label className="text-muted-foreground">Salaire mensuel</Label>
                           <p className="text-2xl font-bold text-primary">
-                            {employee.salary ? `${employee.salary.toLocaleString()} FC` : 'Non défini'}
+                            {employee.salary 
+                              ? `${employee.salary.toLocaleString()} ${employee.salary_currency || 'USD'}` 
+                              : 'Non défini'}
                           </p>
                         </div>
                         {isAdmin() && !isOwnProfile && (
                           <Button variant="outline" size="sm" onClick={() => {
                             const newSalary = prompt('Nouveau salaire:', employee.salary || '0');
                             if (newSalary) {
-                              axios.put(`${API_URL}/api/employees/${employee.id}/salary?salary=${newSalary}`)
+                              const currency = prompt('Devise (USD ou FC):', employee.salary_currency || 'USD');
+                              const validCurrency = ['USD', 'FC'].includes(currency?.toUpperCase()) ? currency.toUpperCase() : 'USD';
+                              axios.put(`${API_URL}/api/employees/${employee.id}/salary?salary=${newSalary}&currency=${validCurrency}`)
                                 .then(() => {
                                   toast.success('Salaire mis à jour');
                                   fetchEmployeeData();

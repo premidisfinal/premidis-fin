@@ -462,21 +462,6 @@ const EmployeeProfile = () => {
           </TabsContent>
 
           {/* Documents Tab */}
-                <Separator />
-                <div>
-                  <Label className="text-muted-foreground">Expérience professionnelle</Label>
-                  <p className="text-muted-foreground italic">Non renseigné</p>
-                </div>
-                <Separator />
-                <div>
-                  <Label className="text-muted-foreground">Compétences</Label>
-                  <p className="text-muted-foreground italic">Non renseigné</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Documents Tab */}
           <TabsContent value="documents" className="mt-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">

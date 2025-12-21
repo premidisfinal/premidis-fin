@@ -1,450 +1,316 @@
 #!/usr/bin/env python3
+"""
+PREMIDIS SARL HR Platform - Backend API Testing
+Tests authentication, role-based permissions, leave management, and attendance tracking
+"""
 
 import requests
 import sys
 import json
 from datetime import datetime, timedelta
-import uuid
+from typing import Dict, Any, Optional
 
-class PREMIERDIsAPITester:
+class PremidisHRTester:
     def __init__(self, base_url="https://prometheus-hr.preview.emergentagent.com"):
         self.base_url = base_url
-        self.token = None
-        self.user_id = None
+        self.tokens = {}
+        self.users = {}
         self.tests_run = 0
         self.tests_passed = 0
         self.failed_tests = []
-        self.admin_token = None
-        self.admin_user_id = None
-        self.employee_id = None
-        self.leave_id = None
+        
+        # Test credentials
+        self.credentials = {
+            "admin": {"email": "rh@premierdis.com", "password": "Admin123!"},
+            "secretary": {"email": "secretaire@premierdis.com", "password": "Sec123!"},
+            "employee": {"email": "employe@premierdis.com", "password": "Emp123!"}
+        }
 
-    def log_result(self, test_name, success, details=""):
+    def log_test(self, name: str, success: bool, details: str = ""):
         """Log test result"""
         self.tests_run += 1
+        status = "✅ PASS" if success else "❌ FAIL"
+        print(f"{status} - {name}")
+        if details:
+            print(f"    {details}")
+        
         if success:
             self.tests_passed += 1
-            print(f"✅ {test_name} - PASSED")
         else:
-            print(f"❌ {test_name} - FAILED: {details}")
-            self.failed_tests.append({"test": test_name, "error": details})
+            self.failed_tests.append({"test": name, "details": details})
 
-    def make_request(self, method, endpoint, data=None, headers=None, expected_status=200):
-        """Make HTTP request with error handling"""
+    def make_request(self, method: str, endpoint: str, role: str = None, data: Dict = None, expected_status: int = 200) -> tuple:
+        """Make API request with optional authentication"""
         url = f"{self.base_url}/api/{endpoint}"
-        request_headers = {'Content-Type': 'application/json'}
+        headers = {'Content-Type': 'application/json'}
         
-        if headers:
-            request_headers.update(headers)
+        if role and role in self.tokens:
+            headers['Authorization'] = f'Bearer {self.tokens[role]}'
         
-        if self.token and 'Authorization' not in request_headers:
-            request_headers['Authorization'] = f'Bearer {self.token}'
-
         try:
             if method == 'GET':
-                response = requests.get(url, headers=request_headers, timeout=30)
+                response = requests.get(url, headers=headers)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=request_headers, timeout=30)
+                response = requests.post(url, json=data, headers=headers)
             elif method == 'PUT':
-                response = requests.put(url, json=data, headers=request_headers, timeout=30)
+                response = requests.put(url, json=data, headers=headers)
             elif method == 'DELETE':
-                response = requests.delete(url, headers=request_headers, timeout=30)
+                response = requests.delete(url, headers=headers)
             
             success = response.status_code == expected_status
             return success, response.json() if response.content else {}, response.status_code
+            
         except Exception as e:
             return False, {"error": str(e)}, 0
 
-    def test_health_check(self):
-        """Test API health"""
-        success, response, status = self.make_request('GET', '', expected_status=200)
-        self.log_result("API Health Check", success, f"Status: {status}")
-        return success
-
-    def test_user_registration(self):
-        """Test user registration"""
-        test_email = f"test_employee_{datetime.now().strftime('%H%M%S')}@premierdis.com"
-        user_data = {
-            "email": test_email,
-            "password": "TestPass123!",
-            "first_name": "Test",
-            "last_name": "Employee",
-            "department": "administration",
-            "role": "employee"
-        }
+    def test_authentication(self):
+        """Test authentication for all roles"""
+        print("\n🔐 Testing Authentication...")
         
-        success, response, status = self.make_request('POST', 'auth/register', user_data, expected_status=200)
-        
-        if success and 'access_token' in response:
-            self.token = response['access_token']
-            self.user_id = response['user']['id']
-            self.log_result("User Registration", True)
-            return True
-        else:
-            self.log_result("User Registration", False, f"Status: {status}, Response: {response}")
-            return False
-
-    def test_admin_registration(self):
-        """Test admin user registration"""
-        admin_email = f"admin_{datetime.now().strftime('%H%M%S')}@premierdis.com"
-        admin_data = {
-            "email": admin_email,
-            "password": "AdminPass123!",
-            "first_name": "Admin",
-            "last_name": "User",
-            "department": "ressources_humaines",
-            "role": "admin"
-        }
-        
-        success, response, status = self.make_request('POST', 'auth/register', admin_data, expected_status=200)
-        
-        if success and 'access_token' in response:
-            self.admin_token = response['access_token']
-            self.admin_user_id = response['user']['id']
-            self.log_result("Admin Registration", True)
-            return True
-        else:
-            self.log_result("Admin Registration", False, f"Status: {status}, Response: {response}")
-            return False
-
-    def test_user_login(self):
-        """Test user login"""
-        if not self.user_id:
-            return False
+        for role, creds in self.credentials.items():
+            success, response, status = self.make_request(
+                'POST', 'auth/login', data=creds, expected_status=200
+            )
             
-        login_data = {
-            "email": f"test_employee_{datetime.now().strftime('%H%M%S')}@premierdis.com",
-            "password": "TestPass123!"
+            if success and 'access_token' in response:
+                self.tokens[role] = response['access_token']
+                self.users[role] = response['user']
+                self.log_test(f"Login as {role}", True, f"Role: {response['user']['role']}")
+            else:
+                self.log_test(f"Login as {role}", False, f"Status: {status}, Response: {response}")
+
+    def test_role_permissions(self):
+        """Test role-based access control"""
+        print("\n🛡️ Testing Role-Based Permissions...")
+        
+        # Test employee list access
+        for role in ['admin', 'secretary', 'employee']:
+            success, response, status = self.make_request('GET', 'employees', role=role)
+            
+            if role == 'employee':
+                # Employee should only see themselves
+                expected = len(response.get('employees', [])) == 1
+                self.log_test(f"{role} - Employee list (self only)", expected, 
+                            f"Employees visible: {len(response.get('employees', []))}")
+            else:
+                # Admin/Secretary should see all employees
+                expected = len(response.get('employees', [])) > 1
+                self.log_test(f"{role} - Employee list (all)", expected,
+                            f"Employees visible: {len(response.get('employees', []))}")
+
+    def test_leave_management(self):
+        """Test leave request creation and approval workflow"""
+        print("\n📅 Testing Leave Management...")
+        
+        # Create leave request as employee
+        leave_data = {
+            "leave_type": "annual",
+            "start_date": (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"),
+            "end_date": (datetime.now() + timedelta(days=9)).strftime("%Y-%m-%d"),
+            "reason": "Test leave request"
         }
         
-        success, response, status = self.make_request('POST', 'auth/login', login_data, expected_status=200)
-        self.log_result("User Login", success, f"Status: {status}")
-        return success
+        success, response, status = self.make_request(
+            'POST', 'leaves', role='employee', data=leave_data, expected_status=201
+        )
+        
+        if success:
+            leave_id = response.get('id')
+            working_days = response.get('working_days', 0)
+            self.log_test("Employee - Create leave request", True, 
+                        f"Leave ID: {leave_id}, Working days: {working_days}")
+            
+            # Test secretary CANNOT approve (critical test)
+            if leave_id:
+                success, response, status = self.make_request(
+                    'PUT', f'leaves/{leave_id}', role='secretary', 
+                    data={"status": "approved"}, expected_status=403
+                )
+                self.log_test("Secretary CANNOT approve leaves", success, 
+                            f"Expected 403, got {status}")
+                
+                # Test admin CAN approve
+                success, response, status = self.make_request(
+                    'PUT', f'leaves/{leave_id}', role='admin', 
+                    data={"status": "approved"}, expected_status=200
+                )
+                self.log_test("Admin CAN approve leaves", success, 
+                            f"Status: {response.get('status', 'unknown')}")
+        else:
+            self.log_test("Employee - Create leave request", False, f"Status: {status}")
 
-    def test_get_current_user(self):
-        """Test get current user profile"""
-        success, response, status = self.make_request('GET', 'auth/me', expected_status=200)
-        self.log_result("Get Current User", success, f"Status: {status}")
-        return success
+    def test_leave_balance(self):
+        """Test leave balance calculation"""
+        print("\n💰 Testing Leave Balance...")
+        
+        for role in ['admin', 'secretary', 'employee']:
+            success, response, status = self.make_request('GET', 'leaves/balance', role=role)
+            
+            if success:
+                balance_types = list(response.keys())
+                has_annual = 'annual' in balance_types
+                self.log_test(f"{role} - Leave balance access", has_annual, 
+                            f"Balance types: {balance_types}")
+            else:
+                self.log_test(f"{role} - Leave balance access", False, f"Status: {status}")
+
+    def test_attendance_tracking(self):
+        """Test attendance check-in/check-out"""
+        print("\n⏰ Testing Attendance Tracking...")
+        
+        # Test check-in as employee
+        success, response, status = self.make_request(
+            'POST', 'attendance/check-in', role='employee', expected_status=200
+        )
+        
+        if success:
+            check_in_time = response.get('check_in')
+            self.log_test("Employee - Check-in", True, f"Check-in time: {check_in_time}")
+            
+            # Test check-out
+            success, response, status = self.make_request(
+                'POST', 'attendance/check-out', role='employee', expected_status=200
+            )
+            
+            if success:
+                check_out_time = response.get('check_out')
+                self.log_test("Employee - Check-out", True, f"Check-out time: {check_out_time}")
+            else:
+                self.log_test("Employee - Check-out", False, f"Status: {status}")
+        else:
+            self.log_test("Employee - Check-in", False, f"Status: {status}")
+
+    def test_working_day_calculation(self):
+        """Test working day calculation accuracy"""
+        print("\n📊 Testing Working Day Calculation...")
+        
+        # Test weekend exclusion (Monday to Friday = 5 working days)
+        test_cases = [
+            {
+                "start": "2025-01-06",  # Monday
+                "end": "2025-01-10",    # Friday
+                "expected": 5
+            },
+            {
+                "start": "2025-01-06",  # Monday  
+                "end": "2025-01-12",    # Sunday (includes weekend)
+                "expected": 5  # Should exclude weekend
+            }
+        ]
+        
+        for case in test_cases:
+            leave_data = {
+                "leave_type": "annual",
+                "start_date": case["start"],
+                "end_date": case["end"],
+                "reason": "Working day calculation test"
+            }
+            
+            success, response, status = self.make_request(
+                'POST', 'leaves', role='employee', data=leave_data, expected_status=201
+            )
+            
+            if success:
+                actual_days = response.get('working_days', 0)
+                correct = actual_days == case["expected"]
+                self.log_test(f"Working days calculation ({case['start']} to {case['end']})", 
+                            correct, f"Expected: {case['expected']}, Got: {actual_days}")
+            else:
+                self.log_test(f"Working days calculation test", False, f"Status: {status}")
+
+    def test_calendar_access(self):
+        """Test calendar view permissions"""
+        print("\n📅 Testing Calendar Access...")
+        
+        for role in ['admin', 'secretary', 'employee']:
+            success, response, status = self.make_request('GET', 'leaves/calendar', role=role)
+            
+            if success:
+                leaves = response.get('leaves', [])
+                self.log_test(f"{role} - Calendar access", True, f"Leaves visible: {len(leaves)}")
+            else:
+                self.log_test(f"{role} - Calendar access", False, f"Status: {status}")
 
     def test_dashboard_stats(self):
         """Test dashboard statistics"""
-        success, response, status = self.make_request('GET', 'dashboard/stats', expected_status=200)
-        self.log_result("Dashboard Stats", success, f"Status: {status}")
-        return success
-
-    def test_create_employee(self):
-        """Test employee creation (admin only)"""
-        if not self.admin_token:
-            return False
+        print("\n📈 Testing Dashboard Statistics...")
+        
+        for role in ['admin', 'secretary', 'employee']:
+            success, response, status = self.make_request('GET', 'dashboard/stats', role=role)
             
-        # Switch to admin token
-        original_token = self.token
-        self.token = self.admin_token
-        
-        employee_data = {
-            "first_name": "John",
-            "last_name": "Doe",
-            "email": f"john.doe_{datetime.now().strftime('%H%M%S')}@premierdis.com",
-            "phone": "+243123456789",
-            "department": "marketing",
-            "position": "Marketing Manager",
-            "hire_date": "2025-01-01",
-            "salary": 2500.0,
-            "contract_type": "CDI",
-            "country": "RDC"
-        }
-        
-        success, response, status = self.make_request('POST', 'employees', employee_data, expected_status=200)
-        
-        if success and 'id' in response:
-            self.employee_id = response['id']
-            self.log_result("Create Employee", True)
-        else:
-            self.log_result("Create Employee", False, f"Status: {status}, Response: {response}")
-        
-        # Switch back to original token
-        self.token = original_token
-        return success
+            if success:
+                if role in ['admin', 'secretary']:
+                    has_admin_stats = 'total_employees' in response
+                    self.log_test(f"{role} - Admin dashboard stats", has_admin_stats,
+                                f"Stats keys: {list(response.keys())}")
+                else:
+                    has_employee_stats = 'leave_balance' in response
+                    self.log_test(f"{role} - Employee dashboard stats", has_employee_stats,
+                                f"Stats keys: {list(response.keys())}")
+            else:
+                self.log_test(f"{role} - Dashboard stats", False, f"Status: {status}")
 
-    def test_list_employees(self):
-        """Test listing employees"""
-        success, response, status = self.make_request('GET', 'employees', expected_status=200)
-        self.log_result("List Employees", success, f"Status: {status}")
-        return success
-
-    def test_create_leave_request(self):
-        """Test creating leave request"""
-        leave_data = {
-            "leave_type": "annual",
-            "start_date": "2025-02-01",
-            "end_date": "2025-02-05",
-            "reason": "Annual vacation"
-        }
+    def test_employee_data_isolation(self):
+        """Test that employees can only access their own data"""
+        print("\n🔒 Testing Employee Data Isolation...")
         
-        success, response, status = self.make_request('POST', 'leaves', leave_data, expected_status=200)
+        # Get employee's own ID
+        employee_id = self.users.get('employee', {}).get('id')
+        if not employee_id:
+            self.log_test("Employee data isolation", False, "No employee ID available")
+            return
         
-        if success and 'id' in response:
-            self.leave_id = response['id']
-            self.log_result("Create Leave Request", True)
-        else:
-            self.log_result("Create Leave Request", False, f"Status: {status}, Response: {response}")
+        # Test employee can access their own data
+        success, response, status = self.make_request(
+            'GET', f'employees/{employee_id}', role='employee'
+        )
+        self.log_test("Employee - Access own profile", success, f"Status: {status}")
         
-        return success
-
-    def test_list_leaves(self):
-        """Test listing leave requests"""
-        success, response, status = self.make_request('GET', 'leaves', expected_status=200)
-        self.log_result("List Leaves", success, f"Status: {status}")
-        return success
-
-    def test_leave_stats(self):
-        """Test leave statistics"""
-        success, response, status = self.make_request('GET', 'leaves/stats', expected_status=200)
-        self.log_result("Leave Stats", success, f"Status: {status}")
-        return success
-
-    def test_approve_leave(self):
-        """Test approving leave request (admin only)"""
-        if not self.admin_token or not self.leave_id:
-            return False
-            
-        # Switch to admin token
-        original_token = self.token
-        self.token = self.admin_token
-        
-        update_data = {
-            "status": "approved",
-            "admin_comment": "Approved for vacation"
-        }
-        
-        success, response, status = self.make_request('PUT', f'leaves/{self.leave_id}', update_data, expected_status=200)
-        self.log_result("Approve Leave", success, f"Status: {status}")
-        
-        # Switch back to original token
-        self.token = original_token
-        return success
-
-    def test_list_payslips(self):
-        """Test listing payslips"""
-        success, response, status = self.make_request('GET', 'payroll', expected_status=200)
-        self.log_result("List Payslips", success, f"Status: {status}")
-        return success
-
-    def test_list_announcements(self):
-        """Test listing announcements"""
-        success, response, status = self.make_request('GET', 'communication/announcements', expected_status=200)
-        self.log_result("List Announcements", success, f"Status: {status}")
-        return success
-
-    def test_create_announcement(self):
-        """Test creating announcement (admin only)"""
-        if not self.admin_token:
-            return False
-            
-        # Switch to admin token
-        original_token = self.token
-        self.token = self.admin_token
-        
-        announcement_data = {
-            "title": "Test Announcement",
-            "content": "This is a test announcement for the HR platform.",
-            "priority": "normal",
-            "target_departments": []
-        }
-        
-        success, response, status = self.make_request('POST', 'communication/announcements', announcement_data, expected_status=200)
-        self.log_result("Create Announcement", success, f"Status: {status}")
-        
-        # Switch back to original token
-        self.token = original_token
-        return success
-
-    def test_list_messages(self):
-        """Test listing messages"""
-        success, response, status = self.make_request('GET', 'communication/messages', expected_status=200)
-        self.log_result("List Messages", success, f"Status: {status}")
-        return success
-
-    def test_list_contacts(self):
-        """Test listing contacts"""
-        success, response, status = self.make_request('GET', 'communication/contacts', expected_status=200)
-        self.log_result("List Contacts", success, f"Status: {status}")
-        return success
-
-    def test_list_rules(self):
-        """Test listing rules"""
-        success, response, status = self.make_request('GET', 'rules', expected_status=200)
-        self.log_result("List Rules", success, f"Status: {status}")
-        return success
-
-    def test_create_rule(self):
-        """Test creating rule (admin only)"""
-        if not self.admin_token:
-            return False
-            
-        # Switch to admin token
-        original_token = self.token
-        self.token = self.admin_token
-        
-        rule_data = {
-            "title": "Test Company Rule",
-            "content": "This is a test company rule for compliance.",
-            "category": "general",
-            "effective_date": "2025-01-01"
-        }
-        
-        success, response, status = self.make_request('POST', 'rules', rule_data, expected_status=200)
-        self.log_result("Create Rule", success, f"Status: {status}")
-        
-        # Switch back to original token
-        self.token = original_token
-        return success
-
-    def test_leaves_calendar(self):
-        """Test leaves calendar endpoint"""
-        success, response, status = self.make_request('GET', 'leaves/calendar', expected_status=200)
-        self.log_result("Leaves Calendar", success, f"Status: {status}")
-        return success
-
-    def test_attendance_check_in(self):
-        """Test attendance check-in"""
-        success, response, status = self.make_request('POST', 'attendance/check-in', {}, expected_status=200)
-        self.log_result("Attendance Check-in", success, f"Status: {status}")
-        return success
-
-    def test_attendance_check_out(self):
-        """Test attendance check-out"""
-        success, response, status = self.make_request('POST', 'attendance/check-out', {}, expected_status=200)
-        self.log_result("Attendance Check-out", success, f"Status: {status}")
-        return success
-
-    def test_attendance_today(self):
-        """Test get today's attendance"""
-        success, response, status = self.make_request('GET', 'attendance/today', expected_status=200)
-        self.log_result("Today's Attendance", success, f"Status: {status}")
-        return success
-
-    def test_list_attendance(self):
-        """Test listing attendance records"""
-        success, response, status = self.make_request('GET', 'attendance', expected_status=200)
-        self.log_result("List Attendance", success, f"Status: {status}")
-        return success
-
-    def test_create_attendance_record(self):
-        """Test creating attendance record (admin only)"""
-        if not self.admin_token:
-            return False
-            
-        # Switch to admin token
-        original_token = self.token
-        self.token = self.admin_token
-        
-        attendance_data = {
-            "employee_id": self.user_id,
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "check_in": "09:00",
-            "check_out": "17:00",
-            "notes": "Test attendance record"
-        }
-        
-        success, response, status = self.make_request('POST', 'attendance', attendance_data, expected_status=200)
-        self.log_result("Create Attendance Record", success, f"Status: {status}")
-        
-        # Switch back to original token
-        self.token = original_token
-        return success
-
-    def test_voice_endpoints(self):
-        """Test voice AI endpoints availability"""
-        # Test transcribe endpoint (will fail without audio data, but should return 400 not 500)
-        success, response, status = self.make_request('POST', 'voice/transcribe', {}, expected_status=400)
-        self.log_result("Voice Transcribe Endpoint", success, f"Status: {status}")
-        
-        # Test TTS endpoint (will fail without text, but should return 400 not 500)
-        success, response, status = self.make_request('POST', 'voice/speak', {}, expected_status=400)
-        self.log_result("Voice TTS Endpoint", success, f"Status: {status}")
-        
-        # Test chat endpoint (will fail without text, but should return 400 not 500)
-        success, response, status = self.make_request('POST', 'voice/chat', {}, expected_status=400)
-        self.log_result("Voice Chat Endpoint", success, f"Status: {status}")
-        
-        return True
+        # Test employee cannot access admin's data (if we have admin ID)
+        admin_id = self.users.get('admin', {}).get('id')
+        if admin_id and admin_id != employee_id:
+            success, response, status = self.make_request(
+                'GET', f'employees/{admin_id}', role='employee', expected_status=403
+            )
+            self.log_test("Employee CANNOT access other profiles", success, f"Status: {status}")
 
     def run_all_tests(self):
-        """Run all API tests"""
-        print("🚀 Starting PREMIERDIs HR API Tests")
-        print("=" * 50)
+        """Run complete test suite"""
+        print("🚀 Starting PREMIDIS SARL HR Platform Backend Tests")
+        print("=" * 60)
         
-        # Basic connectivity
-        if not self.test_health_check():
-            print("❌ API is not accessible, stopping tests")
+        # Core functionality tests
+        self.test_authentication()
+        
+        if not self.tokens:
+            print("❌ Authentication failed - cannot proceed with other tests")
             return False
         
-        # Authentication tests
-        if not self.test_user_registration():
-            print("❌ User registration failed, stopping tests")
-            return False
-            
-        if not self.test_admin_registration():
-            print("❌ Admin registration failed, continuing with limited tests")
-        
-        self.test_get_current_user()
-        
-        # Dashboard and stats
+        self.test_role_permissions()
+        self.test_leave_management()
+        self.test_leave_balance()
+        self.test_attendance_tracking()
+        self.test_working_day_calculation()
+        self.test_calendar_access()
         self.test_dashboard_stats()
+        self.test_employee_data_isolation()
         
-        # Employee management
-        self.test_create_employee()
-        self.test_list_employees()
-        
-        # Leave management
-        self.test_create_leave_request()
-        self.test_list_leaves()
-        self.test_leave_stats()
-        self.test_approve_leave()
-        self.test_leaves_calendar()
-        
-        # Attendance management
-        self.test_attendance_check_in()
-        self.test_attendance_today()
-        self.test_attendance_check_out()
-        self.test_list_attendance()
-        self.test_create_attendance_record()
-        
-        # Payroll
-        self.test_list_payslips()
-        
-        # Communication
-        self.test_list_announcements()
-        self.test_create_announcement()
-        self.test_list_messages()
-        self.test_list_contacts()
-        
-        # Rules
-        self.test_list_rules()
-        self.test_create_rule()
-        
-        # Voice AI
-        self.test_voice_endpoints()
-        
-        # Print results
-        print("\n" + "=" * 50)
-        print(f"📊 Test Results: {self.tests_passed}/{self.tests_run} passed")
+        # Print summary
+        print("\n" + "=" * 60)
+        print(f"📊 Test Summary: {self.tests_passed}/{self.tests_run} tests passed")
         
         if self.failed_tests:
             print("\n❌ Failed Tests:")
             for test in self.failed_tests:
-                print(f"  - {test['test']}: {test['error']}")
+                print(f"  - {test['test']}: {test['details']}")
         
-        success_rate = (self.tests_passed / self.tests_run) * 100 if self.tests_run > 0 else 0
-        print(f"\n✨ Success Rate: {success_rate:.1f}%")
+        success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
+        print(f"✅ Success Rate: {success_rate:.1f}%")
         
-        return success_rate >= 80
+        return success_rate >= 80  # Consider 80%+ as passing
 
 def main():
-    """Main test execution"""
-    tester = PREMIERDIsAPITester()
+    tester = PremidisHRTester()
     success = tester.run_all_tests()
     return 0 if success else 1
 

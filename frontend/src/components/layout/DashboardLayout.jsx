@@ -49,6 +49,7 @@ const DashboardLayout = ({ children }) => {
     { path: '/time-management', icon: Clock, label: 'Congés' },
     { path: '/performance', icon: TrendingUp, label: 'Performances' },
     { path: '/behavior', icon: UserCheck, label: 'Comportement' },
+    { path: '/permissions', icon: Shield, label: 'Permissions', adminOnly: true },
     { path: '/my-profile', icon: User, label: 'Mon Dossier', employeeOnly: true },
   ];
 

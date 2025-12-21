@@ -90,7 +90,7 @@ class PremidisHRTester:
         
         # 422 means endpoint exists but missing file data - this is expected
         endpoint_exists = status == 422
-        self.log_test("File upload endpoint exists", endpoint_exists, f"Status: {status}")
+        self.log_test("File upload endpoint exists (BUG FIX)", endpoint_exists, f"Status: {status}")
         
         # Test avatar upload endpoint
         employee_id = self.users.get('employee', {}).get('id')
@@ -100,7 +100,7 @@ class PremidisHRTester:
             )
             
             avatar_endpoint_exists = status == 422
-            self.log_test("Avatar upload endpoint exists", avatar_endpoint_exists, f"Status: {status}")
+            self.log_test("Avatar upload endpoint exists (BUG FIX)", avatar_endpoint_exists, f"Status: {status}")
 
     def test_communication_features(self):
         """Test announcement creation by Admin and Secretary"""
@@ -171,7 +171,7 @@ class PremidisHRTester:
                 has_annual_days = 'annual_days' in rules
                 has_leave_types = len(leave_types) > 0
                 
-                self.log_test(f"{role} - Leave rules access", has_annual_days and has_leave_types, 
+                self.log_test(f"{role} - Leave rules access (BUG FIX)", has_annual_days and has_leave_types, 
                             f"Rules: {list(rules.keys())}, Leave types: {len(leave_types)}")
             else:
                 self.log_test(f"{role} - Leave rules access", False, f"Status: {status}")
@@ -180,12 +180,12 @@ class PremidisHRTester:
         """Test leave request creation and approval workflow"""
         print("\n📅 Testing Leave Management...")
         
-        # Create leave request as employee
+        # Create leave request as employee with unique dates
         leave_data = {
             "leave_type": "annual",
-            "start_date": (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"),
-            "end_date": (datetime.now() + timedelta(days=9)).strftime("%Y-%m-%d"),
-            "reason": "Test leave request"
+            "start_date": (datetime.now() + timedelta(days=80)).strftime("%Y-%m-%d"),
+            "end_date": (datetime.now() + timedelta(days=82)).strftime("%Y-%m-%d"),
+            "reason": "Test leave request - unique dates"
         }
         
         success, response, status = self.make_request(
@@ -215,7 +215,7 @@ class PremidisHRTester:
                 self.log_test("Admin CAN approve/reject leaves", success, 
                             f"Status: {response.get('status', 'unknown')}")
         else:
-            self.log_test("Employee - Create leave request", False, f"Status: {status}")
+            self.log_test("Employee - Create leave request", False, f"Status: {status}, Response: {response}")
 
     def test_behavior_tracking(self):
         """Test behavior tracking functionality"""
@@ -266,11 +266,11 @@ class PremidisHRTester:
         """Test that calendar shows only APPROVED leaves, not pending or rejected"""
         print("\n📅 Testing Calendar Shows Only Approved Leaves...")
         
-        # Create leaves with different statuses
+        # Create leaves with different statuses using unique dates
         leave_data_pending = {
             "leave_type": "annual",
-            "start_date": (datetime.now() + timedelta(days=20)).strftime("%Y-%m-%d"),
-            "end_date": (datetime.now() + timedelta(days=21)).strftime("%Y-%m-%d"),
+            "start_date": (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d"),
+            "end_date": (datetime.now() + timedelta(days=91)).strftime("%Y-%m-%d"),
             "reason": "Test pending leave for calendar"
         }
         
@@ -287,8 +287,8 @@ class PremidisHRTester:
         # Create and approve another leave
         leave_data_approved = {
             "leave_type": "sick",
-            "start_date": (datetime.now() + timedelta(days=25)).strftime("%Y-%m-%d"),
-            "end_date": (datetime.now() + timedelta(days=26)).strftime("%Y-%m-%d"),
+            "start_date": (datetime.now() + timedelta(days=95)).strftime("%Y-%m-%d"),
+            "end_date": (datetime.now() + timedelta(days=96)).strftime("%Y-%m-%d"),
             "reason": "Test approved leave for calendar"
         }
         

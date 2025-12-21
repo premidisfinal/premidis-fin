@@ -233,6 +233,7 @@ leaves_router = APIRouter(prefix="/leaves", tags=["Congés"])
 calendar_router = APIRouter(prefix="/calendar", tags=["Calendrier"])
 hr_router = APIRouter(prefix="/hr", tags=["RH Actions"])
 config_router = APIRouter(prefix="/config", tags=["Configuration"])
+behavior_router = APIRouter(prefix="/behavior", tags=["Comportement"])
 
 # ==================== AUTH ROUTES ====================
 @auth_router.post("/register", response_model=TokenResponse)

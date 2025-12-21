@@ -60,7 +60,7 @@ const Dashboard = () => {
       color: 'secondary',
       metric: stats?.total_employees || 0,
       metricLabel: 'employés',
-      adminOnly: true
+      canManageOnly: true
     },
     {
       title: 'Congés',

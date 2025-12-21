@@ -510,18 +510,18 @@ async def get_leaves_for_calendar(
     year: int = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get approved leaves for calendar display"""
+    """Get approved leaves for calendar display - ONLY approved leaves"""
     now = datetime.now()
     target_month = month or now.month
     target_year = year or now.year
     
-    # Build query based on role
+    # Build query based on role - ONLY APPROVED leaves
     query = {"status": "approved"}
     if current_user["role"] == "employee":
-        # Employee sees only their leaves + public holidays
+        # Employee sees only their approved leaves + public holidays
         query = {"$or": [
             {"employee_id": current_user["id"], "status": "approved"},
-            {"leave_type": "public"}
+            {"leave_type": "public", "status": "approved"}
         ]}
     
     leaves = await db.leaves.find(query, {"_id": 0}).to_list(500)

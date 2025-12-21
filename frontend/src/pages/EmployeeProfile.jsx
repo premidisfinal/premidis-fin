@@ -19,7 +19,7 @@ import {
   Briefcase, User, Award, FileText, Banknote, Settings, 
   Mail, Phone, Building2, Calendar, MapPin, Upload, Download,
   Edit, ArrowLeft, Plus, Clock, Target, CheckCircle, Loader2,
-  ThumbsUp, ThumbsDown, UserCheck, Camera
+  ThumbsUp, ThumbsDown, UserCheck, Camera, DollarSign
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';

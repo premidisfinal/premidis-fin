@@ -444,7 +444,7 @@ async def get_leaves_for_calendar(
     
     return {"leaves": filtered, "month": target_month, "year": target_year}
 
-@leaves_router.post("")
+@leaves_router.post("", status_code=status.HTTP_201_CREATED)
 async def create_leave_request(
     leave: LeaveRequest,
     current_user: dict = Depends(get_current_user)

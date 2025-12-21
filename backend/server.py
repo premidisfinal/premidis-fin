@@ -99,6 +99,7 @@ class UserResponse(BaseModel):
     phone: Optional[str] = None
     hire_date: Optional[str] = None
     salary: Optional[float] = None
+    salary_currency: Optional[str] = "USD"
     birth_date: Optional[str] = None
     is_active: bool = True
     created_at: Optional[str] = None

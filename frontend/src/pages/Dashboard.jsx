@@ -11,12 +11,8 @@ import {
   Users,
   Clock,
   TrendingUp,
-  BookOpen,
-  Banknote,
   Bell,
-  Calendar,
-  FileText,
-  AlertCircle
+  UserCheck
 } from 'lucide-react';
 import axios from 'axios';
 

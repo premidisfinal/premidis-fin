@@ -50,6 +50,7 @@ const Administration = () => {
     position: '',
     hire_date: '',
     salary: '',
+    salary_currency: 'USD',
     role: 'employee',
     category: 'agent',
     contract_type: 'CDI',

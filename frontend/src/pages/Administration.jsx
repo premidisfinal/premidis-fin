@@ -32,16 +32,20 @@ const Administration = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editEmployee, setEditEmployee] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     email: '',
+    password: 'Temp123!',
     phone: '',
     department: 'administration',
     position: '',
     hire_date: '',
     salary: '',
+    role: 'employee',
+    category: 'agent',
     contract_type: 'CDI',
     country: 'RDC'
   });

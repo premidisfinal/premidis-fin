@@ -453,10 +453,8 @@ const EmployeeProfile = () => {
                   <Label className="text-muted-foreground">Compétences</Label>
                   <p className="text-muted-foreground italic">Non renseigné</p>
                 </div>
-                
-                {canModify && (
-                  <Button variant="outline" className="mt-4">
-                    <Upload className="mr-2 h-4 w-4" />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Documents Tab */}

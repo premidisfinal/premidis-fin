@@ -18,8 +18,15 @@ const Performance = () => {
   const { t } = useLanguage();
   const [evaluations, setEvaluations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(isAdmin() ? 'company' : 'individual');
+  const [activeTab, setActiveTab] = useState('individual');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
+
+  // Set default tab based on role - admin sees company first
+  useEffect(() => {
+    if (isAdmin()) {
+      setActiveTab('company');
+    }
+  }, []);
 
   // Mock data for company and department performance
   const companyObjectives = [

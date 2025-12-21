@@ -192,6 +192,7 @@ const Performance = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* DEPARTMENT PERFORMANCE TAB */}
           <TabsContent value="department" className="mt-6 space-y-6">

@@ -157,6 +157,17 @@ class ExitAuthorization(BaseModel):
     return_time: Optional[str] = None
     reason: str
 
+class BehaviorNote(BaseModel):
+    employee_id: str
+    type: str  # 'positive' or 'negative'
+    note: str
+    date: str
+
+class DocumentUpload(BaseModel):
+    name: str
+    type: str  # 'certificate', 'pdf', 'image'
+    url: str
+
 # ==================== AUTH HELPERS ====================
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)

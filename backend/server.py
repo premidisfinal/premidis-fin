@@ -1200,45 +1200,16 @@ async def create_announcement(
     announcement.pop("_id", None)
     return announcement
 
-@communication_router.get("/messages")
-async def list_messages(current_user: dict = Depends(get_current_user)):
-    """List user's messages"""
-    messages = await db.messages.find({
-        "$or": [
-            {"sender_id": current_user["id"]},
-            {"receiver_id": current_user["id"]}
-        ]
-    }, {"_id": 0}).sort("created_at", -1).to_list(200)
-    return {"messages": messages}
-
-@communication_router.post("/messages", status_code=status.HTTP_201_CREATED)
-async def send_message(
-    receiver_id: str,
-    content: str,
-    current_user: dict = Depends(get_current_user)
+@communication_router.delete("/announcements/{announcement_id}")
+async def delete_announcement(
+    announcement_id: str,
+    current_user: dict = Depends(require_roles(["admin"]))
 ):
-    """Send a message to another user"""
-    message = {
-        "id": str(uuid.uuid4()),
-        "sender_id": current_user["id"],
-        "sender_name": f"{current_user['first_name']} {current_user['last_name']}",
-        "receiver_id": receiver_id,
-        "content": content,
-        "read": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.messages.insert_one(message)
-    message.pop("_id", None)
-    return message
-
-@communication_router.get("/contacts")
-async def list_contacts(current_user: dict = Depends(get_current_user)):
-    """List all users as contacts"""
-    contacts = await db.users.find(
-        {"id": {"$ne": current_user["id"]}, "is_active": True},
-        {"_id": 0, "password": 0}
-    ).to_list(200)
-    return {"contacts": contacts}
+    """Delete an announcement (admin only)"""
+    result = await db.announcements.delete_one({"id": announcement_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Annonce non trouvée")
+    return {"message": "Annonce supprimée"}
 
 # ==================== FILE UPLOAD ROUTES ====================
 from fastapi import UploadFile, File

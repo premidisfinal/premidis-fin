@@ -414,6 +414,7 @@ const Administration = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           )}
         </div>
 

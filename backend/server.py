@@ -94,14 +94,17 @@ class UserResponse(BaseModel):
     last_name: str
     role: str
     department: str
-    category: str
+    category: Optional[str] = "agent"
     position: Optional[str] = None
     phone: Optional[str] = None
     hire_date: Optional[str] = None
     salary: Optional[float] = None
-    is_active: bool
-    created_at: str
+    birth_date: Optional[str] = None
+    is_active: bool = True
+    created_at: Optional[str] = None
     avatar_url: Optional[str] = None
+    leave_balance: Optional[Dict[str, int]] = None
+    leave_taken: Optional[Dict[str, int]] = None
 
 class TokenResponse(BaseModel):
     access_token: str

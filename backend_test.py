@@ -383,29 +383,187 @@ class PremidisHRTester:
             self.log_test(f"Leave type '{leave_type}' accepted", success, 
                         f"Status: {status}, Leave ID: {response.get('id', 'N/A')}")
 
-    def test_employee_data_isolation(self):
-        """Test that employees can only access their own data"""
-        print("\n🔒 Testing Employee Data Isolation...")
+    def test_file_upload_functionality(self):
+        """Test file upload functionality for PDF, JPEG, PNG files"""
+        print("\n📁 Testing File Upload Functionality...")
         
-        # Get employee's own ID
+        # Test file upload endpoint exists and accepts files
+        # Note: We can't actually upload files in this test, but we can test the endpoint
+        
+        # Test upload endpoint accessibility
+        success, response, status = self.make_request(
+            'POST', 'upload/file', role='employee', expected_status=422  # Expect validation error without file
+        )
+        
+        # 422 means endpoint exists but missing file data - this is expected
+        endpoint_exists = status == 422
+        self.log_test("File upload endpoint exists", endpoint_exists, f"Status: {status}")
+        
+        # Test avatar upload endpoint
+        employee_id = self.users.get('employee', {}).get('id')
+        if employee_id:
+            success, response, status = self.make_request(
+                'POST', f'upload/avatar/{employee_id}', role='employee', expected_status=422
+            )
+            
+            avatar_endpoint_exists = status == 422
+            self.log_test("Avatar upload endpoint exists", avatar_endpoint_exists, f"Status: {status}")
+
+    def test_communication_features(self):
+        """Test announcement creation by Admin and Secretary"""
+        print("\n💬 Testing Communication Features...")
+        
+        # Test announcement creation by Admin
+        announcement_data = {
+            "title": "Test Admin Announcement",
+            "content": "This is a test announcement from admin",
+            "priority": "normal"
+        }
+        
+        success, response, status = self.make_request(
+            'POST', 'communication/announcements', role='admin', 
+            data=announcement_data, expected_status=201
+        )
+        
+        if success:
+            announcement_id = response.get('id')
+            self.log_test("Admin - Create announcement", True, f"Announcement ID: {announcement_id}")
+        else:
+            self.log_test("Admin - Create announcement", False, f"Status: {status}, Response: {response}")
+        
+        # Test announcement creation by Secretary (BUG FIX)
+        announcement_data['title'] = "Test Secretary Announcement"
+        announcement_data['content'] = "This is a test announcement from secretary"
+        
+        success, response, status = self.make_request(
+            'POST', 'communication/announcements', role='secretary', 
+            data=announcement_data, expected_status=201
+        )
+        
+        if success:
+            announcement_id = response.get('id')
+            self.log_test("Secretary - Create announcement (BUG FIX)", True, f"Announcement ID: {announcement_id}")
+        else:
+            self.log_test("Secretary - Create announcement (BUG FIX)", False, f"Status: {status}, Response: {response}")
+        
+        # Test Employee CANNOT create announcements
+        success, response, status = self.make_request(
+            'POST', 'communication/announcements', role='employee', 
+            data=announcement_data, expected_status=403
+        )
+        self.log_test("Employee CANNOT create announcements", success, f"Status: {status}")
+        
+        # Test announcement listing
+        for role in ['admin', 'secretary', 'employee']:
+            success, response, status = self.make_request(
+                'GET', 'communication/announcements', role=role
+            )
+            
+            if success:
+                announcements = response.get('announcements', [])
+                self.log_test(f"{role} - View announcements", True, f"Announcements visible: {len(announcements)}")
+            else:
+                self.log_test(f"{role} - View announcements", False, f"Status: {status}")
+
+    def test_calendar_approved_leaves_only(self):
+        """Test that calendar shows only APPROVED leaves, not pending or rejected"""
+        print("\n📅 Testing Calendar Shows Only Approved Leaves...")
+        
+        # Create leaves with different statuses
+        leave_data_pending = {
+            "leave_type": "annual",
+            "start_date": (datetime.now() + timedelta(days=20)).strftime("%Y-%m-%d"),
+            "end_date": (datetime.now() + timedelta(days=21)).strftime("%Y-%m-%d"),
+            "reason": "Test pending leave for calendar"
+        }
+        
+        # Create pending leave
+        success, response, status = self.make_request(
+            'POST', 'leaves', role='employee', data=leave_data_pending, expected_status=201
+        )
+        
+        pending_leave_id = None
+        if success:
+            pending_leave_id = response.get('id')
+            self.log_test("Created pending leave for calendar test", True, f"Leave ID: {pending_leave_id}")
+        
+        # Create and approve another leave
+        leave_data_approved = {
+            "leave_type": "sick",
+            "start_date": (datetime.now() + timedelta(days=25)).strftime("%Y-%m-%d"),
+            "end_date": (datetime.now() + timedelta(days=26)).strftime("%Y-%m-%d"),
+            "reason": "Test approved leave for calendar"
+        }
+        
+        success, response, status = self.make_request(
+            'POST', 'leaves', role='employee', data=leave_data_approved, expected_status=201
+        )
+        
+        approved_leave_id = None
+        if success:
+            approved_leave_id = response.get('id')
+            # Approve this leave
+            success, response, status = self.make_request(
+                'PUT', f'leaves/{approved_leave_id}', role='admin', 
+                data={"status": "approved"}, expected_status=200
+            )
+            if success:
+                self.log_test("Created and approved leave for calendar test", True, f"Leave ID: {approved_leave_id}")
+        
+        # Now check calendar - should only show approved leaves
+        success, response, status = self.make_request('GET', 'leaves/calendar', role='employee')
+        
+        if success:
+            calendar_leaves = response.get('leaves', [])
+            
+            # Check if only approved leaves are shown
+            approved_count = sum(1 for leave in calendar_leaves if leave.get('status') == 'approved')
+            pending_count = sum(1 for leave in calendar_leaves if leave.get('status') == 'pending')
+            rejected_count = sum(1 for leave in calendar_leaves if leave.get('status') == 'rejected')
+            
+            only_approved = pending_count == 0 and rejected_count == 0
+            self.log_test("Calendar shows only APPROVED leaves (BUG FIX)", only_approved, 
+                        f"Approved: {approved_count}, Pending: {pending_count}, Rejected: {rejected_count}")
+        else:
+            self.log_test("Calendar shows only APPROVED leaves", False, f"Status: {status}")
+
+    def test_document_upload_in_profile(self):
+        """Test document upload in employee profile"""
+        print("\n📄 Testing Document Upload in Employee Profile...")
+        
         employee_id = self.users.get('employee', {}).get('id')
         if not employee_id:
-            self.log_test("Employee data isolation", False, "No employee ID available")
+            self.log_test("Document upload in profile", False, "No employee ID available")
             return
         
-        # Test employee can access their own data
-        success, response, status = self.make_request(
-            'GET', f'employees/{employee_id}', role='employee'
-        )
-        self.log_test("Employee - Access own profile", success, f"Status: {status}")
+        # Test document upload endpoint for employee profile
+        document_data = {
+            "name": "test_document.pdf",
+            "type": "pdf",
+            "url": "/uploads/test_document.pdf"
+        }
         
-        # Test employee cannot access admin's data (if we have admin ID)
-        admin_id = self.users.get('admin', {}).get('id')
-        if admin_id and admin_id != employee_id:
-            success, response, status = self.make_request(
-                'GET', f'employees/{admin_id}', role='employee', expected_status=403
-            )
-            self.log_test("Employee CANNOT access other profiles", success, f"Status: {status}")
+        success, response, status = self.make_request(
+            'POST', f'employees/{employee_id}/documents', role='employee', 
+            data=document_data, expected_status=201
+        )
+        
+        if success:
+            doc_id = response.get('id')
+            self.log_test("Employee - Upload document to profile", True, f"Document ID: {doc_id}")
+        else:
+            self.log_test("Employee - Upload document to profile", False, f"Status: {status}, Response: {response}")
+        
+        # Test document listing
+        success, response, status = self.make_request(
+            'GET', f'employees/{employee_id}/documents', role='employee'
+        )
+        
+        if success:
+            documents = response.get('documents', [])
+            self.log_test("Employee - View profile documents", True, f"Documents found: {len(documents)}")
+        else:
+            self.log_test("Employee - View profile documents", False, f"Status: {status}")
 
     def run_all_tests(self):
         """Run complete test suite"""

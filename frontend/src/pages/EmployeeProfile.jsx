@@ -350,16 +350,12 @@ const EmployeeProfile = () => {
           </CardContent>
         </Card>
 
-        {/* Tabs - Like Odoo */}
+        {/* Tabs - Simplified */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full justify-start bg-muted/50 p-1 h-auto flex-wrap">
             <TabsTrigger value="travail" className="flex items-center gap-2">
               <Briefcase className="h-4 w-4" />
-              Travail
-            </TabsTrigger>
-            <TabsTrigger value="cv" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              CV
+              Informations
             </TabsTrigger>
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -369,13 +365,9 @@ const EmployeeProfile = () => {
               <UserCheck className="h-4 w-4" />
               Comportement
             </TabsTrigger>
-            <TabsTrigger value="objectifs" className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Objectifs
-            </TabsTrigger>
           </TabsList>
 
-          {/* TRAVAIL Tab */}
+          {/* TRAVAIL/INFO Tab */}
           <TabsContent value="travail" className="mt-6">
             <div className="grid gap-6 md:grid-cols-2">
               <Card>

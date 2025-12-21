@@ -496,68 +496,126 @@ const EmployeeProfile = () => {
             </Card>
           </TabsContent>
 
-          {/* Personnel Tab */}
-          <TabsContent value="personnel" className="mt-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Informations personnelles</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground">Prénom</Label>
-                      <p className="font-medium">{employee.first_name}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Nom</Label>
-                      <p className="font-medium">{employee.last_name}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Email</Label>
-                      <p className="font-medium">{employee.email}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Téléphone</Label>
-                      {isEditing && canModify ? (
-                        <Input
-                          value={editData.phone || ''}
-                          onChange={(e) => setEditData({...editData, phone: e.target.value})}
-                        />
-                      ) : (
-                        <p className="font-medium">{employee.phone || '-'}</p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+          {/* Documents Tab */}
+          <TabsContent value="documents" className="mt-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
                   <CardTitle className="text-lg">Documents</CardTitle>
-                  {canModify && (
-                    <Button variant="outline" size="sm">
-                      <Upload className="mr-2 h-4 w-4" />
-                      Importer
+                  <CardDescription>Certificats, CV, pièces d'identité</CardDescription>
+                </div>
+                {(isOwnProfile || canModify) && (
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".pdf,image/jpeg,image/jpg,image/png"
+                      onChange={handleDocumentUpload}
+                      className="hidden"
+                    />
+                    <Button variant="outline" size="sm" asChild>
+                      <span>
+                        {uploading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="mr-2 h-4 w-4" />
+                        )}
+                        Ajouter un document
+                      </span>
                     </Button>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  {documents.length === 0 ? (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Aucun document</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {documents.map((doc) => (
-                        <div key={doc.id} className="flex items-center justify-between p-2 rounded-lg border">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-primary" />
-                            <span className="text-sm">{doc.name}</span>
+                  </label>
+                )}
+              </CardHeader>
+              <CardContent>
+                {documents.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Aucun document</p>
+                    <p className="text-sm mt-2">Formats acceptés : PDF, JPEG, PNG</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {documents.map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded ${doc.type === 'pdf' ? 'bg-red-100' : 'bg-blue-100'}`}>
+                            <FileText className={`h-5 w-5 ${doc.type === 'pdf' ? 'text-red-600' : 'text-blue-600'}`} />
                           </div>
+                          <div>
+                            <p className="font-medium text-sm truncate max-w-[150px]">{doc.name}</p>
+                            <p className="text-xs text-muted-foreground uppercase">{doc.type}</p>
+                          </div>
+                        </div>
+                        <a href={`${API_URL}${doc.url}`} target="_blank" rel="noopener noreferrer">
                           <Button variant="ghost" size="sm">
                             <Download className="h-4 w-4" />
+                          </Button>
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Comportement Tab */}
+          <TabsContent value="comportement" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <UserCheck className="h-5 w-5" />
+                  Historique du comportement
+                </CardTitle>
+                <CardDescription>Notes et observations de la hiérarchie</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {behaviors.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Aucune note de comportement</p>
+                    <p className="text-sm mt-2">Les notes sont ajoutées par l'administration</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {behaviors.map((behavior) => (
+                      <div
+                        key={behavior.id}
+                        className={`p-4 rounded-lg border-l-4 ${
+                          behavior.type === 'positive' ? 'border-l-green-500 bg-green-50 dark:bg-green-900/20' : 'border-l-red-500 bg-red-50 dark:bg-red-900/20'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {behavior.type === 'positive' ? (
+                            <ThumbsUp className="h-5 w-5 text-green-500 mt-0.5" />
+                          ) : (
+                            <ThumbsDown className="h-5 w-5 text-red-500 mt-0.5" />
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <Badge variant={behavior.type === 'positive' ? 'default' : 'destructive'}>
+                                {behavior.type === 'positive' ? 'Positif' : 'Négatif'}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(behavior.date), 'dd MMMM yyyy', { locale: fr })}
+                              </span>
+                            </div>
+                            <p className="text-sm">{behavior.note}</p>
+                            {behavior.created_by_name && (
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Par {behavior.created_by_name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Objectifs Tab */}
                           </Button>
                         </div>
                       ))}

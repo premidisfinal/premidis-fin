@@ -24,6 +24,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const [formData, setFormData] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
@@ -44,6 +45,28 @@ const Settings = () => {
       toast.error('Erreur lors de la mise à jour');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setAvatarLoading(true);
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+    
+    try {
+      const response = await axios.post(`${API_URL}/api/upload/avatar/${user.id}`, formDataUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('Photo de profil mise à jour');
+      // Refresh user data
+      window.location.reload();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'upload');
+    } finally {
+      setAvatarLoading(false);
     }
   };
 

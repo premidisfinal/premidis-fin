@@ -123,6 +123,8 @@ class LeaveRequest(BaseModel):
     start_date: str
     end_date: str
     reason: str
+    employee_id: Optional[str] = None  # For admin/secretary to request for others
+    for_all_employees: bool = False    # For public holidays - apply to all
 
 class LeaveUpdate(BaseModel):
     status: str

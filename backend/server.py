@@ -857,6 +857,130 @@ async def get_categories(current_user: dict = Depends(get_current_user)):
         ]
     }
 
+# ==================== BEHAVIOR TRACKING ROUTES ====================
+@behavior_router.get("")
+async def list_behaviors(current_user: dict = Depends(get_current_user)):
+    """List behavior notes - employees see only their own"""
+    query = {}
+    if current_user["role"] == "employee":
+        query["employee_id"] = current_user["id"]
+    
+    behaviors = await db.behaviors.find(query, {"_id": 0}).sort("date", -1).to_list(500)
+    return {"behaviors": behaviors}
+
+@behavior_router.post("", status_code=status.HTTP_201_CREATED)
+async def create_behavior_note(
+    behavior: BehaviorNote,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Create a behavior note (admin only)"""
+    employee = await db.users.find_one({"id": behavior.employee_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    behavior_doc = {
+        "id": str(uuid.uuid4()),
+        "employee_id": behavior.employee_id,
+        "employee_name": f"{employee['first_name']} {employee['last_name']}",
+        "type": behavior.type,
+        "note": behavior.note,
+        "date": behavior.date,
+        "created_by": current_user["id"],
+        "created_by_name": f"{current_user['first_name']} {current_user['last_name']}",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.behaviors.insert_one(behavior_doc)
+    behavior_doc.pop("_id", None)
+    return behavior_doc
+
+@behavior_router.get("/{employee_id}")
+async def get_employee_behaviors(
+    employee_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get behavior history for an employee"""
+    # Employees can only see their own
+    if current_user["role"] == "employee" and current_user["id"] != employee_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    behaviors = await db.behaviors.find(
+        {"employee_id": employee_id}, 
+        {"_id": 0}
+    ).sort("date", -1).to_list(100)
+    return {"behaviors": behaviors}
+
+# ==================== DOCUMENT UPLOAD ROUTES ====================
+@employees_router.post("/{employee_id}/documents")
+async def upload_document(
+    employee_id: str,
+    document: DocumentUpload,
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a document to employee profile"""
+    # Only employee can upload to their own profile, or admin/secretary
+    if current_user["role"] == "employee" and current_user["id"] != employee_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    doc = {
+        "id": str(uuid.uuid4()),
+        "employee_id": employee_id,
+        "name": document.name,
+        "type": document.type,
+        "url": document.url,
+        "uploaded_by": current_user["id"],
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.documents.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@employees_router.get("/{employee_id}/documents")
+async def get_employee_documents(
+    employee_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get documents for an employee"""
+    # Employees can only see their own documents
+    if current_user["role"] == "employee" and current_user["id"] != employee_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    documents = await db.documents.find({"employee_id": employee_id}, {"_id": 0}).to_list(100)
+    return {"documents": documents}
+
+# ==================== SALARY ROUTES (Admin calculate, Employee view own) ====================
+@employees_router.get("/{employee_id}/salary")
+async def get_employee_salary(
+    employee_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get salary - employee can only see their own"""
+    if current_user["role"] == "employee" and current_user["id"] != employee_id:
+        raise HTTPException(status_code=403, detail="Accès refusé - Vous ne pouvez voir que votre propre salaire")
+    
+    employee = await db.users.find_one({"id": employee_id}, {"_id": 0, "password": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    return {
+        "employee_id": employee_id,
+        "employee_name": f"{employee['first_name']} {employee['last_name']}",
+        "salary": employee.get("salary", 0),
+        "category": employee.get("category", "agent")
+    }
+
+@employees_router.put("/{employee_id}/salary")
+async def update_employee_salary(
+    employee_id: str,
+    salary: float,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Update salary (admin only)"""
+    await db.users.update_one(
+        {"id": employee_id},
+        {"$set": {"salary": salary, "salary_updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Salaire mis à jour", "salary": salary}
+
 # ==================== DASHBOARD STATS ====================
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):

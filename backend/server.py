@@ -325,6 +325,33 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password": 0})
     return user
 
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+@auth_router.put("/change-password")
+async def change_password(
+    password_data: PasswordChange,
+    current_user: dict = Depends(get_current_user)
+):
+    """Change user password"""
+    user = await db.users.find_one({"id": current_user["id"]})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Verify current password
+    if not verify_password(password_data.current_password, user["password"]):
+        raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect")
+    
+    # Hash and update new password
+    hashed_password = get_password_hash(password_data.new_password)
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"password": hashed_password}}
+    )
+    
+    return {"message": "Mot de passe modifié avec succès"}
+
 # ==================== EMPLOYEES ROUTES ====================
 @employees_router.get("")
 async def list_employees(

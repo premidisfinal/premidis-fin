@@ -141,14 +141,92 @@ const Administration = () => {
       first_name: '',
       last_name: '',
       email: '',
+      password: 'Temp123!',
       phone: '',
       department: 'administration',
       position: '',
       hire_date: '',
       salary: '',
+      role: 'employee',
+      category: 'agent',
       contract_type: 'CDI',
       country: 'RDC'
     });
+  };
+
+  // Export employees to CSV
+  const handleExport = () => {
+    const headers = ['Prénom', 'Nom', 'Email', 'Téléphone', 'Département', 'Poste', 'Date embauche', 'Statut'];
+    const csv = [
+      headers.join(','),
+      ...filteredEmployees.map(emp => [
+        emp.first_name,
+        emp.last_name,
+        emp.email,
+        emp.phone || '',
+        emp.department,
+        emp.position || '',
+        emp.hire_date || '',
+        emp.is_active ? 'Actif' : 'Inactif'
+      ].map(val => `"${val}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `employes_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success('Export réussi');
+  };
+
+  // Import employees from CSV
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').slice(1); // Skip header
+      let imported = 0;
+      
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const parts = line.split(',').map(p => p.replace(/"/g, '').trim());
+        const [firstName, lastName, email, phone, department, position, hireDate] = parts;
+        
+        if (firstName && lastName && email) {
+          try {
+            await axios.post(`${API_URL}/api/employees`, {
+              first_name: firstName,
+              last_name: lastName,
+              email: email,
+              password: 'Import123!',
+              phone: phone || '',
+              department: department || 'administration',
+              position: position || '',
+              hire_date: hireDate || '',
+              role: 'employee',
+              category: 'agent'
+            });
+            imported++;
+          } catch (err) {
+            console.error('Failed to import:', email, err);
+          }
+        }
+      }
+      
+      toast.success(`${imported} employé(s) importé(s)`);
+      fetchEmployees();
+    } catch (error) {
+      toast.error('Erreur lors de l\'import');
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const filteredEmployees = employees.filter(emp => 

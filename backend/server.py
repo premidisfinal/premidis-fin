@@ -1291,6 +1291,64 @@ async def delete_announcement(
         raise HTTPException(status_code=404, detail="Annonce non trouvée")
     return {"message": "Annonce supprimée"}
 
+# ==================== LIVE CHAT ROUTES ====================
+class ChatMessage(BaseModel):
+    content: str
+    recipient_id: Optional[str] = None  # None means broadcast to all
+
+@communication_router.get("/chat/messages")
+async def get_chat_messages(
+    recipient_id: Optional[str] = None,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get chat messages - either broadcast or direct messages"""
+    query = {}
+    
+    if recipient_id:
+        # Direct messages between two users
+        query = {
+            "$or": [
+                {"sender_id": current_user["id"], "recipient_id": recipient_id},
+                {"sender_id": recipient_id, "recipient_id": current_user["id"]}
+            ]
+        }
+    else:
+        # Broadcast messages (recipient_id is None or "all")
+        query = {"$or": [{"recipient_id": None}, {"recipient_id": "all"}]}
+    
+    messages = await db.chat_messages.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    messages.reverse()  # Show oldest first
+    return {"messages": messages}
+
+@communication_router.post("/chat/messages", status_code=status.HTTP_201_CREATED)
+async def send_chat_message(
+    message: ChatMessage,
+    current_user: dict = Depends(get_current_user)
+):
+    """Send a chat message"""
+    chat_msg = {
+        "id": str(uuid.uuid4()),
+        "sender_id": current_user["id"],
+        "sender_name": f"{current_user['first_name']} {current_user['last_name']}",
+        "sender_avatar": current_user.get("avatar_url"),
+        "content": message.content,
+        "recipient_id": message.recipient_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.chat_messages.insert_one(chat_msg)
+    chat_msg.pop("_id", None)
+    return chat_msg
+
+@communication_router.get("/chat/users")
+async def get_chat_users(current_user: dict = Depends(get_current_user)):
+    """Get list of users for chat"""
+    users = await db.users.find(
+        {"is_active": True, "id": {"$ne": current_user["id"]}},
+        {"_id": 0, "id": 1, "first_name": 1, "last_name": 1, "avatar_url": 1, "role": 1, "department": 1}
+    ).to_list(100)
+    return {"users": users}
+
 # ==================== FILE UPLOAD ROUTES ====================
 from fastapi import UploadFile, File
 import base64

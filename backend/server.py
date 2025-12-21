@@ -46,12 +46,11 @@ class LeaveStatus(str, Enum):
     REJECTED = "rejected"
 
 class LeaveType(str, Enum):
-    ANNUAL = "annual"           # Congé annuel (ex: 26 jours)
-    SICK = "sick"               # Congé maladie (ex: 2 jours)
-    EXCEPTIONAL = "exceptional" # Autorisation exceptionnelle (ex: 15 jours)
-    MATERNITY = "maternity"     # Congé maternité (3 mois = 90 jours)
-    PUBLIC = "public"           # Jours fériés (configurable)
-    PATERNITY = "paternity"     # Congé paternité
+    ANNUAL = "annual"           # Congé annuel
+    SICK = "sick"               # Congé maladie
+    EXCEPTIONAL = "exceptional" # Autorisation exceptionnelle
+    MATERNITY = "maternity"     # Congé maternité
+    PUBLIC = "public"           # Jours fériés
 
 class EmployeeCategory(str, Enum):
     CADRE = "cadre"

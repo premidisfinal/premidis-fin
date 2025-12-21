@@ -563,22 +563,69 @@ async def create_leave_request(
     # Calculate working days
     working_days = calculate_working_days(leave.start_date, leave.end_date)
     
-    # Check leave balance
-    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
-    leave_balance = user.get("leave_balance", {})
-    leave_taken = user.get("leave_taken", {})
+    # Admin/Secretary can create for others or for all employees (holidays)
+    can_create_for_others = current_user["role"] in ["admin", "secretary"]
     
-    available = leave_balance.get(leave.leave_type, 0) - leave_taken.get(leave.leave_type, 0)
+    # For public holidays - create for all employees
+    if leave.for_all_employees and leave.leave_type == "public" and can_create_for_others:
+        all_employees = await db.users.find({"is_active": True}, {"_id": 0}).to_list(500)
+        created_leaves = []
+        
+        for emp in all_employees:
+            leave_id = str(uuid.uuid4())
+            leave_doc = {
+                "id": leave_id,
+                "employee_id": emp["id"],
+                "employee_name": f"{emp['first_name']} {emp['last_name']}",
+                "department": emp.get("department", ""),
+                "leave_type": leave.leave_type,
+                "start_date": leave.start_date,
+                "end_date": leave.end_date,
+                "working_days": working_days,
+                "reason": leave.reason,
+                "status": "approved",  # Auto-approved for holidays
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": current_user["id"],
+                "admin_comment": "Jour férié - appliqué à tous",
+                "approved_by": current_user["id"],
+                "approved_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.leaves.insert_one(leave_doc)
+            leave_doc.pop("_id", None)
+            created_leaves.append(leave_doc)
+        
+        return {"message": f"Jour férié créé pour {len(created_leaves)} employés", "count": len(created_leaves)}
     
-    if working_days > available and leave.leave_type != "public":
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Solde insuffisant. Disponible: {available} jours, Demandé: {working_days} jours"
-        )
+    # Determine target employee
+    if leave.employee_id and can_create_for_others:
+        target_employee = await db.users.find_one({"id": leave.employee_id}, {"_id": 0})
+        if not target_employee:
+            raise HTTPException(status_code=404, detail="Employé non trouvé")
+        target_id = leave.employee_id
+        target_name = f"{target_employee['first_name']} {target_employee['last_name']}"
+        target_dept = target_employee.get("department", "")
+        user_for_balance = target_employee
+    else:
+        target_id = current_user["id"]
+        target_name = f"{current_user['first_name']} {current_user['last_name']}"
+        target_dept = current_user.get("department", "")
+        user_for_balance = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+    
+    # Check leave balance (skip for public holidays)
+    if leave.leave_type != "public":
+        leave_balance = user_for_balance.get("leave_balance", {})
+        leave_taken = user_for_balance.get("leave_taken", {})
+        available = leave_balance.get(leave.leave_type, 0) - leave_taken.get(leave.leave_type, 0)
+        
+        if working_days > available:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Solde insuffisant. Disponible: {available} jours, Demandé: {working_days} jours"
+            )
     
     # Check for overlapping leaves
     existing = await db.leaves.find_one({
-        "employee_id": current_user["id"],
+        "employee_id": target_id,
         "status": {"$ne": "rejected"},
         "$or": [
             {"start_date": {"$lte": leave.end_date}, "end_date": {"$gte": leave.start_date}}
@@ -591,9 +638,9 @@ async def create_leave_request(
     leave_id = str(uuid.uuid4())
     leave_doc = {
         "id": leave_id,
-        "employee_id": current_user["id"],
-        "employee_name": f"{current_user['first_name']} {current_user['last_name']}",
-        "department": current_user.get("department", ""),
+        "employee_id": target_id,
+        "employee_name": target_name,
+        "department": target_dept,
         "leave_type": leave.leave_type,
         "start_date": leave.start_date,
         "end_date": leave.end_date,
@@ -601,6 +648,7 @@ async def create_leave_request(
         "reason": leave.reason,
         "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"] if leave.employee_id else None,
         "admin_comment": None,
         "approved_by": None,
         "approved_at": None

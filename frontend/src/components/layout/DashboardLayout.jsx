@@ -47,8 +47,8 @@ const DashboardLayout = ({ children }) => {
     { path: '/communication', icon: MessageSquare, label: 'communication' },
     { path: '/administration', icon: Users, label: 'Gestion Personnel', canManage: true },
     { path: '/time-management', icon: Clock, label: 'Congés' },
-    { path: '/performance', icon: TrendingUp, label: 'Performances' },
     { path: '/behavior', icon: UserCheck, label: 'Comportement' },
+    { path: '/pending-approvals', icon: UserPlus, label: 'Demandes en attente', adminOnly: true },
     { path: '/permissions', icon: Shield, label: 'Permissions', adminOnly: true },
     { path: '/my-profile', icon: User, label: 'Mon Dossier', employeeOnly: true },
   ];

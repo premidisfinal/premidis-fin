@@ -72,14 +72,6 @@ const Dashboard = () => {
       metricLabel: 'en attente'
     },
     {
-      title: 'Performances',
-      icon: TrendingUp,
-      description: isAdmin() ? 'Performance entreprise' : 'Performance individuelle et département',
-      link: '/performance',
-      color: 'primary',
-      adminOnly: false
-    },
-    {
       title: 'Comportement',
       icon: UserCheck,
       description: isAdmin() ? 'Suivi du comportement des employés' : 'Mon historique de comportement',

@@ -869,11 +869,21 @@ async def create_leave_request(
     # Calculate working days
     working_days = calculate_working_days(leave.start_date, leave.end_date)
     
-    # Admin/Secretary can create for others or for all employees (holidays)
+    # Get leave type configuration to check minimum days
+    leave_type_config = await db.leave_types.find_one({"code": leave.leave_type}, {"_id": 0})
+    if leave_type_config:
+        min_days = leave_type_config.get("min_days", 1)
+        if working_days < min_days:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Le type de congé '{leave_type_config['name']}' requiert au minimum {min_days} jours"
+            )
+    
+    # Admin/Secretary can create for others or for all employees
     can_create_for_others = current_user["role"] in ["admin", "secretary"]
     
-    # For public holidays - create for all employees
-    if leave.for_all_employees and leave.leave_type == "public" and can_create_for_others:
+    # For collective leaves - create for all employees
+    if leave.for_all_employees and can_create_for_others:
         all_employees = await db.users.find({"is_active": True}, {"_id": 0}).to_list(500)
         created_leaves = []
         
@@ -884,15 +894,17 @@ async def create_leave_request(
                 "employee_id": emp["id"],
                 "employee_name": f"{emp['first_name']} {emp['last_name']}",
                 "department": emp.get("department", ""),
-                "leave_type": leave.leave_type,
+                "position": emp.get("position", ""),
+                "leave_type": leave.leave_type or "collective",
                 "start_date": leave.start_date,
                 "end_date": leave.end_date,
                 "working_days": working_days,
                 "reason": leave.reason,
-                "status": "approved",  # Auto-approved for holidays
+                "status": "approved",  # Auto-approved for collective
+                "is_collective": True,
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "created_by": current_user["id"],
-                "admin_comment": "Jour férié - appliqué à tous",
+                "admin_comment": "Congé collectif - appliqué à tous les employés",
                 "approved_by": current_user["id"],
                 "approved_at": datetime.now(timezone.utc).isoformat()
             }
@@ -900,7 +912,7 @@ async def create_leave_request(
             leave_doc.pop("_id", None)
             created_leaves.append(leave_doc)
         
-        return {"message": f"Jour férié créé pour {len(created_leaves)} employés", "count": len(created_leaves)}
+        return {"message": f"Congé collectif créé pour {len(created_leaves)} employés", "count": len(created_leaves)}
     
     # Determine target employee
     if leave.employee_id and can_create_for_others:
@@ -910,15 +922,19 @@ async def create_leave_request(
         target_id = leave.employee_id
         target_name = f"{target_employee['first_name']} {target_employee['last_name']}"
         target_dept = target_employee.get("department", "")
+        target_position = target_employee.get("position", "")
+        target_role = target_employee.get("role", "employee")
         user_for_balance = target_employee
     else:
         target_id = current_user["id"]
         target_name = f"{current_user['first_name']} {current_user['last_name']}"
         target_dept = current_user.get("department", "")
+        target_position = current_user.get("position", "")
+        target_role = current_user.get("role", "employee")
         user_for_balance = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
     
-    # Check leave balance (skip for public holidays)
-    if leave.leave_type != "public":
+    # Check leave balance (skip for collective/public holidays)
+    if leave.leave_type not in ["public", "collective"]:
         leave_balance = user_for_balance.get("leave_balance", {})
         leave_taken = user_for_balance.get("leave_taken", {})
         available = leave_balance.get(leave.leave_type, 0) - leave_taken.get(leave.leave_type, 0)
@@ -929,7 +945,7 @@ async def create_leave_request(
                 detail=f"Solde insuffisant. Disponible: {available} jours, Demandé: {working_days} jours"
             )
     
-    # Check for overlapping leaves
+    # Check for overlapping leaves for this employee
     existing = await db.leaves.find_one({
         "employee_id": target_id,
         "status": {"$ne": "rejected"},
@@ -941,12 +957,59 @@ async def create_leave_request(
     if existing:
         raise HTTPException(status_code=400, detail="Chevauchement avec une demande existante")
     
+    # Check for overlapping leaves for KEY POSITIONS (admin, secretary)
+    key_positions = ["admin", "secretary"]
+    overlap_warnings = []
+    
+    if target_role in key_positions:
+        # Find other employees with same role who have approved leaves during this period
+        overlapping_key_leaves = await db.leaves.find({
+            "employee_id": {"$ne": target_id},
+            "status": {"$in": ["approved", "pending"]},
+            "$or": [
+                {"start_date": {"$lte": leave.end_date}, "end_date": {"$gte": leave.start_date}}
+            ]
+        }, {"_id": 0}).to_list(100)
+        
+        for ol in overlapping_key_leaves:
+            emp = await db.users.find_one({"id": ol["employee_id"]}, {"_id": 0})
+            if emp and emp.get("role") in key_positions:
+                overlap_warnings.append({
+                    "type": "key_position",
+                    "employee_name": ol["employee_name"],
+                    "role": emp.get("role"),
+                    "dates": f"{ol['start_date']} - {ol['end_date']}"
+                })
+    
+    # Check for overlapping leaves in same department/position
+    dept_overlaps = await db.leaves.find({
+        "employee_id": {"$ne": target_id},
+        "department": target_dept,
+        "status": {"$in": ["approved", "pending"]},
+        "$or": [
+            {"start_date": {"$lte": leave.end_date}, "end_date": {"$gte": leave.start_date}}
+        ]
+    }, {"_id": 0}).to_list(100)
+    
+    for do in dept_overlaps:
+        overlap_warnings.append({
+            "type": "department",
+            "employee_name": do["employee_name"],
+            "department": target_dept,
+            "dates": f"{do['start_date']} - {do['end_date']}"
+        })
+    
+    # Create notification for admin if there are overlaps
+    if overlap_warnings:
+        await create_overlap_notification(target_name, target_dept, leave.start_date, leave.end_date, overlap_warnings)
+    
     leave_id = str(uuid.uuid4())
     leave_doc = {
         "id": leave_id,
         "employee_id": target_id,
         "employee_name": target_name,
         "department": target_dept,
+        "position": target_position,
         "leave_type": leave.leave_type,
         "start_date": leave.start_date,
         "end_date": leave.end_date,
@@ -957,12 +1020,72 @@ async def create_leave_request(
         "created_by": current_user["id"] if leave.employee_id else None,
         "admin_comment": None,
         "approved_by": None,
-        "approved_at": None
+        "approved_at": None,
+        "has_overlap_warning": len(overlap_warnings) > 0,
+        "overlap_warnings": overlap_warnings
     }
     
     await db.leaves.insert_one(leave_doc)
     leave_doc.pop("_id", None)
     return leave_doc
+
+async def create_overlap_notification(employee_name: str, department: str, start_date: str, end_date: str, overlaps: list):
+    """Create notification and send email for leave overlaps"""
+    # Create in-app notification for all admins
+    admins = await db.users.find({"role": {"$in": ["admin", "super_admin"]}, "is_active": True}, {"_id": 0}).to_list(50)
+    
+    overlap_details = "\n".join([f"- {o['employee_name']} ({o.get('department', o.get('role', ''))}): {o['dates']}" for o in overlaps])
+    
+    for admin in admins:
+        notification = {
+            "id": str(uuid.uuid4()),
+            "user_id": admin["id"],
+            "type": "leave_overlap",
+            "title": "⚠️ Chevauchement de congés détecté",
+            "message": f"{employee_name} ({department}) demande un congé du {start_date} au {end_date}.\n\nChevauchements:\n{overlap_details}",
+            "read": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.notifications.insert_one(notification)
+    
+    # Send email notification
+    settings = await db.system_settings.find_one({"type": "notifications"}, {"_id": 0})
+    admin_email = settings.get("admin_notification_email", "bahizifranck0@gmail.com") if settings else "bahizifranck0@gmail.com"
+    
+    resend_api_key = os.environ.get('RESEND_API_KEY', '')
+    sender_email = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+    
+    if resend_api_key:
+        try:
+            import resend
+            resend.api_key = resend_api_key
+            
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #F59E0B;">⚠️ Chevauchement de congés détecté</h2>
+                <p><strong>{employee_name}</strong> du département <strong>{department}</strong> a demandé un congé:</p>
+                <p><strong>Période:</strong> {start_date} au {end_date}</p>
+                <h3 style="color: #EF4444;">Chevauchements détectés:</h3>
+                <ul>
+                    {''.join([f'<li><strong>{o["employee_name"]}</strong> - {o.get("department", o.get("role", ""))}: {o["dates"]}</li>' for o in overlaps])}
+                </ul>
+                <p>Veuillez vérifier et gérer cette demande dans la plateforme.</p>
+                <hr style="margin-top: 30px; border: none; border-top: 1px solid #eee;">
+                <p style="color: #666; font-size: 12px;">PREMIDIS SARL - Plateforme RH</p>
+            </div>
+            """
+            
+            params = {
+                "from": sender_email,
+                "to": [admin_email],
+                "subject": f"⚠️ Chevauchement de congés: {employee_name}",
+                "html": html_content
+            }
+            
+            await asyncio.to_thread(resend.Emails.send, params)
+            logging.info(f"Leave overlap notification sent to {admin_email}")
+        except Exception as e:
+            logging.error(f"Failed to send overlap notification: {str(e)}")
 
 @leaves_router.get("/balance")
 async def get_leave_balance(current_user: dict = Depends(get_current_user)):

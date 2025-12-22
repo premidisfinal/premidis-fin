@@ -1315,6 +1315,121 @@ async def create_attendance_manual(
     return attendance_doc
 
 # ==================== CONFIG ROUTES (Admin Only) ====================
+
+# System settings endpoints
+class SystemSettings(BaseModel):
+    admin_notification_email: str = "bahizifranck0@gmail.com"
+
+@config_router.get("/system-settings")
+async def get_system_settings(current_user: dict = Depends(require_roles(["admin", "super_admin"]))):
+    """Get system settings"""
+    settings = await db.system_settings.find_one({"type": "notifications"}, {"_id": 0})
+    if not settings:
+        settings = {
+            "type": "notifications",
+            "admin_notification_email": "bahizifranck0@gmail.com"
+        }
+        await db.system_settings.insert_one(settings)
+    return settings
+
+@config_router.put("/system-settings")
+async def update_system_settings(
+    settings: SystemSettings,
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Update system settings"""
+    settings_doc = {
+        "type": "notifications",
+        "admin_notification_email": settings.admin_notification_email,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"]
+    }
+    
+    await db.system_settings.update_one(
+        {"type": "notifications"},
+        {"$set": settings_doc},
+        upsert=True
+    )
+    return settings_doc
+
+# Leave types configuration
+class LeaveTypeConfig(BaseModel):
+    id: Optional[str] = None
+    name: str
+    code: str
+    min_days: int = 1
+    max_days: int = 30
+    default_balance: int = 0
+    requires_approval: bool = True
+    is_active: bool = True
+    color: str = "#4F46E5"
+
+@config_router.get("/leave-types")
+async def get_leave_types(current_user: dict = Depends(get_current_user)):
+    """Get all configured leave types"""
+    leave_types = await db.leave_types.find({"is_active": True}, {"_id": 0}).to_list(50)
+    
+    # If no custom types exist, return defaults
+    if not leave_types:
+        default_types = [
+            {"id": "annual", "name": "Congé annuel", "code": "annual", "min_days": 1, "max_days": 30, "default_balance": 26, "requires_approval": True, "is_active": True, "color": "#4F46E5"},
+            {"id": "sick", "name": "Congé maladie", "code": "sick", "min_days": 2, "max_days": 30, "default_balance": 2, "requires_approval": True, "is_active": True, "color": "#EF4444"},
+            {"id": "maternity", "name": "Congé maternité", "code": "maternity", "min_days": 90, "max_days": 120, "default_balance": 90, "requires_approval": True, "is_active": True, "color": "#EC4899"},
+            {"id": "paternity", "name": "Congé paternité", "code": "paternity", "min_days": 10, "max_days": 15, "default_balance": 10, "requires_approval": True, "is_active": True, "color": "#3B82F6"},
+            {"id": "exceptional", "name": "Congé exceptionnel", "code": "exceptional", "min_days": 1, "max_days": 15, "default_balance": 15, "requires_approval": True, "is_active": True, "color": "#F59E0B"},
+            {"id": "collective", "name": "Congé collectif (tous)", "code": "collective", "min_days": 1, "max_days": 30, "default_balance": 0, "requires_approval": False, "is_active": True, "color": "#10B981"}
+        ]
+        # Insert default types
+        for lt in default_types:
+            await db.leave_types.insert_one(lt)
+        leave_types = default_types
+    
+    return {"leave_types": leave_types}
+
+@config_router.post("/leave-types")
+async def create_leave_type(
+    leave_type: LeaveTypeConfig,
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Create a new leave type"""
+    leave_type_doc = leave_type.model_dump()
+    leave_type_doc["id"] = str(uuid.uuid4())
+    leave_type_doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    leave_type_doc["created_by"] = current_user["id"]
+    
+    await db.leave_types.insert_one(leave_type_doc)
+    leave_type_doc.pop("_id", None)
+    return leave_type_doc
+
+@config_router.put("/leave-types/{leave_type_id}")
+async def update_leave_type(
+    leave_type_id: str,
+    leave_type: LeaveTypeConfig,
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Update a leave type"""
+    update_data = leave_type.model_dump()
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_by"] = current_user["id"]
+    
+    await db.leave_types.update_one(
+        {"id": leave_type_id},
+        {"$set": update_data}
+    )
+    return {"message": "Type de congé mis à jour"}
+
+@config_router.delete("/leave-types/{leave_type_id}")
+async def delete_leave_type(
+    leave_type_id: str,
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Deactivate a leave type"""
+    await db.leave_types.update_one(
+        {"id": leave_type_id},
+        {"$set": {"is_active": False}}
+    )
+    return {"message": "Type de congé désactivé"}
+
 @config_router.get("/leave-rules")
 async def get_leave_rules(current_user: dict = Depends(require_roles(["admin"]))):
     rules = await db.leave_rules.find_one({"type": "default"}, {"_id": 0})

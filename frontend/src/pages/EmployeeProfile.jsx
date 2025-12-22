@@ -95,14 +95,6 @@ const EmployeeProfile = () => {
         setPayslips([]);
       }
 
-      // Fetch objectives/evaluations
-      try {
-        const evalResponse = await axios.get(`${API_URL}/api/performance`);
-        setObjectives(evalResponse.data.evaluations || []);
-      } catch {
-        setObjectives([]);
-      }
-
       // Fetch documents
       try {
         const docsResponse = await axios.get(`${API_URL}/api/employees/${employeeId}/documents`);

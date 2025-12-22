@@ -1600,8 +1600,7 @@ DEFAULT_PERMISSIONS = {
         "can_view_salaries": True,
         "can_edit_salaries": True,
         "can_delete_employees": True,
-        "can_manage_permissions": True,
-        "can_view_all_performance": True
+        "can_manage_permissions": True
     },
     "secretary": {
         "can_manage_employees": True,
@@ -1611,8 +1610,7 @@ DEFAULT_PERMISSIONS = {
         "can_view_salaries": False,
         "can_edit_salaries": False,
         "can_delete_employees": False,
-        "can_manage_permissions": False,
-        "can_view_all_performance": False
+        "can_manage_permissions": False
     },
     "employee": {
         "can_manage_employees": False,
@@ -1622,8 +1620,7 @@ DEFAULT_PERMISSIONS = {
         "can_view_salaries": False,
         "can_edit_salaries": False,
         "can_delete_employees": False,
-        "can_manage_permissions": False,
-        "can_view_all_performance": False
+        "can_manage_permissions": False
     }
 }
 

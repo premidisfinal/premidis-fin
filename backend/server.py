@@ -243,7 +243,14 @@ communication_router = APIRouter(prefix="/communication", tags=["Communication"]
 upload_router = APIRouter(prefix="/upload", tags=["Upload"])
 
 # ==================== AUTH ROUTES ====================
-@auth_router.post("/register", response_model=TokenResponse)
+
+# Registration status for roles requiring approval
+class RegistrationStatus:
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+@auth_router.post("/register")
 async def register(user_data: UserCreate):
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
@@ -256,6 +263,10 @@ async def register(user_data: UserCreate):
     leave_rules = await db.leave_rules.find_one({"type": "default"}, {"_id": 0})
     if not leave_rules:
         leave_rules = LeaveRuleConfig().model_dump()
+    
+    # Determine if role needs approval
+    sensitive_roles = ["admin", "secretary", "super_admin"]
+    needs_approval = user_data.role in sensitive_roles
     
     user_doc = {
         "id": user_id,
@@ -270,11 +281,12 @@ async def register(user_data: UserCreate):
         "phone": user_data.phone,
         "hire_date": user_data.hire_date,
         "salary": user_data.salary,
+        "salary_currency": user_data.salary_currency,
         "birth_date": None,
-        "is_active": True,
+        "is_active": not needs_approval,  # Employees active immediately, others need approval
+        "registration_status": RegistrationStatus.PENDING if needs_approval else RegistrationStatus.APPROVED,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "avatar_url": None,
-        # Leave balances based on rules
         "leave_balance": {
             "annual": leave_rules.get("annual_days", 26),
             "sick": leave_rules.get("sick_days", 2),
@@ -293,6 +305,16 @@ async def register(user_data: UserCreate):
     
     await db.users.insert_one(user_doc)
     
+    # If role needs approval, send notification email to admin
+    if needs_approval:
+        await send_registration_approval_notification(user_doc)
+        return {
+            "message": "Inscription soumise avec succès. Votre compte est en attente d'approbation par un administrateur.",
+            "status": "pending_approval",
+            "user_id": user_id
+        }
+    
+    # For employees, return token immediately
     access_token = create_access_token(data={"sub": user_id, "role": user_data.role})
     
     user_response = UserResponse(
@@ -309,6 +331,132 @@ async def register(user_data: UserCreate):
     )
     
     return TokenResponse(access_token=access_token, user=user_response)
+
+async def send_registration_approval_notification(user: dict):
+    """Send email notification to admin for new registration requiring approval"""
+    # Get admin notification email from settings
+    settings = await db.system_settings.find_one({"type": "notifications"}, {"_id": 0})
+    admin_email = settings.get("admin_notification_email", "bahizifranck0@gmail.com") if settings else "bahizifranck0@gmail.com"
+    
+    resend_api_key = os.environ.get('RESEND_API_KEY', '')
+    sender_email = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://hrportal-39.preview.emergentagent.com')
+    
+    if resend_api_key:
+        try:
+            import resend
+            resend.api_key = resend_api_key
+            
+            role_labels = {
+                "admin": "Administrateur",
+                "secretary": "Secrétaire",
+                "super_admin": "Super Administrateur"
+            }
+            
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #4F46E5;">Nouvelle demande d'inscription - PREMIDIS</h2>
+                <p>Une nouvelle demande d'inscription nécessite votre approbation :</p>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Nom :</strong> {user['first_name']} {user['last_name']}</p>
+                    <p><strong>Email :</strong> {user['email']}</p>
+                    <p><strong>Rôle demandé :</strong> {role_labels.get(user['role'], user['role'])}</p>
+                    <p><strong>Département :</strong> {user.get('department', 'Non spécifié')}</p>
+                </div>
+                <p style="margin: 30px 0;">
+                    <a href="{frontend_url}/pending-approvals" 
+                       style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                        Gérer les demandes
+                    </a>
+                </p>
+                <hr style="margin-top: 30px; border: none; border-top: 1px solid #eee;">
+                <p style="color: #666; font-size: 12px;">PREMIDIS SARL - Plateforme RH</p>
+            </div>
+            """
+            
+            params = {
+                "from": sender_email,
+                "to": [admin_email],
+                "subject": f"Nouvelle demande d'inscription: {user['first_name']} {user['last_name']} ({role_labels.get(user['role'], user['role'])})",
+                "html": html_content
+            }
+            
+            await asyncio.to_thread(resend.Emails.send, params)
+            logging.info(f"Registration approval notification sent to {admin_email}")
+        except Exception as e:
+            logging.error(f"Failed to send registration notification: {str(e)}")
+
+# Pending registrations endpoints
+@auth_router.get("/pending-registrations")
+async def get_pending_registrations(current_user: dict = Depends(require_roles(["admin", "super_admin"]))):
+    """Get all pending registration requests"""
+    pending = await db.users.find(
+        {"registration_status": RegistrationStatus.PENDING},
+        {"_id": 0, "password": 0}
+    ).to_list(100)
+    return {"pending_registrations": pending}
+
+@auth_router.post("/approve-registration/{user_id}")
+async def approve_registration(
+    user_id: str,
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Approve a pending registration"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    if user.get("registration_status") != RegistrationStatus.PENDING:
+        raise HTTPException(status_code=400, detail="Cette demande a déjà été traitée")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "is_active": True,
+            "registration_status": RegistrationStatus.APPROVED,
+            "approved_by": current_user["id"],
+            "approved_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Create notification for the user
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": "registration_approved",
+        "title": "Inscription approuvée",
+        "message": "Votre demande d'inscription a été approuvée. Vous pouvez maintenant vous connecter.",
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {"message": "Inscription approuvée avec succès"}
+
+@auth_router.post("/reject-registration/{user_id}")
+async def reject_registration(
+    user_id: str,
+    reason: str = "",
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Reject a pending registration"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    if user.get("registration_status") != RegistrationStatus.PENDING:
+        raise HTTPException(status_code=400, detail="Cette demande a déjà été traitée")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "registration_status": RegistrationStatus.REJECTED,
+            "rejected_by": current_user["id"],
+            "rejected_at": datetime.now(timezone.utc).isoformat(),
+            "rejection_reason": reason
+        }}
+    )
+    
+    return {"message": "Inscription rejetée"}
 
 @auth_router.post("/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):

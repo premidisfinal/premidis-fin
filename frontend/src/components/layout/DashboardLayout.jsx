@@ -18,7 +18,6 @@ import {
   MessageSquare,
   Users,
   Clock,
-  TrendingUp,
   Settings,
   LogOut,
   Menu,
@@ -28,7 +27,9 @@ import {
   UserCheck,
   Moon,
   Sun,
-  Shield
+  Shield,
+  UserPlus,
+  Bell
 } from 'lucide-react';
 import NotificationCenter from '../NotificationCenter';
 import Logo from '../Logo';

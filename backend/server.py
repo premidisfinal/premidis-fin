@@ -464,6 +464,13 @@ async def login(credentials: UserLogin):
     if not user or not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Identifiants invalides")
     
+    # Check registration status for sensitive roles
+    if user.get("registration_status") == RegistrationStatus.PENDING:
+        raise HTTPException(status_code=403, detail="Votre compte est en attente d'approbation par un administrateur")
+    
+    if user.get("registration_status") == RegistrationStatus.REJECTED:
+        raise HTTPException(status_code=403, detail="Votre demande d'inscription a été rejetée")
+    
     if not user.get("is_active", True):
         raise HTTPException(status_code=403, detail="Compte désactivé")
     

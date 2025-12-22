@@ -8,7 +8,10 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Loader2, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Eye, EyeOff, Shield, CheckCircle } from 'lucide-react';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Register = () => {
   const { register } = useAuth();
@@ -21,11 +24,13 @@ const Register = () => {
     confirmPassword: '',
     first_name: '',
     last_name: '',
-    department: 'administration'
+    department: 'administration',
+    role: 'employee'
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   const departments = [
     { value: 'marketing', label: 'Marketing' },
@@ -37,6 +42,12 @@ const Register = () => {
     { value: 'securite', label: 'Sécurité' },
     { value: 'chauffeur', label: 'Chauffeur' },
     { value: 'technicien', label: 'Technicien' }
+  ];
+
+  const roles = [
+    { value: 'employee', label: 'Employé', description: 'Accès standard à votre dossier', needsApproval: false },
+    { value: 'secretary', label: 'Secrétaire', description: 'Gestion du personnel et des congés', needsApproval: true },
+    { value: 'admin', label: 'Administrateur', description: 'Accès complet à toutes les fonctionnalités', needsApproval: true }
   ];
 
   const handleChange = (e) => {
@@ -60,21 +71,82 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await register({
+      const response = await axios.post(`${API_URL}/api/auth/register`, {
         email: formData.email,
         password: formData.password,
         first_name: formData.first_name,
         last_name: formData.last_name,
         department: formData.department,
-        role: 'employee'
+        role: formData.role
       });
-      navigate('/dashboard');
+
+      // Check if registration is pending approval
+      if (response.data.status === 'pending_approval') {
+        setPendingApproval(true);
+      } else {
+        // Employee - immediate login
+        await register({
+          email: formData.email,
+          password: formData.password,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          department: formData.department,
+          role: formData.role
+        });
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Une erreur est survenue');
     } finally {
       setLoading(false);
     }
   };
+
+  // Show success message for pending approval
+  if (pendingApproval) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative"
+        style={{
+          backgroundImage: 'url(https://images.unsplash.com/photo-1514905565314-fea02285fa69?crop=entropy&cs=srgb&fm=jpg&q=85)'
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-secondary/80 backdrop-blur-sm" />
+        
+        <div className="relative z-10 w-full max-w-md animate-slide-in">
+          <Card className="glass-effect border-white/20 shadow-2xl">
+            <CardHeader className="space-y-1 text-center">
+              <div className="flex justify-center mb-4">
+                <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+              </div>
+              <CardTitle className="text-2xl font-bold">Inscription soumise !</CardTitle>
+              <CardDescription>
+                Votre demande d'inscription en tant que <strong>{roles.find(r => r.value === formData.role)?.label}</strong> a été envoyée.
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              <Alert>
+                <Shield className="h-4 w-4" />
+                <AlertDescription>
+                  Un administrateur doit approuver votre compte avant que vous puissiez vous connecter. 
+                  Vous recevrez une notification une fois votre compte activé.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+            
+            <CardFooter>
+              <Button onClick={() => navigate('/login')} className="w-full">
+                Retour à la connexion
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -161,6 +233,37 @@ const Register = () => {
                     data-testid="register-email"
                   />
                 </div>
+              </div>
+
+              {/* Role Selection */}
+              <div className="space-y-2">
+                <Label>Rôle demandé</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => setFormData({ ...formData, role: value })}
+                >
+                  <SelectTrigger data-testid="register-role">
+                    <SelectValue placeholder="Sélectionner un rôle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        <div className="flex items-center gap-2">
+                          <Shield className={`h-4 w-4 ${role.needsApproval ? 'text-orange-500' : 'text-green-500'}`} />
+                          <span>{role.label}</span>
+                          {role.needsApproval && (
+                            <span className="text-xs text-orange-500">(Approbation requise)</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.role !== 'employee' && (
+                  <p className="text-xs text-orange-500">
+                    ⚠️ Les rôles Admin et Secrétaire nécessitent l'approbation d'un administrateur
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">

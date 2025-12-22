@@ -14,11 +14,11 @@ import Dashboard from './pages/Dashboard';
 import Communication from './pages/Communication';
 import Administration from './pages/Administration';
 import TimeManagement from './pages/TimeManagement';
-import Performance from './pages/Performance';
 import Behavior from './pages/Behavior';
 import Settings from './pages/Settings';
 import EmployeeProfile from './pages/EmployeeProfile';
 import PermissionsManagement from './pages/PermissionsManagement';
+import PendingApprovals from './pages/PendingApprovals';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {

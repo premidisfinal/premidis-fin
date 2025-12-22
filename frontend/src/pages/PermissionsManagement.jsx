@@ -29,8 +29,7 @@ const defaultPermissions = {
     can_view_salaries: true,
     can_edit_salaries: true,
     can_delete_employees: true,
-    can_manage_permissions: true,
-    can_view_all_performance: true
+    can_manage_permissions: true
   },
   secretary: {
     can_manage_employees: true,
@@ -40,8 +39,7 @@ const defaultPermissions = {
     can_view_salaries: false,
     can_edit_salaries: false,
     can_delete_employees: false,
-    can_manage_permissions: false,
-    can_view_all_performance: false
+    can_manage_permissions: false
   },
   employee: {
     can_manage_employees: false,
@@ -51,8 +49,7 @@ const defaultPermissions = {
     can_view_salaries: false,
     can_edit_salaries: false,
     can_delete_employees: false,
-    can_manage_permissions: false,
-    can_view_all_performance: false
+    can_manage_permissions: false
   }
 };
 
@@ -64,8 +61,7 @@ const permissionLabels = {
   can_view_salaries: { label: 'Voir les salaires', icon: Eye, description: 'Voir les salaires des employés' },
   can_edit_salaries: { label: 'Modifier les salaires', icon: DollarSign, description: 'Modifier les salaires' },
   can_delete_employees: { label: 'Supprimer des employés', icon: Trash2, description: 'Supprimer définitivement des employés' },
-  can_manage_permissions: { label: 'Gérer les permissions', icon: Shield, description: 'Modifier les permissions des rôles' },
-  can_view_all_performance: { label: 'Performance entreprise', icon: FileText, description: 'Voir la performance globale de l\'entreprise' }
+  can_manage_permissions: { label: 'Gérer les permissions', icon: Shield, description: 'Modifier les permissions des rôles' }
 };
 
 const PermissionsManagement = () => {

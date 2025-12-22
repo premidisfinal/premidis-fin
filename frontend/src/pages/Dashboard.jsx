@@ -10,7 +10,6 @@ import {
   MessageSquare,
   Users,
   Clock,
-  TrendingUp,
   Bell,
   UserCheck
 } from 'lucide-react';

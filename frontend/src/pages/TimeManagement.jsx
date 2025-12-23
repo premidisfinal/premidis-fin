@@ -871,7 +871,7 @@ const TimeManagement = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Heure d'entrée</Label>
+                            <Label>Heure d&apos;entrée</Label>
                             <Input
                               type="time"
                               value={attendanceForm.check_in}

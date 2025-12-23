@@ -66,7 +66,7 @@ const TimeManagement = () => {
     check_out: '',
     notes: ''
   });
-  const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
+  
   const [statusFilter, setStatusFilter] = useState(null);
   const [leaveRules, setLeaveRules] = useState(null);
   const [leaveBalance, setLeaveBalance] = useState({});

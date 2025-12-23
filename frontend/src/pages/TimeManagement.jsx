@@ -19,7 +19,7 @@ import {
   Loader2, ChevronLeft, ChevronRight, LogIn, LogOut, Download,
   Users, FileText, Settings, Save, Edit, Trash2, Calculator
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addMonths, subMonths, addDays, addWeeks } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import axios from 'axios';
 import { toast } from 'sonner';

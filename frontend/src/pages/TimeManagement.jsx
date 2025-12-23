@@ -650,7 +650,7 @@ const TimeManagement = () => {
                           <Calendar
                             mode="single"
                             selected={formData.start_date}
-                            onSelect={(date) => setFormData({ ...formData, start_date: date })}
+                            onSelect={handleStartDateChange}
                             locale={fr}
                           />
                         </PopoverContent>
@@ -658,10 +658,21 @@ const TimeManagement = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label>Date de fin</Label>
+                      <Label className="flex items-center gap-2">
+                        Date de fin
+                        {formData.auto_calculated && (
+                          <Badge variant="secondary" className="text-xs">
+                            <Calculator className="h-3 w-3 mr-1" />
+                            Auto
+                          </Badge>
+                        )}
+                      </Label>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left">
+                          <Button 
+                            variant="outline" 
+                            className={`w-full justify-start text-left ${formData.auto_calculated ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : ''}`}
+                          >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {formData.end_date ? format(formData.end_date, 'dd/MM/yyyy') : 'Sélectionner'}
                           </Button>
@@ -670,11 +681,16 @@ const TimeManagement = () => {
                           <Calendar
                             mode="single"
                             selected={formData.end_date}
-                            onSelect={(date) => setFormData({ ...formData, end_date: date })}
+                            onSelect={(date) => setFormData({ ...formData, end_date: date, auto_calculated: false })}
                             locale={fr}
                           />
                         </PopoverContent>
                       </Popover>
+                      {formData.auto_calculated && (
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          ✓ Calculée automatiquement selon la durée du type de congé
+                        </p>
+                      )}
                     </div>
                   </div>
 

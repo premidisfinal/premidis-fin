@@ -286,7 +286,7 @@ const TimeManagement = () => {
   const handleCheckIn = async () => {
     try {
       await axios.post(`${API_URL}/api/attendance/check-in`);
-      toast.success('Pointage d\'entrée enregistré');
+      toast.success('Pointage d&apos;entrée enregistré');
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erreur');

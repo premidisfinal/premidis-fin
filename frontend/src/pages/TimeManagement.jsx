@@ -603,7 +603,7 @@ const TimeManagement = () => {
                     <Label>Type de congé</Label>
                     <Select
                       value={formData.leave_type}
-                      onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                      onValueChange={handleLeaveTypeChange}
                       disabled={formData.for_all_employees}
                     >
                       <SelectTrigger>
@@ -615,11 +615,25 @@ const TimeManagement = () => {
                             <div className="flex items-center gap-2">
                               <div className={`w-3 h-3 rounded-full ${type.color}`} />
                               {type.label}
+                              {type.duration_value && (
+                                <span className="text-xs text-muted-foreground ml-1">
+                                  ({type.duration_value} {type.duration_unit === 'days' ? 'j' : type.duration_unit === 'weeks' ? 'sem' : 'mois'})
+                                </span>
+                              )}
                             </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {/* Show duration info for selected type */}
+                    {formData.leave_type && leaveTypesConfig.find(lt => lt.code === formData.leave_type) && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Calculator className="h-3 w-3" />
+                        Durée configurée: {leaveTypesConfig.find(lt => lt.code === formData.leave_type)?.duration_value}{' '}
+                        {leaveTypesConfig.find(lt => lt.code === formData.leave_type)?.duration_unit === 'days' ? 'jour(s)' :
+                         leaveTypesConfig.find(lt => lt.code === formData.leave_type)?.duration_unit === 'weeks' ? 'semaine(s)' : 'mois'}
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

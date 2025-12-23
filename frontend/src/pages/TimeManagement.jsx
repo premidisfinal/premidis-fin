@@ -149,10 +149,7 @@ const TimeManagement = () => {
       // Fetch attendance
       const attRes = await axios.get(`${API_URL}/api/attendance`);
       setAttendance(attRes.data.attendance || []);
-
-      // Fetch today's attendance
-      const todayRes = await axios.get(`${API_URL}/api/attendance/today`);
-      setTodayAttendance(todayRes.data.attendance);
+      setTodayAttendance(attRes.data.today || null);
 
     } catch (error) {
       console.error('Error fetching data:', error);

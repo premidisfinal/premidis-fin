@@ -97,6 +97,15 @@ const TimeManagement = () => {
     fetchLeaveTypesConfig();
   }, [currentMonth]);
 
+  const fetchLeaveTypesConfig = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/config/leave-types`);
+      setLeaveTypesConfig(response.data.leave_types || []);
+    } catch (error) {
+      console.error('Error fetching leave types:', error);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {

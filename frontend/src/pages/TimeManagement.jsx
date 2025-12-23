@@ -158,6 +158,72 @@ const TimeManagement = () => {
     }
   };
 
+  // Calculate end date automatically based on leave type
+  const calculateEndDate = async (leaveType, startDate) => {
+    if (!startDate || !leaveType) return;
+    
+    const config = leaveTypesConfig.find(lt => lt.code === leaveType);
+    if (!config) return;
+    
+    try {
+      const response = await axios.post(`${API_URL}/api/config/calculate-leave-end-date`, null, {
+        params: {
+          leave_type_code: leaveType,
+          start_date: format(startDate, 'yyyy-MM-dd')
+        }
+      });
+      
+      const endDate = parseISO(response.data.end_date);
+      setFormData(prev => ({
+        ...prev,
+        end_date: endDate,
+        auto_calculated: true
+      }));
+      
+      toast.success(`Date de fin calculée automatiquement: ${format(endDate, 'dd/MM/yyyy')}`);
+    } catch (error) {
+      console.error('Error calculating end date:', error);
+    }
+  };
+
+  // Handle leave type change - auto calculate if start date is set
+  const handleLeaveTypeChange = async (value) => {
+    setFormData(prev => ({ ...prev, leave_type: value }));
+    
+    if (formData.start_date) {
+      await calculateEndDate(value, formData.start_date);
+    }
+  };
+
+  // Handle start date change - auto calculate end date
+  const handleStartDateChange = async (date) => {
+    setFormData(prev => ({ ...prev, start_date: date, auto_calculated: false }));
+    
+    if (date && formData.leave_type) {
+      await calculateEndDate(formData.leave_type, date);
+    }
+  };
+
+  // Save leave type configuration
+  const handleSaveLeaveType = async (leaveType) => {
+    setSavingConfig(true);
+    try {
+      if (leaveType.id) {
+        await axios.put(`${API_URL}/api/config/leave-types/${leaveType.id}`, leaveType);
+        toast.success('Type de congé mis à jour');
+      } else {
+        await axios.post(`${API_URL}/api/config/leave-types`, leaveType);
+        toast.success('Type de congé créé');
+      }
+      await fetchLeaveTypesConfig();
+      setEditingLeaveType(null);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
   const handleSubmitLeave = async (e) => {
     e.preventDefault();
     if (!formData.start_date || !formData.end_date) {

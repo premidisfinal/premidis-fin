@@ -256,7 +256,8 @@ const TimeManagement = () => {
         end_date: null, 
         reason: '',
         employee_id: '',
-        for_all_employees: false
+        for_all_employees: false,
+        auto_calculated: false
       });
       fetchData();
     } catch (error) {

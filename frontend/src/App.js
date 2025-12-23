@@ -18,7 +18,6 @@ import Behavior from './pages/Behavior';
 import Settings from './pages/Settings';
 import EmployeeProfile from './pages/EmployeeProfile';
 import PermissionsManagement from './pages/PermissionsManagement';
-import PendingApprovals from './pages/PendingApprovals';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {

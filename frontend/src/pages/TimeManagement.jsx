@@ -94,6 +94,7 @@ const TimeManagement = () => {
 
   useEffect(() => {
     fetchData();
+    fetchLeaveTypesConfig();
   }, [currentMonth]);
 
   const fetchData = async () => {

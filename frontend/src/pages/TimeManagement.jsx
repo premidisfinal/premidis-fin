@@ -582,15 +582,15 @@ const TimeManagement = () => {
                 )}
               </div>
               <div className="flex gap-3">
-                <Button
-                  onClick={handleCheckIn}
-                  disabled={todayAttendance?.check_in}
-                  className="bg-green-600 hover:bg-green-700"
-                  data-testid="check-in-btn"
-                >
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Entrée
-                </Button>
+                  <Button
+                    onClick={handleCheckIn}
+                    disabled={todayAttendance?.check_in}
+                    className="bg-green-600 hover:bg-green-700"
+                    data-testid="check-in-btn"
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Entrée
+                  </Button>
                 <Button
                   onClick={handleCheckOut}
                   disabled={!todayAttendance?.check_in || todayAttendance?.check_out}

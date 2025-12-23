@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Calendar } from '../components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { ScrollArea } from '../components/ui/scroll-area';
 import { 
   Calendar as CalendarIcon, Plus, Clock, CheckCircle, XCircle, AlertCircle, 
   Loader2, ChevronLeft, ChevronRight, LogIn, LogOut, Download,

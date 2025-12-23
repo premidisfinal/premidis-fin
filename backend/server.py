@@ -245,14 +245,9 @@ notifications_router = APIRouter(prefix="/notifications", tags=["Notifications"]
 
 # ==================== AUTH ROUTES ====================
 
-# Registration status for roles requiring approval
-class RegistrationStatus:
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-
-@auth_router.post("/register")
+@auth_router.post("/register", response_model=TokenResponse)
 async def register(user_data: UserCreate):
+    """Register a new user - ALL ROLES ARE ACTIVATED IMMEDIATELY"""
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
         raise HTTPException(status_code=400, detail="Email déjà enregistré")
@@ -265,10 +260,7 @@ async def register(user_data: UserCreate):
     if not leave_rules:
         leave_rules = LeaveRuleConfig().model_dump()
     
-    # Determine if role needs approval
-    sensitive_roles = ["admin", "secretary", "super_admin"]
-    needs_approval = user_data.role in sensitive_roles
-    
+    # ALL ACCOUNTS ARE ACTIVE IMMEDIATELY - NO APPROVAL REQUIRED
     user_doc = {
         "id": user_id,
         "email": user_data.email,
@@ -284,8 +276,7 @@ async def register(user_data: UserCreate):
         "salary": user_data.salary,
         "salary_currency": user_data.salary_currency,
         "birth_date": None,
-        "is_active": not needs_approval,  # Employees active immediately, others need approval
-        "registration_status": RegistrationStatus.PENDING if needs_approval else RegistrationStatus.APPROVED,
+        "is_active": True,  # ALWAYS ACTIVE
         "created_at": datetime.now(timezone.utc).isoformat(),
         "avatar_url": None,
         "leave_balance": {
@@ -306,16 +297,7 @@ async def register(user_data: UserCreate):
     
     await db.users.insert_one(user_doc)
     
-    # If role needs approval, send notification email to admin
-    if needs_approval:
-        await send_registration_approval_notification(user_doc)
-        return {
-            "message": "Inscription soumise avec succès. Votre compte est en attente d'approbation par un administrateur.",
-            "status": "pending_approval",
-            "user_id": user_id
-        }
-    
-    # For employees, return token immediately
+    # Return token immediately for ALL roles
     access_token = create_access_token(data={"sub": user_id, "role": user_data.role})
     
     user_response = UserResponse(

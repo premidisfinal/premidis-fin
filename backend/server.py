@@ -443,16 +443,10 @@ async def reject_registration(
 
 @auth_router.post("/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):
+    """Login - simple check for active account"""
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
     if not user or not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Identifiants invalides")
-    
-    # Check registration status for sensitive roles
-    if user.get("registration_status") == RegistrationStatus.PENDING:
-        raise HTTPException(status_code=403, detail="Votre compte est en attente d'approbation par un administrateur")
-    
-    if user.get("registration_status") == RegistrationStatus.REJECTED:
-        raise HTTPException(status_code=403, detail="Votre demande d'inscription a été rejetée")
     
     if not user.get("is_active", True):
         raise HTTPException(status_code=403, detail="Compte désactivé")

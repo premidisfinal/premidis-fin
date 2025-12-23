@@ -845,7 +845,7 @@ const TimeManagement = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Historique des pointages</CardTitle>
-                  <CardDescription>Enregistrement des heures d'entrée et sortie</CardDescription>
+                  <CardDescription>Enregistrement des heures d&apos;entrée et sortie</CardDescription>
                 </div>
                 {isAdmin() && (
                   <Dialog open={attendanceDialogOpen} onOpenChange={setAttendanceDialogOpen}>

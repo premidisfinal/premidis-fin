@@ -130,20 +130,26 @@ const TimeManagement = () => {
       try {
         const rulesRes = await axios.get(`${API_URL}/api/leaves/rules`);
         setLeaveRules(rulesRes.data);
-      } catch {}
+      } catch (error) {
+        console.error('Error fetching leave rules:', error);
+      }
 
       // Fetch leave balance
       try {
         const balanceRes = await axios.get(`${API_URL}/api/leaves/balance`);
         setLeaveBalance(balanceRes.data);
-      } catch {}
+      } catch (error) {
+        console.error('Error fetching leave balance:', error);
+      }
 
       // Fetch employees for admin/secretary
       if (isAdmin() || canEdit()) {
         try {
           const empRes = await axios.get(`${API_URL}/api/employees`);
           setEmployees(empRes.data.employees || []);
-        } catch {}
+        } catch (error) {
+          console.error('Error fetching employees:', error);
+        }
       }
 
       // Fetch attendance

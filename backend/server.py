@@ -1331,8 +1331,10 @@ class LeaveTypeConfig(BaseModel):
     id: Optional[str] = None
     name: str
     code: str
+    duration_value: int = 1  # Durée officielle
+    duration_unit: str = "days"  # days, weeks, months
     min_days: int = 1
-    max_days: int = 30
+    max_days: int = 365
     default_balance: int = 0
     requires_approval: bool = True
     is_active: bool = True
@@ -1343,15 +1345,15 @@ async def get_leave_types(current_user: dict = Depends(get_current_user)):
     """Get all configured leave types"""
     leave_types = await db.leave_types.find({"is_active": True}, {"_id": 0}).to_list(50)
     
-    # If no custom types exist, return defaults
+    # If no custom types exist, return defaults with duration configuration
     if not leave_types:
         default_types = [
-            {"id": "annual", "name": "Congé annuel", "code": "annual", "min_days": 1, "max_days": 30, "default_balance": 26, "requires_approval": True, "is_active": True, "color": "#4F46E5"},
-            {"id": "sick", "name": "Congé maladie", "code": "sick", "min_days": 2, "max_days": 30, "default_balance": 2, "requires_approval": True, "is_active": True, "color": "#EF4444"},
-            {"id": "maternity", "name": "Congé maternité", "code": "maternity", "min_days": 90, "max_days": 120, "default_balance": 90, "requires_approval": True, "is_active": True, "color": "#EC4899"},
-            {"id": "paternity", "name": "Congé paternité", "code": "paternity", "min_days": 10, "max_days": 15, "default_balance": 10, "requires_approval": True, "is_active": True, "color": "#3B82F6"},
-            {"id": "exceptional", "name": "Congé exceptionnel", "code": "exceptional", "min_days": 1, "max_days": 15, "default_balance": 15, "requires_approval": True, "is_active": True, "color": "#F59E0B"},
-            {"id": "collective", "name": "Congé collectif (tous)", "code": "collective", "min_days": 1, "max_days": 30, "default_balance": 0, "requires_approval": False, "is_active": True, "color": "#10B981"}
+            {"id": "annual", "name": "Congé annuel", "code": "annual", "duration_value": 30, "duration_unit": "days", "min_days": 1, "max_days": 30, "default_balance": 30, "requires_approval": True, "is_active": True, "color": "#4F46E5"},
+            {"id": "sick", "name": "Congé maladie", "code": "sick", "duration_value": 2, "duration_unit": "days", "min_days": 2, "max_days": 30, "default_balance": 2, "requires_approval": True, "is_active": True, "color": "#EF4444"},
+            {"id": "maternity", "name": "Congé maternité", "code": "maternity", "duration_value": 3, "duration_unit": "months", "min_days": 90, "max_days": 120, "default_balance": 90, "requires_approval": True, "is_active": True, "color": "#EC4899"},
+            {"id": "paternity", "name": "Congé paternité", "code": "paternity", "duration_value": 10, "duration_unit": "days", "min_days": 10, "max_days": 15, "default_balance": 10, "requires_approval": True, "is_active": True, "color": "#3B82F6"},
+            {"id": "exceptional", "name": "Congé exceptionnel", "code": "exceptional", "duration_value": 15, "duration_unit": "days", "min_days": 1, "max_days": 15, "default_balance": 15, "requires_approval": True, "is_active": True, "color": "#F59E0B"},
+            {"id": "collective", "name": "Congé collectif (tous)", "code": "collective", "duration_value": 1, "duration_unit": "days", "min_days": 1, "max_days": 30, "default_balance": 0, "requires_approval": False, "is_active": True, "color": "#10B981"}
         ]
         # Insert default types
         for lt in default_types:
@@ -1359,6 +1361,58 @@ async def get_leave_types(current_user: dict = Depends(get_current_user)):
         leave_types = default_types
     
     return {"leave_types": leave_types}
+
+# Endpoint to calculate end date based on leave type and start date
+@config_router.post("/calculate-leave-end-date")
+async def calculate_leave_end_date(
+    leave_type_code: str,
+    start_date: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Calculate end date based on leave type configuration"""
+    leave_type = await db.leave_types.find_one({"code": leave_type_code, "is_active": True}, {"_id": 0})
+    
+    if not leave_type:
+        raise HTTPException(status_code=404, detail="Type de congé non trouvé")
+    
+    duration_value = leave_type.get("duration_value", 1)
+    duration_unit = leave_type.get("duration_unit", "days")
+    
+    try:
+        start = datetime.strptime(start_date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Format de date invalide")
+    
+    # Calculate end date based on unit
+    if duration_unit == "days":
+        end = start + timedelta(days=duration_value - 1)  # -1 because start day counts
+        total_days = duration_value
+    elif duration_unit == "weeks":
+        end = start + timedelta(weeks=duration_value) - timedelta(days=1)
+        total_days = duration_value * 7
+    elif duration_unit == "months":
+        # Add months
+        month = start.month + duration_value
+        year = start.year + (month - 1) // 12
+        month = ((month - 1) % 12) + 1
+        # Handle day overflow
+        import calendar
+        max_day = calendar.monthrange(year, month)[1]
+        day = min(start.day, max_day)
+        end = start.replace(year=year, month=month, day=day) - timedelta(days=1)
+        total_days = (end - start).days + 1
+    else:
+        end = start + timedelta(days=duration_value - 1)
+        total_days = duration_value
+    
+    return {
+        "start_date": start_date,
+        "end_date": end.strftime("%Y-%m-%d"),
+        "duration_value": duration_value,
+        "duration_unit": duration_unit,
+        "total_days": total_days,
+        "leave_type": leave_type
+    }
 
 @config_router.post("/leave-types")
 async def create_leave_type(

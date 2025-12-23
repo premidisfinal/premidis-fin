@@ -71,13 +71,26 @@ const TimeManagement = () => {
   const [leaveRules, setLeaveRules] = useState(null);
   const [leaveBalance, setLeaveBalance] = useState({});
 
-  const leaveTypes = [
+  // Default leave types (fallback)
+  const defaultLeaveTypes = [
     { value: 'annual', label: 'Congé annuel', color: 'bg-blue-500' },
     { value: 'sick', label: 'Congé maladie', color: 'bg-red-500' },
     { value: 'maternity', label: 'Congé maternité', color: 'bg-pink-500' },
-    { value: 'exceptional', label: 'Autorisation exceptionnelle', color: 'bg-orange-500' },
-    { value: 'public', label: 'Jour férié', color: 'bg-green-500' }
+    { value: 'paternity', label: 'Congé paternité', color: 'bg-cyan-500' },
+    { value: 'exceptional', label: 'Congé exceptionnel', color: 'bg-orange-500' },
+    { value: 'collective', label: 'Congé collectif (tous)', color: 'bg-green-500' }
   ];
+
+  // Computed leave types from config or defaults
+  const leaveTypes = leaveTypesConfig.length > 0 
+    ? leaveTypesConfig.map(lt => ({
+        value: lt.code,
+        label: lt.name,
+        color: `bg-[${lt.color}]`,
+        duration_value: lt.duration_value,
+        duration_unit: lt.duration_unit
+      }))
+    : defaultLeaveTypes;
 
   useEffect(() => {
     fetchData();

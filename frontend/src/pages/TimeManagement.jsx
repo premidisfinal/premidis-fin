@@ -17,7 +17,7 @@ import { ScrollArea } from '../components/ui/scroll-area';
 import { 
   Calendar as CalendarIcon, Plus, Clock, CheckCircle, XCircle, AlertCircle, 
   Loader2, ChevronLeft, ChevronRight, LogIn, LogOut, Download,
-  Users, FileText, Settings
+  Users, FileText, Settings, Save, Edit, Trash2, Calculator
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addMonths, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';

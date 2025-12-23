@@ -41,6 +41,12 @@ const TimeManagement = () => {
   const [submitting, setSubmitting] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
+  // Leave configuration state
+  const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
+  const [leaveTypesConfig, setLeaveTypesConfig] = useState([]);
+  const [editingLeaveType, setEditingLeaveType] = useState(null);
+  const [savingConfig, setSavingConfig] = useState(false);
+  
   const [formData, setFormData] = useState({
     leave_type: 'annual',
     start_date: null,

@@ -401,30 +401,149 @@ const TimeManagement = () => {
                     Ajuster les congés
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="sm:max-w-[700px] max-h-[90vh]">
                   <DialogHeader>
-                    <DialogTitle>Paramètres des congés</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Settings className="h-5 w-5" />
+                      Configuration des types de congés
+                    </DialogTitle>
+                    <DialogDescription>
+                      Définissez la durée officielle de chaque type de congé. Cette durée sera utilisée pour calculer automatiquement la date de fin.
+                    </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Quota annuel par défaut (jours)</Label>
-                      <Input type="number" defaultValue="30" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Types de congés</Label>
-                      <div className="space-y-2">
-                        {leaveTypes.map((type) => (
-                          <div key={type.value} className="flex items-center justify-between p-2 border rounded">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-3 h-3 rounded-full ${type.color}`} />
-                              <span>{type.label}</span>
+                  
+                  <ScrollArea className="max-h-[60vh] pr-4">
+                    <div className="space-y-4">
+                      {/* Leave Types Configuration */}
+                      {leaveTypesConfig.map((leaveType) => (
+                        <div 
+                          key={leaveType.id || leaveType.code} 
+                          className="p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors"
+                        >
+                          {editingLeaveType?.id === leaveType.id ? (
+                            // Edit Mode
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Nom du congé</Label>
+                                  <Input
+                                    value={editingLeaveType.name}
+                                    onChange={(e) => setEditingLeaveType({...editingLeaveType, name: e.target.value})}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Code</Label>
+                                  <Input
+                                    value={editingLeaveType.code}
+                                    disabled
+                                    className="bg-muted"
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Durée officielle</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={editingLeaveType.duration_value}
+                                    onChange={(e) => setEditingLeaveType({...editingLeaveType, duration_value: parseInt(e.target.value) || 1})}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Unité de temps</Label>
+                                  <Select
+                                    value={editingLeaveType.duration_unit}
+                                    onValueChange={(value) => setEditingLeaveType({...editingLeaveType, duration_unit: value})}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="days">Jours</SelectItem>
+                                      <SelectItem value="weeks">Semaines</SelectItem>
+                                      <SelectItem value="months">Mois</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Solde par défaut</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={editingLeaveType.default_balance}
+                                    onChange={(e) => setEditingLeaveType({...editingLeaveType, default_balance: parseInt(e.target.value) || 0})}
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div className="flex justify-end gap-2">
+                                <Button variant="outline" onClick={() => setEditingLeaveType(null)}>
+                                  Annuler
+                                </Button>
+                                <Button onClick={() => handleSaveLeaveType(editingLeaveType)} disabled={savingConfig}>
+                                  {savingConfig ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                  Enregistrer
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ) : (
+                            // View Mode
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div 
+                                  className="w-4 h-4 rounded-full" 
+                                  style={{ backgroundColor: leaveType.color }}
+                                />
+                                <div>
+                                  <h4 className="font-medium">{leaveType.name}</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    Durée: <strong>{leaveType.duration_value}</strong> {
+                                      leaveType.duration_unit === 'days' ? 'jour(s)' :
+                                      leaveType.duration_unit === 'weeks' ? 'semaine(s)' :
+                                      leaveType.duration_unit === 'months' ? 'mois' : leaveType.duration_unit
+                                    }
+                                    {' • '}Solde: <strong>{leaveType.default_balance}</strong> jours
+                                  </p>
+                                </div>
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => setEditingLeaveType({...leaveType})}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      
+                      {leaveTypesConfig.length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Settings className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                          <p>Chargement des types de congés...</p>
+                        </div>
+                      )}
+                      
+                      {/* Example Calculation */}
+                      <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                        <h4 className="font-medium flex items-center gap-2 mb-2">
+                          <Calculator className="h-4 w-4" />
+                          Exemple de calcul automatique
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Si vous sélectionnez <strong>Congé maternité</strong> (3 mois) et la date de début <strong>01 mars 2026</strong>, 
+                          le système calculera automatiquement:
+                        </p>
+                        <ul className="text-sm mt-2 space-y-1">
+                          <li>→ Date de fin: <strong>31 mai 2026</strong></li>
+                          <li>→ Durée totale: <strong>3 mois</strong></li>
+                        </ul>
                       </div>
                     </div>
-                    <Button className="w-full">Enregistrer</Button>
-                  </div>
+                  </ScrollArea>
                 </DialogContent>
               </Dialog>
             )}

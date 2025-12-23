@@ -28,7 +28,6 @@ import {
   Moon,
   Sun,
   Shield,
-  UserPlus,
   Bell
 } from 'lucide-react';
 import NotificationCenter from '../NotificationCenter';

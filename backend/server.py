@@ -667,19 +667,14 @@ async def get_leaves_for_calendar(
     year: int = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get approved leaves for calendar display - ONLY approved leaves"""
+    """Get approved leaves for calendar display - ALL approved leaves visible to everyone"""
     now = datetime.now()
     target_month = month or now.month
     target_year = year or now.year
     
-    # Build query based on role - ONLY APPROVED leaves
+    # ALL users see ALL approved leaves (for global calendar visibility)
+    # This allows employees and admins to see when colleagues are on leave
     query = {"status": "approved"}
-    if current_user["role"] == "employee":
-        # Employee sees only their approved leaves + public holidays
-        query = {"$or": [
-            {"employee_id": current_user["id"], "status": "approved"},
-            {"leave_type": "public", "status": "approved"}
-        ]}
     
     leaves = await db.leaves.find(query, {"_id": 0}).to_list(500)
     

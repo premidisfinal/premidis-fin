@@ -595,52 +595,6 @@ const EmployeeProfile = () => {
                     })}
                   </div>
                 )}
-                                      </Button>
-                                    </a>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-                            ) : (
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button size="sm" variant="outline" className="flex-1">
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    Voir
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-4xl">
-                                  <DialogHeader>
-                                    <DialogTitle>{doc.name}</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="flex justify-center">
-                                    <img 
-                                      src={`${API_URL}${doc.url}`} 
-                                      alt={doc.name}
-                                      className="max-h-[70vh] object-contain"
-                                    />
-                                  </div>
-                                  <div className="flex justify-end">
-                                    <a href={`${API_URL}${doc.url}`} download={doc.name}>
-                                      <Button>
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Télécharger
-                                      </Button>
-                                    </a>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-                            )}
-                            <a href={`${API_URL}${doc.url}`} download={doc.name}>
-                              <Button size="sm" variant="outline">
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </CardContent>
             </Card>
           </TabsContent>

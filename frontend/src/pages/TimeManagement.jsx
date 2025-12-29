@@ -527,6 +527,123 @@ const TimeManagement = () => {
                         </div>
                       )}
                       
+                      {/* Add New Leave Type Button */}
+                      {!editingLeaveType && (
+                        <Button 
+                          variant="outline" 
+                          className="w-full border-dashed"
+                          onClick={() => setEditingLeaveType({
+                            id: null,
+                            name: '',
+                            code: '',
+                            duration_value: 1,
+                            duration_unit: 'days',
+                            default_balance: 0,
+                            requires_approval: true,
+                            is_active: true,
+                            color: '#4F46E5'
+                          })}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Créer un nouveau type de congé
+                        </Button>
+                      )}
+                      
+                      {/* New Leave Type Form */}
+                      {editingLeaveType && !editingLeaveType.id && (
+                        <div className="p-4 border-2 border-dashed border-primary/50 rounded-lg bg-primary/5">
+                          <h4 className="font-medium mb-4 flex items-center gap-2">
+                            <Plus className="h-4 w-4" />
+                            Nouveau type de congé
+                          </h4>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Nom du congé *</Label>
+                                <Input
+                                  value={editingLeaveType.name}
+                                  onChange={(e) => setEditingLeaveType({...editingLeaveType, name: e.target.value})}
+                                  placeholder="Ex: Congé parental"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Code unique *</Label>
+                                <Input
+                                  value={editingLeaveType.code}
+                                  onChange={(e) => setEditingLeaveType({...editingLeaveType, code: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
+                                  placeholder="Ex: parental"
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-4">
+                              <div className="space-y-2">
+                                <Label>Durée officielle *</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={editingLeaveType.duration_value}
+                                  onChange={(e) => setEditingLeaveType({...editingLeaveType, duration_value: parseInt(e.target.value) || 1})}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Unité *</Label>
+                                <Select
+                                  value={editingLeaveType.duration_unit}
+                                  onValueChange={(value) => setEditingLeaveType({...editingLeaveType, duration_unit: value})}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="days">Jours</SelectItem>
+                                    <SelectItem value="weeks">Semaines</SelectItem>
+                                    <SelectItem value="months">Mois</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Solde par défaut</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={editingLeaveType.default_balance}
+                                  onChange={(e) => setEditingLeaveType({...editingLeaveType, default_balance: parseInt(e.target.value) || 0})}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label>Couleur</Label>
+                              <div className="flex gap-2">
+                                {['#4F46E5', '#EF4444', '#EC4899', '#3B82F6', '#F59E0B', '#10B981', '#8B5CF6', '#06B6D4'].map(color => (
+                                  <button
+                                    key={color}
+                                    type="button"
+                                    className={`w-8 h-8 rounded-full border-2 ${editingLeaveType.color === color ? 'border-foreground' : 'border-transparent'}`}
+                                    style={{ backgroundColor: color }}
+                                    onClick={() => setEditingLeaveType({...editingLeaveType, color})}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" onClick={() => setEditingLeaveType(null)}>
+                                Annuler
+                              </Button>
+                              <Button 
+                                onClick={() => handleSaveLeaveType(editingLeaveType)} 
+                                disabled={savingConfig || !editingLeaveType.name || !editingLeaveType.code}
+                              >
+                                {savingConfig ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Créer le type de congé
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Example Calculation */}
                       <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
                         <h4 className="font-medium flex items-center gap-2 mb-2">

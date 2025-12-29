@@ -495,89 +495,106 @@ const EmployeeProfile = () => {
                   </div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {documents.map((doc) => (
-                      <div key={doc.id} className="rounded-lg border hover:shadow-md transition-all overflow-hidden">
-                        {/* Preview for images */}
-                        {['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(doc.type?.toLowerCase()) ? (
-                          <div className="relative group">
-                            <img 
-                              src={`${API_URL}${doc.url}`} 
-                              alt={doc.name}
-                              className="w-full h-32 object-cover"
-                              onError={(e) => { e.target.style.display = 'none' }}
-                            />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button size="sm" variant="secondary">
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    Voir
+                    {documents.map((doc) => {
+                      // Construct the full URL for the document
+                      const docUrl = doc.url ? (doc.url.startsWith('http') ? doc.url : `${API_URL}${doc.url}`) : null;
+                      const fileType = doc.type?.toLowerCase() || '';
+                      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'image'].includes(fileType);
+                      const isPdf = fileType === 'pdf';
+                      const canView = docUrl && (isImage || isPdf);
+                      const canDownload = docUrl;
+                      
+                      return (
+                        <div key={doc.id} className="rounded-lg border hover:shadow-md transition-all overflow-hidden bg-card">
+                          {/* Preview area */}
+                          {isImage && docUrl ? (
+                            <div className="relative h-32 bg-muted">
+                              <img 
+                                src={docUrl} 
+                                alt={doc.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => { 
+                                  e.target.style.display = 'none';
+                                  e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                                  const icon = document.createElement('div');
+                                  icon.innerHTML = '<svg class="h-12 w-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+                                  e.target.parentElement.appendChild(icon);
+                                }}
+                              />
+                            </div>
+                          ) : isPdf ? (
+                            <div className="h-32 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 flex items-center justify-center">
+                              <FileText className="h-12 w-12 text-red-500" />
+                            </div>
+                          ) : (
+                            <div className="h-32 bg-muted flex items-center justify-center">
+                              <FileText className="h-12 w-12 text-muted-foreground" />
+                            </div>
+                          )}
+                          
+                          {/* Document info */}
+                          <div className="p-3">
+                            <p className="font-medium text-sm truncate" title={doc.name}>{doc.name}</p>
+                            <p className="text-xs text-muted-foreground uppercase mb-3">{doc.type || 'Fichier'}</p>
+                            
+                            {/* Action buttons - only show if action is possible */}
+                            <div className="flex gap-2">
+                              {/* View button - only if document can be viewed */}
+                              {canView && (
+                                isImage ? (
+                                  // For images: open in new tab for full view
+                                  <a 
+                                    href={docUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex-1"
+                                  >
+                                    <Button size="sm" variant="outline" className="w-full">
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      Voir
+                                    </Button>
+                                  </a>
+                                ) : isPdf ? (
+                                  // For PDFs: open in new tab
+                                  <a 
+                                    href={docUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex-1"
+                                  >
+                                    <Button size="sm" variant="outline" className="w-full">
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      Voir
+                                    </Button>
+                                  </a>
+                                ) : null
+                              )}
+                              
+                              {/* Download button - only if URL exists */}
+                              {canDownload && (
+                                <a 
+                                  href={docUrl} 
+                                  download={doc.name || 'document'}
+                                  className={canView ? '' : 'flex-1'}
+                                >
+                                  <Button size="sm" variant="outline" className={canView ? '' : 'w-full'}>
+                                    <Download className="h-4 w-4" />
+                                    {!canView && <span className="ml-1">Télécharger</span>}
                                   </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-4xl">
-                                  <DialogHeader>
-                                    <DialogTitle>{doc.name}</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="flex justify-center">
-                                    <img 
-                                      src={`${API_URL}${doc.url}`} 
-                                      alt={doc.name}
-                                      className="max-h-[70vh] object-contain"
-                                    />
-                                  </div>
-                                  <div className="flex justify-end">
-                                    <a href={`${API_URL}${doc.url}`} download={doc.name}>
-                                      <Button>
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Télécharger
-                                      </Button>
-                                    </a>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-                              <a href={`${API_URL}${doc.url}`} download={doc.name}>
-                                <Button size="sm" variant="secondary">
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                              </a>
+                                </a>
+                              )}
+                              
+                              {/* No action possible */}
+                              {!canView && !canDownload && (
+                                <p className="text-xs text-muted-foreground">Document non disponible</p>
+                              )}
                             </div>
                           </div>
-                        ) : (
-                          /* Preview placeholder for PDF */
-                          <div className="h-32 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 flex items-center justify-center">
-                            <FileText className="h-12 w-12 text-red-500" />
-                          </div>
-                        )}
-                        
-                        {/* Document info and actions */}
-                        <div className="p-3">
-                          <p className="font-medium text-sm truncate">{doc.name}</p>
-                          <p className="text-xs text-muted-foreground uppercase mb-2">{doc.type}</p>
-                          <div className="flex gap-2">
-                            {doc.type?.toLowerCase() === 'pdf' ? (
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button size="sm" variant="outline" className="flex-1">
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    Voir
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-5xl h-[90vh]">
-                                  <DialogHeader>
-                                    <DialogTitle>{doc.name}</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="flex-1 h-full">
-                                    <iframe 
-                                      src={`${API_URL}${doc.url}`} 
-                                      className="w-full h-[calc(90vh-100px)]"
-                                      title={doc.name}
-                                    />
-                                  </div>
-                                  <div className="flex justify-end">
-                                    <a href={`${API_URL}${doc.url}`} download={doc.name}>
-                                      <Button>
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Télécharger
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                                       </Button>
                                     </a>
                                   </div>

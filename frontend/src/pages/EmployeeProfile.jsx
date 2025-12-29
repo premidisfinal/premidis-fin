@@ -496,21 +496,130 @@ const EmployeeProfile = () => {
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {documents.map((doc) => (
-                      <div key={doc.id} className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded ${doc.type === 'pdf' ? 'bg-red-100' : 'bg-blue-100'}`}>
-                            <FileText className={`h-5 w-5 ${doc.type === 'pdf' ? 'text-red-600' : 'text-blue-600'}`} />
+                      <div key={doc.id} className="rounded-lg border hover:shadow-md transition-all overflow-hidden">
+                        {/* Preview for images */}
+                        {['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(doc.type?.toLowerCase()) ? (
+                          <div className="relative group">
+                            <img 
+                              src={`${API_URL}${doc.url}`} 
+                              alt={doc.name}
+                              className="w-full h-32 object-cover"
+                              onError={(e) => { e.target.style.display = 'none' }}
+                            />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button size="sm" variant="secondary">
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    Voir
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl">
+                                  <DialogHeader>
+                                    <DialogTitle>{doc.name}</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="flex justify-center">
+                                    <img 
+                                      src={`${API_URL}${doc.url}`} 
+                                      alt={doc.name}
+                                      className="max-h-[70vh] object-contain"
+                                    />
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <a href={`${API_URL}${doc.url}`} download={doc.name}>
+                                      <Button>
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Télécharger
+                                      </Button>
+                                    </a>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                              <a href={`${API_URL}${doc.url}`} download={doc.name}>
+                                <Button size="sm" variant="secondary">
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </a>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-sm truncate max-w-[150px]">{doc.name}</p>
-                            <p className="text-xs text-muted-foreground uppercase">{doc.type}</p>
+                        ) : (
+                          /* Preview placeholder for PDF */
+                          <div className="h-32 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 flex items-center justify-center">
+                            <FileText className="h-12 w-12 text-red-500" />
+                          </div>
+                        )}
+                        
+                        {/* Document info and actions */}
+                        <div className="p-3">
+                          <p className="font-medium text-sm truncate">{doc.name}</p>
+                          <p className="text-xs text-muted-foreground uppercase mb-2">{doc.type}</p>
+                          <div className="flex gap-2">
+                            {doc.type?.toLowerCase() === 'pdf' ? (
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button size="sm" variant="outline" className="flex-1">
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    Voir
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-5xl h-[90vh]">
+                                  <DialogHeader>
+                                    <DialogTitle>{doc.name}</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="flex-1 h-full">
+                                    <iframe 
+                                      src={`${API_URL}${doc.url}`} 
+                                      className="w-full h-[calc(90vh-100px)]"
+                                      title={doc.name}
+                                    />
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <a href={`${API_URL}${doc.url}`} download={doc.name}>
+                                      <Button>
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Télécharger
+                                      </Button>
+                                    </a>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            ) : (
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button size="sm" variant="outline" className="flex-1">
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    Voir
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl">
+                                  <DialogHeader>
+                                    <DialogTitle>{doc.name}</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="flex justify-center">
+                                    <img 
+                                      src={`${API_URL}${doc.url}`} 
+                                      alt={doc.name}
+                                      className="max-h-[70vh] object-contain"
+                                    />
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <a href={`${API_URL}${doc.url}`} download={doc.name}>
+                                      <Button>
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Télécharger
+                                      </Button>
+                                    </a>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            )}
+                            <a href={`${API_URL}${doc.url}`} download={doc.name}>
+                              <Button size="sm" variant="outline">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </a>
                           </div>
                         </div>
-                        <a href={`${API_URL}${doc.url}`} target="_blank" rel="noopener noreferrer">
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </a>
                       </div>
                     ))}
                   </div>

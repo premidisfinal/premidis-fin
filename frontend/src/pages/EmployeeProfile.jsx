@@ -274,7 +274,7 @@ const EmployeeProfile = () => {
               {/* Avatar with upload option */}
               <div className="relative">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src={employee.avatar_url} />
+                  <AvatarImage src={employee.avatar_url ? (employee.avatar_url.startsWith('http') ? employee.avatar_url : `${API_URL}${employee.avatar_url}`) : null} />
                   <AvatarFallback className="bg-primary/10 text-primary text-2xl">
                     {employee.first_name?.[0]}{employee.last_name?.[0]}
                   </AvatarFallback>

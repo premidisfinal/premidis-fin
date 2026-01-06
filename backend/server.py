@@ -1645,6 +1645,52 @@ async def get_employee_documents(
     documents = await db.documents.find({"employee_id": employee_id}, {"_id": 0}).to_list(100)
     return {"documents": documents}
 
+@employees_router.put("/{employee_id}/documents/{document_id}")
+async def update_document(
+    employee_id: str,
+    document_id: str,
+    name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Rename a document"""
+    # Check permissions
+    if current_user["role"] == "employee" and current_user["id"] != employee_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    result = await db.documents.update_one(
+        {"id": document_id, "employee_id": employee_id},
+        {"$set": {"name": name, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Document non trouvé")
+    
+    return {"message": "Document renommé", "name": name}
+
+@employees_router.delete("/{employee_id}/documents/{document_id}")
+async def delete_document(
+    employee_id: str,
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a document"""
+    # Check permissions
+    if current_user["role"] == "employee" and current_user["id"] != employee_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Get document to delete file from disk
+    doc = await db.documents.find_one({"id": document_id, "employee_id": employee_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document non trouvé")
+    
+    # Delete from database
+    await db.documents.delete_one({"id": document_id})
+    
+    # Optionally delete file from disk (be careful with shared files)
+    # For now, we keep the file but remove the reference
+    
+    return {"message": "Document supprimé"}
+
 # ==================== SALARY ROUTES (Admin calculate, Employee view own) ====================
 @employees_router.get("/{employee_id}/salary")
 async def get_employee_salary(

@@ -2,12 +2,16 @@ import requests
 import sys
 from datetime import datetime
 import json
+import uuid
 
 class HRPlatformTester:
     def __init__(self, base_url="https://open-hr-admin.preview.emergentagent.com"):
         self.base_url = base_url
         self.admin_token = None
         self.employee_token = None
+        self.employee_id = None
+        self.site_id = None
+        self.document_id = None
         self.tests_run = 0
         self.tests_passed = 0
         self.test_results = []

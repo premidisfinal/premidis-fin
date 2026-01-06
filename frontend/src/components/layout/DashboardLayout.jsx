@@ -190,7 +190,7 @@ const DashboardLayout = ({ children }) => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2 pl-2" data-testid="user-menu-btn">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${process.env.REACT_APP_BACKEND_URL}${user.avatar_url}`) : null} />
+                      <AvatarImage src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${process.env.REACT_APP_BACKEND_URL}${user.avatar_url.startsWith('/api/') ? '' : '/api'}${user.avatar_url}`) : null} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         {user?.first_name?.[0]}{user?.last_name?.[0]}
                       </AvatarFallback>

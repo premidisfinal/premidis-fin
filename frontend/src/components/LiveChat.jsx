@@ -174,7 +174,7 @@ const LiveChat = () => {
                 onClick={() => setSelectedUser(u)}
               >
                 <Avatar className="h-5 w-5 mr-2">
-                  <AvatarImage src={u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `${API_URL}${u.avatar_url}`) : null} />
+                  <AvatarImage src={u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `${API_URL}${u.avatar_url.startsWith('/api/') ? '' : '/api'}${u.avatar_url}`) : null} />
                   <AvatarFallback className="text-xs">
                     {u.first_name?.[0]}{u.last_name?.[0]}
                   </AvatarFallback>
@@ -217,7 +217,7 @@ const LiveChat = () => {
                           <div className={`flex gap-2 max-w-[80%] ${isOwn ? 'flex-row-reverse' : ''}`}>
                             {!isOwn && (
                               <Avatar className="h-8 w-8">
-                                <AvatarImage src={message.sender_avatar ? (message.sender_avatar.startsWith('http') ? message.sender_avatar : `${API_URL}${message.sender_avatar}`) : null} />
+                                <AvatarImage src={message.sender_avatar ? (message.sender_avatar.startsWith('http') ? message.sender_avatar : `${API_URL}${message.sender_avatar.startsWith('/api/') ? '' : '/api'}${message.sender_avatar}`) : null} />
                                 <AvatarFallback className="text-xs bg-primary/10">
                                   {message.sender_name?.split(' ').map(n => n[0]).join('')}
                                 </AvatarFallback>

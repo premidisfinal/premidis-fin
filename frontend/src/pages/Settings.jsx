@@ -120,7 +120,7 @@ const Settings = () => {
             <div className="flex items-center gap-6">
               <div className="relative">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${API_URL}${user.avatar_url}`) : null} />
+                  <AvatarImage src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${API_URL}${user.avatar_url.startsWith('/api/') ? '' : '/api'}${user.avatar_url}`) : null} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                     {user?.first_name?.[0]}{user?.last_name?.[0]}
                   </AvatarFallback>

@@ -592,6 +592,19 @@ async def get_employee(employee_id: str, current_user: dict = Depends(get_curren
     employee = await db.users.find_one({"id": employee_id}, {"_id": 0, "password": 0})
     if not employee:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    # Enrich with site info
+    if employee.get("site_id"):
+        site = await db.sites.find_one({"id": employee["site_id"]}, {"_id": 0})
+        if site:
+            employee["site_name"] = site.get("name")
+    
+    # Enrich with hierarchical group info
+    if employee.get("hierarchical_group_id"):
+        group = await db.hierarchical_groups.find_one({"id": employee["hierarchical_group_id"]}, {"_id": 0})
+        if group:
+            employee["hierarchical_group_name"] = group.get("name")
+    
     return employee
 
 @employees_router.put("/{employee_id}")

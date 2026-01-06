@@ -12,7 +12,8 @@ import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { 
-  Plus, ThumbsUp, ThumbsDown, Clock, User, Search, Filter, Loader2, Download
+  Plus, ThumbsUp, ThumbsDown, Clock, User, Search, Filter, Loader2, Download,
+  Upload, FileText, X, Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';

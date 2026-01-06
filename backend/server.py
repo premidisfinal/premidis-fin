@@ -1959,8 +1959,8 @@ api_router.include_router(notifications_router)
 
 app.include_router(api_router)
 
-# Mount uploads folder
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+# Mount uploads folder - use /api/uploads for Kubernetes ingress routing
+app.mount("/api/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,

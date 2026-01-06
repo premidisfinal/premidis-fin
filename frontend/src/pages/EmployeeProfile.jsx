@@ -114,6 +114,24 @@ const EmployeeProfile = () => {
         setBehaviors([]);
       }
 
+      // Fetch employee leaves
+      try {
+        const leavesResponse = await axios.get(`${API_URL}/api/leaves`, {
+          params: { employee_id: employeeId }
+        });
+        setLeaves(leavesResponse.data.leaves || []);
+      } catch {
+        setLeaves([]);
+      }
+
+      // Fetch leave balance (from employee data)
+      try {
+        const balanceResponse = await axios.get(`${API_URL}/api/leaves/balance`);
+        setLeaveBalance(balanceResponse.data);
+      } catch {
+        setLeaveBalance(null);
+      }
+
     } catch (error) {
       console.error('Error fetching employee data:', error);
     } finally {

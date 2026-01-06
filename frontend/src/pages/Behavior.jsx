@@ -249,6 +249,64 @@ const Behavior = () => {
                       />
                     </div>
 
+                    {/* Documents section */}
+                    <div className="space-y-2">
+                      <Label>Documents justificatifs</Label>
+                      <div className="border rounded-lg p-3">
+                        {formData.document_urls.length > 0 && (
+                          <div className="space-y-2 mb-3">
+                            {formData.document_urls.map((url, index) => (
+                              <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-sm truncate max-w-[200px]">
+                                    Document {index + 1}
+                                  </span>
+                                </div>
+                                <div className="flex gap-1">
+                                  <a href={getDocUrl(url)} target="_blank" rel="noopener noreferrer">
+                                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
+                                      <Eye className="h-3 w-3" />
+                                    </Button>
+                                  </a>
+                                  <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-7 w-7 text-destructive"
+                                    onClick={() => removeDocument(index)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <label className="cursor-pointer">
+                          <input
+                            type="file"
+                            accept=".pdf,image/jpeg,image/jpg,image/png"
+                            onChange={handleBehaviorDocUpload}
+                            className="hidden"
+                          />
+                          <Button type="button" variant="outline" size="sm" className="w-full" asChild>
+                            <span>
+                              {uploadingDoc ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              ) : (
+                                <Upload className="mr-2 h-4 w-4" />
+                              )}
+                              Ajouter un document
+                            </span>
+                          </Button>
+                        </label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Ajoutez des preuves ou documents justificatifs (PDF, images)
+                      </p>
+                    </div>
+
                     <Button type="submit" className="w-full" disabled={submitting}>
                       {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Enregistrer

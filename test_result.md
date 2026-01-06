@@ -1,37 +1,30 @@
-# Test Results - PREMIDIS HR Platform
+# Test Results - HR PWA
 
-## Last Update: $(date)
+## Testing Protocol
+1. Test photo de profil - should display in employee list and profile
+2. Test onglet Congés dans le dossier employé - should show balances and history
+3. Test module Sites de travail - CRUD sites and hierarchical groups
+4. Test documents - view, rename, download, delete
+5. Test comportement - positive/negative types with document attachments
+6. Test onglet Identité - birth date, hire date, hierarchy level, site
 
-## Features to Test:
+## Incorporate User Feedback
+- Photo de profil must display correctly (FIXED - using /api/uploads route)
+- Documents must be viewable in-app modal (IMPLEMENTED)
+- Congés tab must show balances (IMPLEMENTED)
+- Sites management module (IMPLEMENTED)
 
-### 1. Voice Assistant Removal
-- [ ] Verify the floating voice button is removed from all pages
-- [ ] Verify no 404 errors related to /api/voice/* endpoints
+## Test Scenarios to Execute
+1. Login as admin
+2. Navigate to Gestion Personnel
+3. View employee profile - check IDENTITÉ tab
+4. Check Documents tab - verify view/rename/delete
+5. Check Congés tab - verify balances display
+6. Test Sites de travail - create site, create group
+7. Test Comportement - add note with document
 
-### 2. Live Chat Implementation
-- [ ] Chat tab visible in Communication page
-- [ ] Can send broadcast messages
-- [ ] Can view messages from other users
-- [ ] Messages display with sender name and timestamp
-
-### 3. Multi-Currency System (USD/FC)
-- [ ] Admin can select currency (USD/FC) when creating employee
-- [ ] Admin can select currency when editing employee
-- [ ] Currency is displayed correctly in employee profile
-- [ ] Salary shows with correct currency format
-
-### 4. Forgot Password Feature
-- [ ] Can access /forgot-password page
-- [ ] Can submit email address
-- [ ] Token is generated in database
-- [ ] /reset-password page validates token
-- [ ] Can reset password with valid token
-- [ ] Invalid/expired tokens are rejected
-
-## Test Credentials:
-- Admin: rh@premierdis.com / Admin123!
-- Employee: employe@premierdis.com / Emp123!
-
-## Incorporate User Feedback:
-- Test all new features thoroughly
-- Verify no regressions in existing functionality
+## Expected Results
+- All tabs should display correctly
+- Photo profiles should show in list and profile
+- Documents should be viewable in modal
+- Leave balances should display in employee profile

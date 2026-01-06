@@ -632,6 +632,7 @@ async def delete_employee(
 async def list_leaves(
     status: Optional[str] = None,
     leave_type: Optional[str] = None,
+    employee_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
@@ -639,6 +640,9 @@ async def list_leaves(
     # Employees see only their own leaves
     if current_user["role"] == "employee":
         query["employee_id"] = current_user["id"]
+    elif employee_id:
+        # Admin/Secretary can filter by employee_id
+        query["employee_id"] = employee_id
     
     if status:
         query["status"] = status

@@ -37,8 +37,11 @@ const Behavior = () => {
     employee_id: '',
     type: 'positive',
     note: '',
-    date: format(new Date(), 'yyyy-MM-dd')
+    date: format(new Date(), 'yyyy-MM-dd'),
+    document_urls: []
   });
+  
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   useEffect(() => {
     fetchData();

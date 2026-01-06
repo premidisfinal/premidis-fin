@@ -1,30 +1,146 @@
-# Test Results - HR PWA
+backend:
+  - task: "Sites API - List all sites"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - needs testing"
 
-## Testing Protocol
-1. Test photo de profil - should display in employee list and profile
-2. Test onglet Congés dans le dossier employé - should show balances and history
-3. Test module Sites de travail - CRUD sites and hierarchical groups
-4. Test documents - view, rename, download, delete
-5. Test comportement - positive/negative types with document attachments
-6. Test onglet Identité - birth date, hire date, hierarchy level, site
+  - task: "Sites API - Create new site"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - needs testing"
 
-## Incorporate User Feedback
-- Photo de profil must display correctly (FIXED - using /api/uploads route)
-- Documents must be viewable in-app modal (IMPLEMENTED)
-- Congés tab must show balances (IMPLEMENTED)
-- Sites management module (IMPLEMENTED)
+  - task: "Sites API - List hierarchical groups"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - needs testing"
 
-## Test Scenarios to Execute
-1. Login as admin
-2. Navigate to Gestion Personnel
-3. View employee profile - check IDENTITÉ tab
-4. Check Documents tab - verify view/rename/delete
-5. Check Congés tab - verify balances display
-6. Test Sites de travail - create site, create group
-7. Test Comportement - add note with document
+  - task: "Employee API - List employees with site info"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - needs testing"
 
-## Expected Results
-- All tabs should display correctly
-- Photo profiles should show in list and profile
-- Documents should be viewable in modal
-- Leave balances should display in employee profile
+  - task: "Employee API - Get employee details with site and group info"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - needs testing"
+
+  - task: "Leaves API - Get leaves for specific employee"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - needs testing"
+
+  - task: "Documents API - Rename document"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - needs testing"
+
+  - task: "Documents API - Delete document"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - needs testing"
+
+  - task: "Behavior API - Create behavior with document_urls"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - needs testing"
+
+frontend:
+  - task: "Login and navigate to employee profile"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Frontend testing not performed by testing agent"
+
+metadata:
+  created_by: "testing_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Sites API - List all sites"
+    - "Sites API - Create new site"
+    - "Sites API - List hierarchical groups"
+    - "Employee API - List employees with site info"
+    - "Employee API - Get employee details with site and group info"
+    - "Leaves API - Get leaves for specific employee"
+    - "Documents API - Rename document"
+    - "Documents API - Delete document"
+    - "Behavior API - Create behavior with document_urls"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "testing"
+    message: "Starting comprehensive backend API testing for HR PWA application. Focus on Sites API, Employee API enhancements, Leaves API, Documents API, and Behavior API with document_urls field."

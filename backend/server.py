@@ -101,6 +101,11 @@ class UserResponse(BaseModel):
     salary: Optional[float] = None
     salary_currency: Optional[str] = "USD"
     birth_date: Optional[str] = None
+    hierarchy_level: Optional[str] = None
+    site_id: Optional[str] = None
+    site_name: Optional[str] = None
+    hierarchical_group_id: Optional[str] = None
+    hierarchical_group_name: Optional[str] = None
     is_active: bool = True
     created_at: Optional[str] = None
     avatar_url: Optional[str] = None

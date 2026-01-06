@@ -1584,6 +1584,7 @@ async def create_behavior_note(
         "type": behavior.type,
         "note": behavior.note,
         "date": behavior.date,
+        "document_urls": behavior.document_urls or [],
         "created_by": current_user["id"],
         "created_by_name": f"{current_user['first_name']} {current_user['last_name']}",
         "created_at": datetime.now(timezone.utc).isoformat()

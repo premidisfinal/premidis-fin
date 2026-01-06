@@ -78,7 +78,7 @@ const Behavior = () => {
       await axios.post(`${API_URL}/api/behavior`, formData);
       toast.success('Note de comportement ajoutée');
       setDialogOpen(false);
-      setFormData({ employee_id: '', type: 'positive', note: '', date: format(new Date(), 'yyyy-MM-dd') });
+      setFormData({ employee_id: '', type: 'positive', note: '', date: format(new Date(), 'yyyy-MM-dd'), document_urls: [] });
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erreur');

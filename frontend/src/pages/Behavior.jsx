@@ -87,6 +87,44 @@ const Behavior = () => {
     }
   };
 
+  // Upload document for behavior
+  const handleBehaviorDocUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingDoc(true);
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+    
+    try {
+      const response = await axios.post(`${API_URL}/api/upload/file`, formDataUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setFormData(prev => ({
+        ...prev,
+        document_urls: [...prev.document_urls, response.data.url]
+      }));
+      toast.success('Document ajouté');
+    } catch (error) {
+      toast.error('Erreur lors de l\'upload');
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
+
+  const removeDocument = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      document_urls: prev.document_urls.filter((_, i) => i !== index)
+    }));
+  };
+
+  const getDocUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `${API_URL}${url.startsWith('/api/') ? '' : '/api'}${url}`;
+  };
+
   const handleExport = () => {
     const csv = [
       'Date,Employé,Type,Note',

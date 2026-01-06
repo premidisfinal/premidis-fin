@@ -1,102 +1,66 @@
 <analysis>**original_problem_statement:**
-The user wants to refactor an existing Human Resources PWA, codenamed PREMIERDIs, to simplify its functionality, enforce strict role-based access, and fix numerous bugs. The frontend UI/UX, branding, and name must be preserved.
+The user initially wanted to refactor an HR PWA by simplifying functionality, enforcing role-based access, and fixing bugs. The scope has since expanded significantly based on new user requests.
 
-**PRODUCT REQUIREMENTS (Based on multiple user prompts):**
+**LATEST PRODUCT REQUIREMENTS:**
 
-1.  **Core Principle:** Simplicity, stability, and usability for non-technical users. Remove all non-essential features.
-2.  **Strict Role-Based Access:**
-    *   **Administrator:** Full access. Manages employees, salaries, permissions, behavior, and approves leave.
-    *   **Secretary:** Manages employee records, can request leave for all employees (for holidays), can approve/reject leave requests, and post announcements. Access is limited by permissions set by the Admin.
-    *   **Employee:** Read-only access to their own profile, salary, and behavior history. Can submit leave requests and upload documents.
-3.  **Core Features:**
-    *   **Leave Management:** Simplified system for Annual, Sick, Maternity, Exceptional, and Public Holidays. Secretaries and Admins can approve/reject requests. Secretaries can create leave for all employees at once (for public holidays). Rejected leaves must not appear on the calendar.
-    *   **Personnel Management:** Admins and Secretaries can manage employee details. Admins can set salaries. Employees view their salary as read-only.
-    *   **Behavior Tracking:** A simple module for Admins to record positive/negative behavior notes, which are visible to the employee.
-    *   **Announcements:** A simplified communication module for Admins/Secretaries to post announcements.
-    *   **Document/Image Upload:** Users must be able to upload profile pictures and documents to their profiles.
-    *   **Settings:** Users can change their password, profile info, and profile picture.
-    *   **Dark Mode:** A functional dark mode toggle.
-4.  **Latest Requests:**
-    *   Implement a multi-currency system for salaries, supporting USD and FC.
-    *   Fix the non-functional Forgot Password feature by sending a password reset email.
-    *   Implement a Permissions Management page for Admins to configure what Secretaries and Employees can do.
+1.  **Open Registration System (CRITICAL):**
+    *   Remove all forms of user registration approval (no admin email validation, no pending status).
+    *   Any user must be able to go to the registration page, select the Administrator role, and create a fully-active admin account immediately. This is a non-negotiable requirement to ensure the client can always regain access to the application.
+2.  **Advanced Leave Management:**
+    *   Admins must have an Ajuster les congés (Adjust Leave) interface to configure the default duration and unit (days, months) for each type of leave (e.g., Maternity: 3 months).
+    *   When creating a leave request for an employee, the system must automatically calculate the end date based on the start date and the configured duration for the selected leave type.
+    *   Admins should be able to create new leave types directly from this configuration interface.
+    *   Implement an option to create leave for all employees at once (e.g., for public holidays).
+    *   The system must notify administrators (via UI badge and email) when leave requests from key-post employees (Admin, Secretary) or employees in the same department overlap.
+3.  **UI/UX Improvements:**
+    *   In the employee profile, documents should be viewable directly within the app (e.g., in a modal) and have a clear download button.
+    *   Ensure an uploaded profile picture correctly replaces the user's initials in the UI.
+    *   The main calendar should display all approved leaves for all employees, giving a global view.
+4.  **Module Removal:**
+    *   The Performance module must be completely removed from the application (UI, backend endpoints, database references).
 
 **User's preferred language**: French (fr)
 
 **what currently exists?**
-A full-stack HR application (FastAPI backend, React frontend) that has been significantly refactored and simplified per the user's instructions. The application is stable and functional. Major work was done to remove unused modules (, ), add new ones (, ), fix bugs (employee creation/modification, file uploads, role permissions), and implement user-requested features like dark mode and a new logo. The application now reflects the simplified, role-based structure requested by the user.
+The application is a full-stack HR platform (React/FastAPI/MongoDB). The agent has just fixed a critical JSX syntax error in  that was preventing the frontend from compiling. The application now builds successfully and is accessible. Key features include an open registration system for admins, a partially implemented Ajuster les congés module for leave management, a Forgot Password flow using Resend, and a simple live chat.
 
 **Last working item**:
-- Last item agent was working: The agent was about to start implementing the final user requests: adding a multi-currency system (USD/FC) for salaries and fixing the broken forgot password feature. The agent identified that the backend was missing the necessary endpoints for password reset.
-- Status: NOT STARTED
-- Agent Testing Done: N
-- Which testing method agent to use? both
+- Last item agent was working: Fixing a critical frontend compilation error. The user reported a  in . The agent identified and removed orphaned JSX code causing the build to fail.
+- Status: COMPLETED
+- Agent Testing Done: Y
+- Which testing method agent to use? NA (The fix is complete. The next task will require testing).
 - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-- Issue 1: The Forgot Password feature is not working. (Priority: P0)
-
-Issues Detail:
-- Issue 1:
-    - Attempted fixes: The agent analyzed  and  and determined that the required backend endpoints ( and ) are missing. No code has been written yet.
-    - Next debug checklist:
-        1.  In , add new endpoints  and .
-        2.  Integrate SendGrid to send an email with a unique reset token.
-        3.  The  endpoint should validate the token and update the user's password.
-        4.  Ensure the frontend  page correctly calls the new endpoint.
-        5.  Test the full flow: request reset, receive email (mock or real), click link, and set a new password.
-    - Why fix this issue and what will be achieved with the fix? This is a critical user-facing feature required for account recovery. Fixing it is one of the last two requirements before deployment.
-    - Status: NOT STARTED
-    - Is recurring issue? N
-    - Should Test frontend/backend/both after fix? Both
-    - Blocked on other issue: None
+- None. The blocking issue has been resolved.
 
 **In progress Task List**:
-- Task 1: Implement a multi-currency system for salaries. (Priority: P0)
+- Task 1: Finalize the document viewer and download functionality. (Priority: P0)
 
 Task Detail:
 - Task 1:
-    - Where to resume:
-        1.  **Backend**: Modify the  model in  to include a  field (e.g., ) alongside the  field.
-        2.  **Backend**: Update the employee creation () and update () endpoints to accept and save the currency.
-        3.  **Frontend**: In , add a  dropdown in the employee creation/modification form for the admin to choose between 'USD' and 'FC'.
-        4.  **Frontend**: In , update the salary display to show the amount and the currency (e.g., ,000 USD).
-    - What will be achieved with this? It will fulfill a key business requirement for handling salaries in different local currencies.
-    - Status: NOT STARTED
-    - Should Test frontend/backend/both after fix? Both
-    - Blocked on something: None
+    - Where to resume: This task is now unblocked. Resume work in . The agent needs to verify and/or complete the implementation of the document viewer modal () and download functionality.
+    - What will be achieved with this? This will fulfill the user's requirement for an in-app document viewer and download buttons on the employee profile page.
+    - Status: IN PROGRESS
+    - Should Test frontend/backend/both after fix? Frontend
+    - Blocked on something: None.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks:**
-    1.  **Final Validation (P0):** After implementing the pending items, run the testing agent for a full, final regression test to ensure the entire application is stable and ready for deployment.
+    1.  **Leave Management - Create New Type (P1):** In , connect the Créer un nouveau type de congé button and form to the existing  backend endpoint.
+    2.  **Leave Management - Overlap Notifications (P1):** The backend has initial logic to detect leave overlaps for key posts. This needs to be completed and integrated with a frontend notification system (UI badge and email via Resend) to alert admins.
+    3.  **Profile Picture Display (P2):** Verify that when a user uploads a profile picture, it correctly displays in place of their initials throughout the app.
+    4.  **Global Calendar View (P2):** Verify on the frontend that the calendar in  now correctly displays leaves for all employees when viewed by an admin, using the  endpoint.
 - **Future Tasks:**
-    1.  **Deployment (P1):** The user has indicated that once the current tasks are complete, the next step is to deploy the application.
+    1.  **Final Regression Test (P2):** Once all features are implemented and verified, run the testing agent for a full regression test of the entire application.
+    2.  **Deployment (P3):** The final step after user confirmation will be to deploy the application.
 
 **Completed work in this session**
-- **Critical Bug Fix:** Resolved the initial frontend build failure, making the application renderable.
-- **Major Refactoring:**
-    - Removed  and  modules from the UI and backend.
-    - Simplified the  page to focus solely on announcements.
-    - Simplified the  page to three tabs: Informations, Documents, Comportement.
-- **Feature Implementation:**
-    - Added a  tracking module with frontend UI and backend endpoints.
-    - Added a  page for admins to control role capabilities.
-    - Implemented a functional Dark Mode with a UI toggle.
-    - Added a  page for users to change their profile info, password, and profile picture.
-    - Enabled Secretaries to create leave requests for all employees (for public holidays).
-    - Implemented a new logo on the login page and throughout the app.
-    - Added salary management for admins and a read-only view for employees.
-- **Bug Fixes:**
-    - Fixed the admin's inability to create and modify employees.
-    - Implemented an option for admins to permanently delete or just deactivate employees.
-    - Granted Secretaries the ability to approve/reject leave requests.
-    - Corrected the calendar logic to hide rejected leaves.
-    - Fixed all file/document/profile picture upload errors.
-    - Fixed the announcement posting functionality.
-    - Made leave rules clearly visible to employees before they request leave.
+- Recently completed:
+  - Fixed a critical JSX  in , which unblocked all frontend development. The agent removed orphaned code and confirmed the frontend compiles and loads successfully.
 
 **Earlier issues found/mentioned but not fixed**
-None. All previously mentioned issues have been addressed. The current pending tasks originate from the very last user messages.
+- None.
 
 **Known issue recurrence from previous fork**
 - None.
@@ -109,73 +73,60 @@ None. All previously mentioned issues have been addressed. The current pending t
 - **Backend:** FastAPI, Python
 - **Database:** MongoDB
 - **Authentication:** JWT (JSON Web Tokens)
+- **Email:** Resend API
 
 **key DB schema**
 - **users:** 
-- **leaves:** 
-- **announcements:** 
-- **behavior_notes:** (new) 
-- **permissions:** (new) 
+- **chat_messages:** 
+- **system_settings:** 
+- **leave_type_configs:** 
+- **notifications:** 
 
 **changes in tech stack**
-- None.
+- **Added:**  (Python library for email).
 
 **All files of reference**
-- **/app/backend/server.py**: The main backend file. Needs edits for multi-currency salaries and forgot-password endpoints.
-- **/app/frontend/src/pages/ForgotPassword.jsx**: Frontend for the broken password reset feature.
-- **/app/frontend/src/pages/Administration.jsx**: Needs a currency selector for salary management.
-- **/app/frontend/src/pages/EmployeeProfile.jsx**: Needs to display salary with currency.
-- **/app/frontend/src/pages/Settings.jsx**: Updated to include profile picture uploads.
-- **/app/frontend/src/pages/Login.jsx**: Updated to include the new logo.
+- **/app/frontend/src/pages/EmployeeProfile.jsx**: The syntax error has been fixed. This file is the primary location for the next task: implementing the document viewer/downloader.
+- **/app/frontend/src/pages/TimeManagement.jsx**: Contains UI for the Ajuster les congés feature and is relevant for upcoming leave management tasks.
+- **/app/frontend/src/pages/Register.jsx**: Contains the logic for the critical open registration flow.
+- **/app/backend/server.py**: Contains all backend logic, including endpoints for registration, leave management, and chat.
 
 **Areas that need refactoring**:
-- None. The application has just undergone a major refactoring and simplification.
+- **/app/frontend/src/pages/EmployeeProfile.jsx**: Although the syntax error is fixed, the file still contains orphaned code and commented-out API calls from the removed Performance module that should be cleaned up.
 
 **key api endpoints**
-- , , 
--  (GET, PUT)
--  (GET, POST, PUT),  (DELETE)
--  (GET, POST),  (PUT)
--  (GET, POST)
--  (GET, POST, DELETE)
--  (POST),  (POST)
-- **To be created:** , 
+- **Auth:** ,  (modified),  (new),  (new)
+- **Leave Config (new):**  (GET, POST, PUT),  (POST)
+- **Calendar:**  (modified to show all leaves)
+- **Chat (new):**  (GET, POST)
+- **Notifications (new):**  (GET, PUT)
+- **Removed:** All endpoints related to .
 
 **Critical Info for New Agent**
-- The user is super happy with the current state and progress. The goal is to complete the final two tasks (multi-currency and forgot password) and then prepare for deployment.
-- Maintain the principles of simplicity and stability. Do not introduce new features or complexity beyond what is explicitly requested.
-- The application has been heavily simplified. Refer to the current codebase and UI rather than earlier prompts for structure.
+- **TOP PRIORITY:** The frontend compilation blocker is resolved. The immediate next step is to continue the **In Progress Task**: Finalize the document viewer and download functionality in .
+- **CRITICAL REQUIREMENT:** The user has mandated that the registration system remain completely open, allowing anyone to create an Administrator account at any time. Do **NOT** re-introduce any form of approval, validation, or pending status for new user accounts.
 
-**documents and test_reports created in this job**
-- /app/test_reports/iteration_4.json
-- /app/test_reports/iteration_5.json
-- /app/test_reports/iteration_6.json
-- /app/test_reports/iteration_7.json
-- /app/test_result.md (updated multiple times)
+**documents and test reports created in this job**
+- /app/test_reports/iteration_8.json (from a previous job, but still relevant)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **[#537]** I need a multi currency system on salary feature which supports mainly USD and FC and the other last issue is the forget password feature which is not working and the email link ins not being sent so it needs correction and after that we only need to deploy. thank you for evrything I am suoer happy
-2.  **[#451]** inside settings we need the ability t change profile picture and we also need a salary option for admin to set it for the employee and edit it but for the employee it can only be in read only and i need a feature in the admin side to set permissions for everyone... I also need the new logo to appear on the login page lastly the admin is not abe to delete completely the employees and when he tries to modify the emplyees here is the errror he is encoutenring...
-3.  **[#357]** remove the inmport cv cause we just judged that the document import is working and is already more than enough. I need the secretary to be able to request a congee for all employees at the same time... and you can remove all stuff inside communication and leave only anouncement... there are errors in modifying the employees and deleting them as an admin and there is an error n changing the password verify all other unseen errors
-4.  **[#253]** (Follow-up Prompt) Fix all import and upload errors, especially: Import buttons not working... Document upload errors... Fix the error preventing announcements from being created... Secretary MUST be able to approve and reject leave requests... If a leave request is rejected: It must NOT appear in the calendar... Add a dedicated “Behavior / Comportement” tab in each employee profile... All users must be able to Upload/Edit/Change profile picture... AND REPLACE THE LOGO WITH THIS ATTACHED IMAGE...
-5.  **[#100]** (Refactor Prompt #2) FOCUS: SIMPLICITY, STABILITY, REAL USERS... Your task is to SIMPLIFY, CLEAN, FIX, and REBUILD the platform logic so it focuses ONLY on essential HR features... Remove ALL unnecessary features... MUST-HAVE UI FEATURES: Dark mode, Clear color usage... EMPLOYEE PROFILE MANAGEMENT: Employees must be able to: Edit personal information, Change profile picture, Upload documents... LEAVE MANAGEMENT (SIMPLIFIED)... PERSONNEL MANAGEMENT (SIMPLIFIED)... BEHAVIOR TRACKING MODULE (IMPORTANT)... REMOVE COMPLETELY: Règlement intérieur, Remuneration modules... BUG FIXES (MANDATORY)...
-6.  **[#5]** (Refactor Prompt #1) GARDEZ JUSTE LE DESIGN ET LE NOM PREMIERDIS PAS PROMETHEUS EN PLUS FOCALISER VOUS SUR CE PROMPT... Your mission is to refactor and rebuild the internal logic, permissions, workflows, and data handling so the platform focuses ONLY on the client-validated features listed below... Remove or disable any functionality not explicitly listed.
+1. **[LATEST]** User sent corrige cette erreur (fix this error) along with the frontend compilation error log. The agent successfully fixed this. (Completed)
+2. An  was sent by the agent to confirm a plan, but the user responded with the bug report above instead. The original plan confirmation is no longer pending as the agent correctly pivoted to the urgent fix.
 
 **Project Health Check:**
-- **Working**: The frontend builds, and the application is functional and stable.
-- **Mocked**: None.
+- **Healthy**: The frontend and backend services are running. The previous critical compilation error has been resolved.
 
 **3rd Party Integrations**
-- **OpenAI Whisper & TTS:** Integrated for potential voice features, but not actively used in the simplified UI. Uses Emergent LLM Key.
-- **SendGrid:** Required for the pending Forgot Password email functionality. Requires a user-provided API key.
+- **Resend:** Used for sending password reset and other notification emails. Requires  in .
 
 **Testing status**
-- Testing agent used after significant changes: YES (Last run:  with 91% global success).
+- Testing agent used after significant changes: NO (not in this session)
 - Troubleshoot agent used after agent stuck in loop: NO
-- Test files created: Test files were created/updated by the testing agent in .
-- Known regressions: None. A calendar issue was identified and fixed in the last session.
+- Test files created: None in this session.
+- Known regressions: None. The previous major regression (non-compiling frontend) has been fixed.
 
 **Credentials to test flow:**
-- **Admin:**  (password was likely reset or is unknown, but a new one can be created)
-- **Secretary:**  (password was likely reset or is unknown)
-- **Employee:**  / </analysis>
+- No fixed credentials are required. Per the user's critical request, a new administrator account can be created at any time directly from the public registration page (). Use this method to create a test admin user.
+
+**What agent forgot to execute**
+- Nothing. The agent was about to propose a plan to the user but was interrupted by an urgent bug report. The agent correctly prioritized and resolved the user's immediate issue. The next step should be to create and confirm a new plan, starting with the unblocked task.</analysis>

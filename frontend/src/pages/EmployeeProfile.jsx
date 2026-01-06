@@ -598,59 +598,73 @@ const EmployeeProfile = () => {
                           
                           {/* Document info */}
                           <div className="p-3">
-                            <p className="font-medium text-sm truncate" title={doc.name}>{doc.name}</p>
+                            {/* Document name - editable */}
+                            {editingDocName === doc.id ? (
+                              <div className="flex items-center gap-1 mb-2">
+                                <Input
+                                  value={newDocName}
+                                  onChange={(e) => setNewDocName(e.target.value)}
+                                  className="h-7 text-sm"
+                                  autoFocus
+                                />
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleRenameDocument(doc.id)}>
+                                  <Check className="h-3 w-3 text-green-500" />
+                                </Button>
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingDocName(null); setNewDocName(''); }}>
+                                  <X className="h-3 w-3 text-red-500" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between mb-1">
+                                <p className="font-medium text-sm truncate flex-1" title={doc.name}>{doc.name}</p>
+                                {(isOwnProfile || canModify) && (
+                                  <Button 
+                                    size="icon" 
+                                    variant="ghost" 
+                                    className="h-6 w-6 ml-1"
+                                    onClick={() => { setEditingDocName(doc.id); setNewDocName(doc.name); }}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
                             <p className="text-xs text-muted-foreground uppercase mb-3">{doc.type || 'Fichier'}</p>
                             
-                            {/* Action buttons - only show if action is possible */}
-                            <div className="flex gap-2">
-                              {/* View button - only if document can be viewed */}
+                            {/* Action buttons */}
+                            <div className="flex gap-1 flex-wrap">
+                              {/* View button */}
                               {canView && (
-                                isImage ? (
-                                  // For images: open in new tab for full view
-                                  <a 
-                                    href={docUrl} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex-1"
-                                  >
-                                    <Button size="sm" variant="outline" className="w-full">
-                                      <Eye className="h-4 w-4 mr-1" />
-                                      Voir
-                                    </Button>
-                                  </a>
-                                ) : isPdf ? (
-                                  // For PDFs: open in new tab
-                                  <a 
-                                    href={docUrl} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex-1"
-                                  >
-                                    <Button size="sm" variant="outline" className="w-full">
-                                      <Eye className="h-4 w-4 mr-1" />
-                                      Voir
-                                    </Button>
-                                  </a>
-                                ) : null
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="flex-1"
+                                  onClick={() => setViewingDoc({ ...doc, url: docUrl, isImage, isPdf })}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Voir
+                                </Button>
                               )}
                               
-                              {/* Download button - only if URL exists */}
+                              {/* Download button */}
                               {canDownload && (
-                                <a 
-                                  href={docUrl} 
-                                  download={doc.name || 'document'}
-                                  className={canView ? '' : 'flex-1'}
-                                >
-                                  <Button size="sm" variant="outline" className={canView ? '' : 'w-full'}>
+                                <a href={docUrl} download={doc.name || 'document'}>
+                                  <Button size="sm" variant="outline">
                                     <Download className="h-4 w-4" />
-                                    {!canView && <span className="ml-1">Télécharger</span>}
                                   </Button>
                                 </a>
                               )}
                               
-                              {/* No action possible */}
-                              {!canView && !canDownload && (
-                                <p className="text-xs text-muted-foreground">Document non disponible</p>
+                              {/* Delete button */}
+                              {(isOwnProfile || canModify) && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => handleDeleteDocument(doc.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               )}
                             </div>
                           </div>

@@ -575,22 +575,52 @@ const EmployeeProfile = () => {
                 </CardContent>
               </Card>
 
+              {/* SITE DE TRAVAIL Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">EMPLACEMENT</CardTitle>
+                  <CardTitle className="text-lg">SITE DE TRAVAIL</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label className="text-muted-foreground">Adresse professionnelle</Label>
-                    <p className="font-medium">PREMIDIS sarl</p>
-                    <p className="text-muted-foreground text-sm">{employee.country}</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <Label className="text-muted-foreground">Site principal</Label>
+                      <p className="font-medium flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-primary" />
+                        {employee.site_name || 'Non assigné'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Groupe hiérarchique</Label>
+                      <p className="font-medium">{employee.hierarchical_group_name || 'Non assigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Pays</Label>
+                      <p className="font-medium">{employee.country || 'RDC'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <Label className="text-muted-foreground">Date d'embauche</Label>
-                    <p className="font-medium">
-                      {employee.hire_date ? format(new Date(employee.hire_date), 'dd MMMM yyyy', { locale: fr }) : '-'}
-                    </p>
-                  </div>
+                  
+                  {/* Ancienneté */}
+                  {employee.hire_date && (
+                    <div className="mt-4 pt-4 border-t">
+                      <Label className="text-muted-foreground">Ancienneté</Label>
+                      <p className="font-medium text-lg text-primary">
+                        {(() => {
+                          const hireDate = new Date(employee.hire_date);
+                          const now = new Date();
+                          const years = now.getFullYear() - hireDate.getFullYear();
+                          const months = now.getMonth() - hireDate.getMonth();
+                          const totalMonths = years * 12 + months;
+                          if (totalMonths < 12) {
+                            return `${totalMonths} mois`;
+                          } else {
+                            const y = Math.floor(totalMonths / 12);
+                            const m = totalMonths % 12;
+                            return `${y} an${y > 1 ? 's' : ''}${m > 0 ? ` et ${m} mois` : ''}`;
+                          }
+                        })()}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

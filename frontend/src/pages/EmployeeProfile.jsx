@@ -895,6 +895,48 @@ const EmployeeProfile = () => {
           </TabsContent>
 
         </Tabs>
+
+        {/* Document Viewer Modal */}
+        <Dialog open={!!viewingDoc} onOpenChange={() => setViewingDoc(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                {viewingDoc?.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="overflow-auto max-h-[70vh]">
+              {viewingDoc?.isImage && (
+                <img 
+                  src={viewingDoc.url} 
+                  alt={viewingDoc.name}
+                  className="w-full h-auto rounded-lg"
+                />
+              )}
+              {viewingDoc?.isPdf && (
+                <iframe
+                  src={viewingDoc.url}
+                  className="w-full h-[65vh] rounded-lg border"
+                  title={viewingDoc.name}
+                />
+              )}
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <a href={viewingDoc?.url} download={viewingDoc?.name}>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Télécharger
+                </Button>
+              </a>
+              <a href={viewingDoc?.url} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline">
+                  Ouvrir dans un nouvel onglet
+                </Button>
+              </a>
+              <Button onClick={() => setViewingDoc(null)}>Fermer</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

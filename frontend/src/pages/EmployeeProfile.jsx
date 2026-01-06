@@ -20,7 +20,8 @@ import {
   Mail, Phone, Building2, Calendar, MapPin, Upload, Download,
   Edit, ArrowLeft, Plus, Clock, Target, CheckCircle, Loader2,
   ThumbsUp, ThumbsDown, UserCheck, Camera, DollarSign, Eye,
-  CalendarDays, CalendarCheck, CalendarX, CalendarClock, History
+  CalendarDays, CalendarCheck, CalendarX, CalendarClock, History,
+  Trash2, Pencil, X, Check
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';

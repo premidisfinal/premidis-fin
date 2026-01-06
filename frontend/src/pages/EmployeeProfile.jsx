@@ -41,6 +41,8 @@ const EmployeeProfile = () => {
   const [payslips, setPayslips] = useState([]);
   const [objectives, setObjectives] = useState([]);
   const [behaviors, setBehaviors] = useState([]);
+  const [leaves, setLeaves] = useState([]);
+  const [leaveBalance, setLeaveBalance] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [uploading, setUploading] = useState(false);

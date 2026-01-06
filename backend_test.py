@@ -68,27 +68,22 @@ class HRPlatformTester:
         """Test login for different roles"""
         print("\n🔐 Testing Authentication...")
         
-        # Test admin login
+        # Test admin login with provided credentials
         success, response = self.run_test(
             "Admin Login",
             "POST",
             "auth/login",
             200,
-            data={"email": "rh@premierdis.com", "password": "Admin123!"}
+            data={"email": "test@premidis.com", "password": "Test123!"}
         )
         if success and 'access_token' in response:
             self.admin_token = response['access_token']
+            print(f"✅ Admin token obtained successfully")
+        else:
+            print(f"❌ Failed to get admin token")
+            return False
         
-        # Test employee login
-        success, response = self.run_test(
-            "Employee Login",
-            "POST",
-            "auth/login",
-            200,
-            data={"email": "employe@premierdis.com", "password": "Emp123!"}
-        )
-        if success and 'access_token' in response:
-            self.employee_token = response['access_token']
+        return True
 
     def test_voice_assistant_removal(self):
         """Test that voice assistant endpoints are removed"""

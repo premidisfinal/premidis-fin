@@ -516,7 +516,19 @@ class HRPlatformTester:
         print("🚀 Starting PREMIDIS HR Platform Backend Tests")
         print("=" * 60)
         
-        self.test_authentication()
+        # Authentication is required for most tests
+        if not self.test_authentication():
+            print("❌ Authentication failed - cannot proceed with other tests")
+            return False
+        
+        # Run the new API tests from review request
+        self.test_sites_api()
+        self.test_employee_api_enhanced()
+        self.test_leaves_api()
+        self.test_documents_api()
+        self.test_behavior_api()
+        
+        # Run existing tests
         self.test_voice_assistant_removal()
         self.test_live_chat_endpoints()
         self.test_multi_currency_system()

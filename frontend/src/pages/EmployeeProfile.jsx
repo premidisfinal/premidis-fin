@@ -200,6 +200,39 @@ const EmployeeProfile = () => {
     }
   };
 
+  // Rename document
+  const handleRenameDocument = async (docId) => {
+    if (!newDocName.trim()) {
+      toast.error('Le nom ne peut pas être vide');
+      return;
+    }
+    
+    try {
+      const employeeId = id || user?.id;
+      await axios.put(`${API_URL}/api/employees/${employeeId}/documents/${docId}?name=${encodeURIComponent(newDocName)}`);
+      toast.success('Document renommé');
+      setEditingDocName(null);
+      setNewDocName('');
+      fetchEmployeeData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors du renommage');
+    }
+  };
+
+  // Delete document
+  const handleDeleteDocument = async (docId) => {
+    if (!confirm('Voulez-vous vraiment supprimer ce document ?')) return;
+    
+    try {
+      const employeeId = id || user?.id;
+      await axios.delete(`${API_URL}/api/employees/${employeeId}/documents/${docId}`);
+      toast.success('Document supprimé');
+      fetchEmployeeData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+    }
+  };
+
   const handleSaveEdit = async () => {
     try {
       await axios.put(`${API_URL}/api/employees/${employee.id}`, editData);

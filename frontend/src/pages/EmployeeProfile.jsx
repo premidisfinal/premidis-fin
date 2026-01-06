@@ -378,6 +378,10 @@ const EmployeeProfile = () => {
               <UserCheck className="h-4 w-4" />
               Comportement
             </TabsTrigger>
+            <TabsTrigger value="conges" className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Congés
+            </TabsTrigger>
           </TabsList>
 
           {/* TRAVAIL/INFO Tab */}

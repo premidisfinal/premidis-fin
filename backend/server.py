@@ -167,6 +167,7 @@ class BehaviorNote(BaseModel):
     type: str  # 'positive' or 'negative'
     note: str
     date: str
+    document_urls: Optional[List[str]] = []  # Documents liés au comportement
 
 class DocumentUpload(BaseModel):
     name: str

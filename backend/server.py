@@ -147,6 +147,10 @@ class EmployeeUpdate(BaseModel):
     salary: Optional[float] = None
     salary_currency: Optional[str] = None
     hire_date: Optional[str] = None
+    site_id: Optional[str] = None
+    hierarchical_group_id: Optional[str] = None
+    birth_date: Optional[str] = None
+    hierarchy_level: Optional[str] = None
 
 class SalaryAdvance(BaseModel):
     employee_id: str

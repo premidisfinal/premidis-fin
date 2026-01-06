@@ -304,6 +304,213 @@ class HRPlatformTester:
         else:
             self.log_test("Default currency is USD", False, f"Expected USD, got {response.get('salary_currency')}")
 
+    def test_sites_api(self):
+        """Test Sites API endpoints"""
+        print("\n🏢 Testing Sites API...")
+        
+        if not self.admin_token:
+            print("❌ Cannot test sites API - no admin token")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test GET /api/sites - list all sites
+        success, response = self.run_test(
+            "GET /api/sites - List all sites",
+            "GET",
+            "sites",
+            200,
+            headers=headers
+        )
+        
+        # Test POST /api/sites - create a new site
+        site_data = {
+            "name": "Kinshasa HQ",
+            "city": "Kinshasa", 
+            "country": "RDC",
+            "address": "123 Avenue du Commerce"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/sites - Create new site",
+            "POST",
+            "sites",
+            201,
+            data=site_data,
+            headers=headers
+        )
+        
+        if success and 'id' in response:
+            self.site_id = response['id']
+            print(f"✅ Site created with ID: {self.site_id}")
+        
+        # Test GET /api/sites/groups - list hierarchical groups
+        success, response = self.run_test(
+            "GET /api/sites/groups - List hierarchical groups",
+            "GET",
+            "sites/groups",
+            200,
+            headers=headers
+        )
+
+    def test_employee_api_enhanced(self):
+        """Test Employee API with site and group information"""
+        print("\n👥 Testing Enhanced Employee API...")
+        
+        if not self.admin_token:
+            print("❌ Cannot test employee API - no admin token")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test GET /api/employees - list employees
+        success, response = self.run_test(
+            "GET /api/employees - List employees",
+            "GET",
+            "employees",
+            200,
+            headers=headers
+        )
+        
+        if success and 'employees' in response and len(response['employees']) > 0:
+            self.employee_id = response['employees'][0]['id']
+            print(f"✅ Found employee ID: {self.employee_id}")
+            
+            # Test GET /api/employees/{id} - get employee details with site_name and hierarchical_group_name
+            success, employee_response = self.run_test(
+                "GET /api/employees/{id} - Get employee details with site info",
+                "GET",
+                f"employees/{self.employee_id}",
+                200,
+                headers=headers
+            )
+            
+            if success:
+                # Check if response includes site_name and hierarchical_group_name fields
+                has_site_name = 'site_name' in employee_response
+                has_group_name = 'hierarchical_group_name' in employee_response
+                
+                self.log_test(
+                    "Employee details include site_name field", 
+                    has_site_name,
+                    f"site_name field present: {has_site_name}"
+                )
+                
+                self.log_test(
+                    "Employee details include hierarchical_group_name field",
+                    has_group_name, 
+                    f"hierarchical_group_name field present: {has_group_name}"
+                )
+
+    def test_leaves_api(self):
+        """Test Leaves API for specific employee"""
+        print("\n🏖️ Testing Leaves API...")
+        
+        if not self.admin_token or not self.employee_id:
+            print("❌ Cannot test leaves API - missing admin token or employee ID")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test GET /api/leaves?employee_id={id} - get leaves for specific employee
+        success, response = self.run_test(
+            f"GET /api/leaves?employee_id={self.employee_id} - Get leaves for specific employee",
+            "GET",
+            f"leaves?employee_id={self.employee_id}",
+            200,
+            headers=headers
+        )
+        
+        if success and 'leaves' in response:
+            self.log_test(
+                "Leaves API returns leaves array",
+                True,
+                f"Found {len(response['leaves'])} leaves for employee"
+            )
+
+    def test_documents_api(self):
+        """Test Documents API - rename and delete"""
+        print("\n📄 Testing Documents API...")
+        
+        if not self.admin_token or not self.employee_id:
+            print("❌ Cannot test documents API - missing admin token or employee ID")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # First, create a test document
+        test_document = {
+            "name": "Test Document",
+            "type": "pdf",
+            "url": "/api/uploads/test.pdf"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/employees/{id}/documents - Create test document",
+            "POST",
+            f"employees/{self.employee_id}/documents",
+            201,
+            data=test_document,
+            headers=headers
+        )
+        
+        if success and 'id' in response:
+            self.document_id = response['id']
+            print(f"✅ Test document created with ID: {self.document_id}")
+            
+            # Test PUT /api/employees/{employee_id}/documents/{document_id}?name=NewName - rename document
+            success, rename_response = self.run_test(
+                "PUT /api/employees/{id}/documents/{doc_id}?name=NewName - Rename document",
+                "PUT",
+                f"employees/{self.employee_id}/documents/{self.document_id}?name=Renamed Document",
+                200,
+                headers=headers
+            )
+            
+            # Test DELETE /api/employees/{employee_id}/documents/{document_id} - delete document
+            success, delete_response = self.run_test(
+                "DELETE /api/employees/{id}/documents/{doc_id} - Delete document",
+                "DELETE",
+                f"employees/{self.employee_id}/documents/{self.document_id}",
+                200,
+                headers=headers
+            )
+
+    def test_behavior_api(self):
+        """Test Behavior API with document_urls field"""
+        print("\n📝 Testing Behavior API...")
+        
+        if not self.admin_token or not self.employee_id:
+            print("❌ Cannot test behavior API - missing admin token or employee ID")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test POST /api/behavior - create behavior with document_urls field
+        behavior_data = {
+            "employee_id": self.employee_id,
+            "type": "positive",
+            "note": "Test behavior note from backend testing",
+            "date": "2026-01-06",
+            "document_urls": ["/api/uploads/test.pdf"]
+        }
+        
+        success, response = self.run_test(
+            "POST /api/behavior - Create behavior with document_urls",
+            "POST",
+            "behavior",
+            201,
+            data=behavior_data,
+            headers=headers
+        )
+        
+        if success and 'document_urls' in response:
+            self.log_test(
+                "Behavior API accepts document_urls field",
+                True,
+                f"document_urls field present in response: {response['document_urls']}"
+            )
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting PREMIDIS HR Platform Backend Tests")

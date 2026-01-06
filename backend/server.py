@@ -1945,6 +1945,193 @@ async def delete_notification(
     await db.notifications.delete_one({"id": notification_id, "user_id": current_user["id"]})
     return {"message": "Notification supprimée"}
 
+# ==================== SITES & HIERARCHICAL GROUPS ROUTES ====================
+class SiteCreate(BaseModel):
+    name: str
+    city: str
+    country: str = "RDC"
+    address: Optional[str] = None
+    is_active: bool = True
+
+class HierarchicalGroupCreate(BaseModel):
+    name: str
+    site_id: str
+    department: str
+    manager_id: Optional[str] = None
+    member_ids: List[str] = []
+
+@sites_router.get("")
+async def list_sites(current_user: dict = Depends(get_current_user)):
+    """List all work sites"""
+    sites = await db.sites.find({"is_active": True}, {"_id": 0}).to_list(100)
+    return {"sites": sites}
+
+@sites_router.post("", status_code=status.HTTP_201_CREATED)
+async def create_site(
+    site: SiteCreate,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Create a new work site"""
+    site_doc = {
+        "id": str(uuid.uuid4()),
+        **site.model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    await db.sites.insert_one(site_doc)
+    site_doc.pop("_id", None)
+    return site_doc
+
+@sites_router.put("/{site_id}")
+async def update_site(
+    site_id: str,
+    site: SiteCreate,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Update a work site"""
+    update_data = site.model_dump()
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.sites.update_one({"id": site_id}, {"$set": update_data})
+    return {"message": "Site mis à jour"}
+
+@sites_router.delete("/{site_id}")
+async def delete_site(
+    site_id: str,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Deactivate a work site"""
+    await db.sites.update_one({"id": site_id}, {"$set": {"is_active": False}})
+    return {"message": "Site désactivé"}
+
+# Hierarchical Groups
+@sites_router.get("/groups")
+async def list_hierarchical_groups(
+    site_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """List hierarchical groups"""
+    query = {}
+    if site_id:
+        query["site_id"] = site_id
+    
+    groups = await db.hierarchical_groups.find(query, {"_id": 0}).to_list(100)
+    
+    # Enrich with manager and member details
+    for group in groups:
+        if group.get("manager_id"):
+            manager = await db.users.find_one({"id": group["manager_id"]}, {"_id": 0, "password": 0})
+            group["manager"] = manager
+        
+        if group.get("member_ids"):
+            members = await db.users.find(
+                {"id": {"$in": group["member_ids"]}}, 
+                {"_id": 0, "password": 0}
+            ).to_list(100)
+            group["members"] = members
+    
+    return {"groups": groups}
+
+@sites_router.post("/groups", status_code=status.HTTP_201_CREATED)
+async def create_hierarchical_group(
+    group: HierarchicalGroupCreate,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Create a hierarchical group"""
+    # Verify site exists
+    site = await db.sites.find_one({"id": group.site_id, "is_active": True})
+    if not site:
+        raise HTTPException(status_code=404, detail="Site non trouvé")
+    
+    group_doc = {
+        "id": str(uuid.uuid4()),
+        **group.model_dump(),
+        "site_name": site["name"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    await db.hierarchical_groups.insert_one(group_doc)
+    
+    # Update employees with their group
+    if group.member_ids:
+        await db.users.update_many(
+            {"id": {"$in": group.member_ids}},
+            {"$set": {"hierarchical_group_id": group_doc["id"], "site_id": group.site_id}}
+        )
+    
+    if group.manager_id:
+        await db.users.update_one(
+            {"id": group.manager_id},
+            {"$set": {"hierarchical_group_id": group_doc["id"], "site_id": group.site_id, "is_manager": True}}
+        )
+    
+    group_doc.pop("_id", None)
+    return group_doc
+
+@sites_router.put("/groups/{group_id}")
+async def update_hierarchical_group(
+    group_id: str,
+    group: HierarchicalGroupCreate,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Update a hierarchical group"""
+    existing = await db.hierarchical_groups.find_one({"id": group_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Groupe non trouvé")
+    
+    # Remove old members from group
+    if existing.get("member_ids"):
+        await db.users.update_many(
+            {"id": {"$in": existing["member_ids"]}},
+            {"$unset": {"hierarchical_group_id": "", "site_id": ""}}
+        )
+    if existing.get("manager_id"):
+        await db.users.update_one(
+            {"id": existing["manager_id"]},
+            {"$unset": {"hierarchical_group_id": "", "is_manager": ""}}
+        )
+    
+    # Update group
+    update_data = group.model_dump()
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.hierarchical_groups.update_one({"id": group_id}, {"$set": update_data})
+    
+    # Add new members to group
+    if group.member_ids:
+        await db.users.update_many(
+            {"id": {"$in": group.member_ids}},
+            {"$set": {"hierarchical_group_id": group_id, "site_id": group.site_id}}
+        )
+    if group.manager_id:
+        await db.users.update_one(
+            {"id": group.manager_id},
+            {"$set": {"hierarchical_group_id": group_id, "site_id": group.site_id, "is_manager": True}}
+        )
+    
+    return {"message": "Groupe mis à jour"}
+
+@sites_router.delete("/groups/{group_id}")
+async def delete_hierarchical_group(
+    group_id: str,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Delete a hierarchical group"""
+    group = await db.hierarchical_groups.find_one({"id": group_id})
+    if group:
+        # Remove group reference from members
+        if group.get("member_ids"):
+            await db.users.update_many(
+                {"id": {"$in": group["member_ids"]}},
+                {"$unset": {"hierarchical_group_id": "", "site_id": ""}}
+            )
+        if group.get("manager_id"):
+            await db.users.update_one(
+                {"id": group["manager_id"]},
+                {"$unset": {"hierarchical_group_id": "", "is_manager": ""}}
+            )
+    
+    await db.hierarchical_groups.delete_one({"id": group_id})
+    return {"message": "Groupe supprimé"}
+
 @api_router.get("/")
 async def root():
     return {"message": "PREMIDIS SARL - HR Platform", "version": "2.0.0"}

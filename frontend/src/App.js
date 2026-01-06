@@ -18,6 +18,7 @@ import Behavior from './pages/Behavior';
 import Settings from './pages/Settings';
 import EmployeeProfile from './pages/EmployeeProfile';
 import PermissionsManagement from './pages/PermissionsManagement';
+import SitesManagement from './pages/SitesManagement';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -90,6 +91,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['super_admin', 'admin', 'secretary']}>
             <Administration />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/sites" 
+        element={
+          <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
+            <SitesManagement />
           </ProtectedRoute>
         } 
       />

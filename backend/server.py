@@ -2148,6 +2148,7 @@ api_router.include_router(behavior_router)
 api_router.include_router(communication_router)
 api_router.include_router(upload_router)
 api_router.include_router(notifications_router)
+api_router.include_router(sites_router)
 
 app.include_router(api_router)
 

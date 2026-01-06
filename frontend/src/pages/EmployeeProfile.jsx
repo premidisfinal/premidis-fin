@@ -47,6 +47,11 @@ const EmployeeProfile = () => {
   const [editData, setEditData] = useState({});
   const [uploading, setUploading] = useState(false);
   
+  // Document viewer/editor states
+  const [viewingDoc, setViewingDoc] = useState(null);
+  const [editingDocName, setEditingDocName] = useState(null);
+  const [newDocName, setNewDocName] = useState('');
+  
   // For creating objectives (admin only)
   const [objectiveDialog, setObjectiveDialog] = useState(false);
   const [objectiveForm, setObjectiveForm] = useState({

@@ -426,6 +426,65 @@ const EmployeeProfile = () => {
           {/* TRAVAIL/INFO Tab */}
           <TabsContent value="travail" className="mt-6">
             <div className="grid gap-6 md:grid-cols-2">
+              {/* IDENTITÉ Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">IDENTITÉ</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <Label className="text-muted-foreground">Nom complet</Label>
+                      <p className="font-medium text-lg">{employee.first_name} {employee.last_name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Date de naissance</Label>
+                      {isEditing && canModify ? (
+                        <Input
+                          type="date"
+                          value={editData.birth_date || ''}
+                          onChange={(e) => setEditData({...editData, birth_date: e.target.value})}
+                        />
+                      ) : (
+                        <p className="font-medium">
+                          {employee.birth_date ? format(new Date(employee.birth_date), 'dd MMMM yyyy', { locale: fr }) : 'Non renseignée'}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Date d'embauche</Label>
+                      {isEditing && canModify ? (
+                        <Input
+                          type="date"
+                          value={editData.hire_date || ''}
+                          onChange={(e) => setEditData({...editData, hire_date: e.target.value})}
+                        />
+                      ) : (
+                        <p className="font-medium">
+                          {employee.hire_date ? format(new Date(employee.hire_date), 'dd MMMM yyyy', { locale: fr }) : 'Non renseignée'}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Email</Label>
+                      <p className="font-medium">{employee.email}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Téléphone</Label>
+                      {isEditing && canModify ? (
+                        <Input
+                          value={editData.phone || ''}
+                          onChange={(e) => setEditData({...editData, phone: e.target.value})}
+                        />
+                      ) : (
+                        <p className="font-medium">{employee.phone || 'Non renseigné'}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* TRAVAIL Card */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">TRAVAIL</CardTitle>
@@ -455,12 +514,28 @@ const EmployeeProfile = () => {
                           onChange={(e) => setEditData({...editData, position: e.target.value})}
                         />
                       ) : (
-                        <p className="font-medium">{employee.position}</p>
+                        <p className="font-medium">{employee.position || 'Non défini'}</p>
                       )}
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Type de contrat</Label>
-                      <p className="font-medium">{employee.contract_type}</p>
+                      <p className="font-medium">{employee.contract_type || 'CDI'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Niveau hiérarchique</Label>
+                      {isEditing && canModify ? (
+                        <Input
+                          value={editData.hierarchy_level || ''}
+                          onChange={(e) => setEditData({...editData, hierarchy_level: e.target.value})}
+                          placeholder="Ex: Manager, Chef d'équipe..."
+                        />
+                      ) : (
+                        <p className="font-medium">{employee.hierarchy_level || employee.is_manager ? 'Manager' : 'Employé'}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Catégorie</Label>
+                      <p className="font-medium capitalize">{employee.category || 'Agent'}</p>
                     </div>
                   </div>
                   

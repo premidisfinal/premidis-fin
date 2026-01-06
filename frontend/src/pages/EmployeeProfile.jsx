@@ -496,8 +496,8 @@ const EmployeeProfile = () => {
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {documents.map((doc) => {
-                      // Construct the full URL for the document
-                      const docUrl = doc.url ? (doc.url.startsWith('http') ? doc.url : `${API_URL}${doc.url}`) : null;
+                      // Construct the full URL for the document - handle both /uploads and /api/uploads
+                      const docUrl = doc.url ? (doc.url.startsWith('http') ? doc.url : `${API_URL}${doc.url.startsWith('/api/') ? '' : '/api'}${doc.url}`) : null;
                       const fileType = doc.type?.toLowerCase() || '';
                       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'image'].includes(fileType);
                       const isPdf = fileType === 'pdf';

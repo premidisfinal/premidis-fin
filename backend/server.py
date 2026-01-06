@@ -1811,7 +1811,7 @@ async def upload_file(
         f.write(content)
     
     # Return URL
-    file_url = f"/uploads/{filename}"
+    file_url = f"/api/uploads/{filename}"
     
     return {
         "success": True,
@@ -1849,7 +1849,7 @@ async def upload_avatar(
         f.write(content)
     
     # Update user avatar URL
-    avatar_url = f"/uploads/{filename}"
+    avatar_url = f"/api/uploads/{filename}"
     await db.users.update_one(
         {"id": employee_id},
         {"$set": {"avatar_url": avatar_url}}

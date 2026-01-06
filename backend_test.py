@@ -376,6 +376,20 @@ class HRPlatformTester:
             self.employee_id = response['employees'][0]['id']
             print(f"✅ Found employee ID: {self.employee_id}")
             
+            # If we have a site_id from the sites test, assign it to the employee
+            if self.site_id:
+                update_data = {"site_id": self.site_id}
+                success, update_response = self.run_test(
+                    "PUT /api/employees/{id} - Assign site to employee",
+                    "PUT",
+                    f"employees/{self.employee_id}",
+                    200,
+                    data=update_data,
+                    headers=headers
+                )
+                if success:
+                    print(f"✅ Assigned site {self.site_id} to employee {self.employee_id}")
+            
             # Test GET /api/employees/{id} - get employee details with site_name and hierarchical_group_name
             success, employee_response = self.run_test(
                 "GET /api/employees/{id} - Get employee details with site info",
@@ -390,16 +404,20 @@ class HRPlatformTester:
                 has_site_name = 'site_name' in employee_response
                 has_group_name = 'hierarchical_group_name' in employee_response
                 
+                # Print employee data for debugging
+                print(f"Employee data: site_id={employee_response.get('site_id')}, site_name={employee_response.get('site_name')}")
+                print(f"Employee data: hierarchical_group_id={employee_response.get('hierarchical_group_id')}, hierarchical_group_name={employee_response.get('hierarchical_group_name')}")
+                
                 self.log_test(
                     "Employee details include site_name field", 
                     has_site_name,
-                    f"site_name field present: {has_site_name}"
+                    f"site_name field present: {has_site_name}, value: {employee_response.get('site_name')}"
                 )
                 
                 self.log_test(
                     "Employee details include hierarchical_group_name field",
                     has_group_name, 
-                    f"hierarchical_group_name field present: {has_group_name}"
+                    f"hierarchical_group_name field present: {has_group_name}, value: {employee_response.get('hierarchical_group_name')}"
                 )
 
     def test_leaves_api(self):

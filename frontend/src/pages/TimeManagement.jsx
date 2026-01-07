@@ -186,8 +186,7 @@ const TimeManagement = () => {
         end_date: endDate,
         auto_calculated: true
       }));
-      
-      toast.success(`Date de fin calculée automatiquement: ${format(endDate, 'dd/MM/yyyy')}`);
+      // Calcul silencieux - pas de toast
     } catch (error) {
       console.error('Error calculating end date:', error);
     }

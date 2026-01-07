@@ -165,7 +165,7 @@ const Administration = () => {
         params: { permanent }
       });
       toast.success(permanent ? 'Employé supprimé définitivement' : 'Employé désactivé');
-      fetchEmployees();
+      fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
     }
@@ -178,6 +178,40 @@ const Administration = () => {
       last_name: '',
       email: '',
       password: 'Temp123!',
+      phone: '',
+      department: 'administration',
+      position: '',
+      hire_date: '',
+      salary: '',
+      salary_currency: 'USD',
+      role: 'employee',
+      category: 'agent',
+      country: 'RDC',
+      site_id: '',
+      hierarchy_level: 'employe'
+    });
+  };
+
+  // Filter employees based on search and filters
+  const filteredEmployees = employees.filter(emp => {
+    // Search filter
+    const searchMatch = !searchQuery || 
+      `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      emp.email?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Department filter
+    const deptMatch = filterDepartment === 'all' || emp.department === filterDepartment;
+    
+    // Site filter
+    const siteMatch = filterSite === 'all' || emp.site_id === filterSite;
+    
+    // Hierarchy filter
+    const hierarchyMatch = filterHierarchy === 'all' || 
+      (filterHierarchy === 'chef_departement' && (emp.hierarchy_level === 'chef_departement' || emp.is_manager)) ||
+      (filterHierarchy === 'employe' && emp.hierarchy_level !== 'chef_departement' && !emp.is_manager);
+    
+    return searchMatch && deptMatch && siteMatch && hierarchyMatch;
+  });
       phone: '',
       department: 'administration',
       position: '',

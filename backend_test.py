@@ -424,6 +424,27 @@ class HRPlatformTester:
             headers=headers
         )
         
+        # Create a hierarchical group for testing
+        group_data = {
+            "name": "Administration Team",
+            "site_id": self.site_id if self.site_id else "test-site",
+            "department": "administration"
+        }
+        
+        success, group_response = self.run_test(
+            "POST /api/sites/groups - Create hierarchical group",
+            "POST",
+            "sites/groups",
+            201,
+            data=group_data,
+            headers=headers
+        )
+        
+        group_id = None
+        if success and 'id' in group_response:
+            group_id = group_response['id']
+            print(f"✅ Test hierarchical group created with ID: {group_id}")
+        
         # Test POST /api/employees with site_id and hierarchy_level fields
         test_employee_with_fields = {
             "first_name": "Test",
@@ -468,6 +489,20 @@ class HRPlatformTester:
             # Store this employee ID for profile testing
             if 'id' in response:
                 self.employee_id = response['id']
+                
+                # If we created a group, assign it to the employee
+                if group_id:
+                    update_data = {"hierarchical_group_id": group_id}
+                    success, update_response = self.run_test(
+                        "PUT /api/employees/{id} - Assign hierarchical group",
+                        "PUT",
+                        f"employees/{self.employee_id}",
+                        200,
+                        data=update_data,
+                        headers=headers
+                    )
+                    if success:
+                        print(f"✅ Assigned hierarchical group {group_id} to employee {self.employee_id}")
         
         # Test GET /api/employees/{id} - get employee details with site_name and hierarchical_group_name
         if self.employee_id:
@@ -491,10 +526,13 @@ class HRPlatformTester:
                     f"site_name field present: {has_site_name}, value: {employee_response.get('site_name')}"
                 )
                 
+                # For hierarchical_group_name, it's OK if it's None when no group is assigned
+                group_name_value = employee_response.get('hierarchical_group_name')
+                group_name_test = has_group_name  # Field should be present even if None
                 self.log_test(
                     "Employee profile includes hierarchical_group_name field",
-                    has_group_name, 
-                    f"hierarchical_group_name field present: {has_group_name}, value: {employee_response.get('hierarchical_group_name')}"
+                    group_name_test, 
+                    f"hierarchical_group_name field present: {has_group_name}, value: {group_name_value}"
                 )
                 
                 self.log_test(

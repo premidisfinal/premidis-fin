@@ -543,10 +543,10 @@ const EmployeeProfile = () => {
                               : 'Non défini'}
                           </p>
                         </div>
-                        {isAdmin() && !isOwnProfile && (
+                        {isAdmin() && (
                           <Button variant="outline" size="sm" onClick={() => {
                             const newSalary = prompt('Nouveau salaire:', employee.salary || '0');
-                            if (newSalary) {
+                            if (newSalary && !isNaN(parseFloat(newSalary))) {
                               const currency = prompt('Devise (USD ou FC):', employee.salary_currency || 'USD');
                               const validCurrency = ['USD', 'FC'].includes(currency?.toUpperCase()) ? currency.toUpperCase() : 'USD';
                               axios.put(`${API_URL}/api/employees/${employee.id}/salary?salary=${newSalary}&currency=${validCurrency}`)
@@ -554,11 +554,13 @@ const EmployeeProfile = () => {
                                   toast.success('Salaire mis à jour');
                                   fetchEmployeeData();
                                 })
-                                .catch(err => toast.error('Erreur'));
+                                .catch(err => toast.error(err.response?.data?.detail || 'Erreur lors de la mise à jour'));
+                            } else if (newSalary) {
+                              toast.error('Veuillez entrer un montant valide');
                             }
                           }}>
-                            <Edit className="h-4 w-4 mr-1" />
-                            Modifier
+                            <DollarSign className="h-4 w-4 mr-1" />
+                            Modifier le salaire
                           </Button>
                         )}
                       </div>

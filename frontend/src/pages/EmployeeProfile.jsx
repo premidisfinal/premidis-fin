@@ -518,10 +518,6 @@ const EmployeeProfile = () => {
                       )}
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Type de contrat</Label>
-                      <p className="font-medium">{employee.contract_type || 'CDI'}</p>
-                    </div>
-                    <div>
                       <Label className="text-muted-foreground">Niveau hiérarchique</Label>
                       {isEditing && canModify ? (
                         <Input
@@ -530,12 +526,8 @@ const EmployeeProfile = () => {
                           placeholder="Ex: Manager, Chef d'équipe..."
                         />
                       ) : (
-                        <p className="font-medium">{employee.hierarchy_level || employee.is_manager ? 'Manager' : 'Employé'}</p>
+                        <p className="font-medium">{employee.hierarchy_level === 'chef_departement' || employee.is_manager ? 'Chef de département' : 'Employé simple'}</p>
                       )}
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Catégorie</Label>
-                      <p className="font-medium capitalize">{employee.category || 'Agent'}</p>
                     </div>
                   </div>
                   

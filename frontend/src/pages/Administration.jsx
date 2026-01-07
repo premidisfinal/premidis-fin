@@ -109,19 +109,22 @@ const Administration = () => {
     setSubmitting(true);
 
     try {
+      const payload = {
+        ...formData,
+        salary: parseFloat(formData.salary) || 0,
+        is_manager: formData.hierarchy_level === 'chef_departement'
+      };
+      
       if (editEmployee) {
-        await axios.put(`${API_URL}/api/employees/${editEmployee.id}`, formData);
+        await axios.put(`${API_URL}/api/employees/${editEmployee.id}`, payload);
         toast.success('Employé mis à jour');
       } else {
-        await axios.post(`${API_URL}/api/employees`, {
-          ...formData,
-          salary: parseFloat(formData.salary)
-        });
+        await axios.post(`${API_URL}/api/employees`, payload);
         toast.success('Employé ajouté');
       }
       setDialogOpen(false);
       resetForm();
-      fetchEmployees();
+      fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erreur');
     } finally {
@@ -143,8 +146,9 @@ const Administration = () => {
       salary_currency: employee.salary_currency || 'USD',
       role: employee.role || 'employee',
       category: employee.category || 'agent',
-      contract_type: employee.contract_type || 'CDI',
-      country: employee.country || 'RDC'
+      country: employee.country || 'RDC',
+      site_id: employee.site_id || '',
+      hierarchy_level: employee.hierarchy_level || (employee.is_manager ? 'chef_departement' : 'employe')
     });
     setDialogOpen(true);
   };

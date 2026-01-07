@@ -286,9 +286,16 @@ const TimeManagement = () => {
     }
   };
 
-  // Delete a leave
-  const handleDeleteLeave = async (leaveId) => {
-    if (!confirm('Voulez-vous vraiment supprimer ce congé ?')) return;
+  // Delete a leave - opens confirmation dialog
+  const handleDeleteLeave = (leaveId) => {
+    setDeleteLeaveDialog({ open: true, leaveId });
+  };
+  
+  // Confirm leave deletion
+  const confirmDeleteLeave = async () => {
+    const leaveId = deleteLeaveDialog.leaveId;
+    setDeleteLeaveDialog({ open: false, leaveId: null });
+    
     try {
       await axios.delete(`${API_URL}/api/leaves/${leaveId}`);
       toast.success('Congé supprimé');

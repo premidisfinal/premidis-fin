@@ -288,10 +288,6 @@ const Administration = () => {
     }
   };
 
-  const filteredEmployees = employees.filter(emp => 
-    `${emp.first_name} ${emp.last_name} ${emp.email}`.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
     <DashboardLayout>
       <div className="space-y-6" data-testid="administration-page">

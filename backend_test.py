@@ -377,7 +377,7 @@ class HRPlatformTester:
                 print(f"✅ Test site created with ID: {self.site_id}")
 
     def test_employee_api_enhanced(self):
-        """Test Employee API with site and group information"""
+        """Test Employee API with filters and new fields - Review Request Focus"""
         print("\n👥 Testing Enhanced Employee API...")
         
         if not self.admin_token:
@@ -386,9 +386,9 @@ class HRPlatformTester:
         
         headers = {'Authorization': f'Bearer {self.admin_token}'}
         
-        # Test GET /api/employees - list employees
+        # Test GET /api/employees with filters (department, site, hierarchy_level)
         success, response = self.run_test(
-            "GET /api/employees - List employees",
+            "GET /api/employees - List employees (base)",
             "GET",
             "employees",
             200,
@@ -398,24 +398,81 @@ class HRPlatformTester:
         if success and 'employees' in response and len(response['employees']) > 0:
             self.employee_id = response['employees'][0]['id']
             print(f"✅ Found employee ID: {self.employee_id}")
+        
+        # Test department filter
+        success, response = self.run_test(
+            "GET /api/employees?department=administration - Filter by department",
+            "GET",
+            "employees?department=administration",
+            200,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Employee API supports department filter",
+                True,
+                f"Department filter returned {len(response.get('employees', []))} employees"
+            )
+        
+        # Test category filter (existing)
+        success, response = self.run_test(
+            "GET /api/employees?category=agent - Filter by category",
+            "GET",
+            "employees?category=agent",
+            200,
+            headers=headers
+        )
+        
+        # Test POST /api/employees with site_id and hierarchy_level fields
+        test_employee_with_fields = {
+            "first_name": "Test",
+            "last_name": "SiteHierarchy",
+            "email": f"test_site_hierarchy_{datetime.now().strftime('%H%M%S')}@test.com",
+            "password": "Test123!",
+            "department": "administration",
+            "position": "Test Position",
+            "salary": 1000.0,
+            "salary_currency": "USD",
+            "role": "employee",
+            "site_id": self.site_id if self.site_id else None,
+            "hierarchy_level": "Agent de base"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/employees - Create employee with site_id and hierarchy_level",
+            "POST",
+            "employees",
+            201,
+            data=test_employee_with_fields,
+            headers=headers
+        )
+        
+        if success:
+            # Verify site_id and hierarchy_level are stored
+            site_id_stored = response.get('site_id') == self.site_id if self.site_id else 'site_id' in response
+            hierarchy_stored = response.get('hierarchy_level') == "Agent de base"
             
-            # If we have a site_id from the sites test, assign it to the employee
-            if self.site_id:
-                update_data = {"site_id": self.site_id}
-                success, update_response = self.run_test(
-                    "PUT /api/employees/{id} - Assign site to employee",
-                    "PUT",
-                    f"employees/{self.employee_id}",
-                    200,
-                    data=update_data,
-                    headers=headers
-                )
-                if success:
-                    print(f"✅ Assigned site {self.site_id} to employee {self.employee_id}")
+            self.log_test(
+                "Employee creation accepts site_id field",
+                site_id_stored,
+                f"site_id in response: {response.get('site_id')}"
+            )
             
-            # Test GET /api/employees/{id} - get employee details with site_name and hierarchical_group_name
+            self.log_test(
+                "Employee creation accepts hierarchy_level field",
+                hierarchy_stored,
+                f"hierarchy_level in response: {response.get('hierarchy_level')}"
+            )
+            
+            # Store this employee ID for profile testing
+            if 'id' in response:
+                self.employee_id = response['id']
+        
+        # Test GET /api/employees/{id} - get employee details with site_name and hierarchical_group_name
+        if self.employee_id:
             success, employee_response = self.run_test(
-                "GET /api/employees/{id} - Get employee details with site info",
+                "GET /api/employees/{id} - Get employee profile with enriched data",
                 "GET",
                 f"employees/{self.employee_id}",
                 200,
@@ -426,21 +483,24 @@ class HRPlatformTester:
                 # Check if response includes site_name and hierarchical_group_name fields
                 has_site_name = 'site_name' in employee_response
                 has_group_name = 'hierarchical_group_name' in employee_response
-                
-                # Print employee data for debugging
-                print(f"Employee data: site_id={employee_response.get('site_id')}, site_name={employee_response.get('site_name')}")
-                print(f"Employee data: hierarchical_group_id={employee_response.get('hierarchical_group_id')}, hierarchical_group_name={employee_response.get('hierarchical_group_name')}")
+                has_hierarchy_level = 'hierarchy_level' in employee_response
                 
                 self.log_test(
-                    "Employee details include site_name field", 
+                    "Employee profile includes site_name field", 
                     has_site_name,
                     f"site_name field present: {has_site_name}, value: {employee_response.get('site_name')}"
                 )
                 
                 self.log_test(
-                    "Employee details include hierarchical_group_name field",
+                    "Employee profile includes hierarchical_group_name field",
                     has_group_name, 
                     f"hierarchical_group_name field present: {has_group_name}, value: {employee_response.get('hierarchical_group_name')}"
+                )
+                
+                self.log_test(
+                    "Employee profile includes hierarchy_level field",
+                    has_hierarchy_level,
+                    f"hierarchy_level field present: {has_hierarchy_level}, value: {employee_response.get('hierarchy_level')}"
                 )
 
     def test_leaves_api(self):

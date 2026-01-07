@@ -448,21 +448,41 @@ const Administration = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Type de contrat</Label>
+                      <Label>Site de travail</Label>
                       <Select
-                        value={formData.contract_type}
-                        onValueChange={(value) => setFormData({ ...formData, contract_type: value })}
+                        value={formData.site_id}
+                        onValueChange={(value) => setFormData({ ...formData, site_id: value })}
                       >
-                        <SelectTrigger data-testid="emp-contract">
-                          <SelectValue />
+                        <SelectTrigger data-testid="emp-site">
+                          <SelectValue placeholder="Sélectionner un site" />
                         </SelectTrigger>
                         <SelectContent>
-                          {contractTypes.map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          <SelectItem value="">Non assigné</SelectItem>
+                          {sites.map((site) => (
+                            <SelectItem key={site.id} value={site.id}>{site.name} - {site.city}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <Label>Niveau hiérarchique</Label>
+                      <Select
+                        value={formData.hierarchy_level}
+                        onValueChange={(value) => setFormData({ ...formData, hierarchy_level: value })}
+                      >
+                        <SelectTrigger data-testid="emp-hierarchy">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {hierarchyLevels.map((level) => (
+                            <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Pays</Label>
                       <Select
@@ -492,9 +512,9 @@ const Administration = () => {
           )}
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
+        {/* Filters - ENRICHIS */}
+        <div className="flex flex-wrap gap-4">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Rechercher un employé..."

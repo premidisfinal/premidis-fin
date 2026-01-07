@@ -1010,6 +1010,80 @@ const EmployeeProfile = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Document Confirmation Dialog */}
+        <Dialog open={deleteDocDialog.open} onOpenChange={(open) => !open && setDeleteDocDialog({ open: false, docId: null })}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="h-5 w-5" />
+                Confirmer la suppression
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-muted-foreground">
+                Voulez-vous vraiment supprimer ce document ? Cette action est irréversible.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteDocDialog({ open: false, docId: null })}>
+                Annuler
+              </Button>
+              <Button variant="destructive" onClick={confirmDeleteDocument}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Salary Modification Dialog */}
+        <Dialog open={salaryDialog.open} onOpenChange={(open) => !open && setSalaryDialog({ open: false, salary: '', currency: 'USD' })}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-primary" />
+                Modifier le salaire
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="salary">Nouveau salaire</Label>
+                <Input
+                  id="salary"
+                  type="number"
+                  placeholder="Ex: 2500"
+                  value={salaryDialog.salary}
+                  onChange={(e) => setSalaryDialog(prev => ({ ...prev, salary: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currency">Devise</Label>
+                <Select 
+                  value={salaryDialog.currency} 
+                  onValueChange={(value) => setSalaryDialog(prev => ({ ...prev, currency: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une devise" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD - Dollar américain</SelectItem>
+                    <SelectItem value="FC">FC - Franc congolais</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSalaryDialog({ open: false, salary: '', currency: 'USD' })}>
+                Annuler
+              </Button>
+              <Button onClick={handleUpdateSalary}>
+                <Check className="h-4 w-4 mr-2" />
+                Enregistrer
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

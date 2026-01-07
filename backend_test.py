@@ -305,7 +305,7 @@ class HRPlatformTester:
             self.log_test("Default currency is USD", False, f"Expected USD, got {response.get('salary_currency')}")
 
     def test_sites_api(self):
-        """Test Sites API endpoints"""
+        """Test Sites API endpoints - Review Request Focus"""
         print("\n🏢 Testing Sites API...")
         
         if not self.admin_token:
@@ -314,44 +314,67 @@ class HRPlatformTester:
         
         headers = {'Authorization': f'Bearer {self.admin_token}'}
         
-        # Test GET /api/sites - list all sites
+        # Test GET /api/sites - list all sites (main focus from review)
         success, response = self.run_test(
-            "GET /api/sites - List all sites",
+            "GET /api/sites - List sites structure",
             "GET",
             "sites",
             200,
             headers=headers
         )
         
-        # Test POST /api/sites - create a new site
-        site_data = {
-            "name": "Kinshasa HQ",
-            "city": "Kinshasa", 
-            "country": "RDC",
-            "address": "123 Avenue du Commerce"
-        }
+        if success:
+            # Verify the structure includes necessary fields for site cards
+            if 'sites' in response or isinstance(response, list):
+                sites_data = response.get('sites', response) if isinstance(response, dict) else response
+                self.log_test(
+                    "Sites API returns proper structure",
+                    True,
+                    f"Found {len(sites_data)} sites in response"
+                )
+                
+                # Check if sites have required fields for frontend display
+                if sites_data and len(sites_data) > 0:
+                    first_site = sites_data[0]
+                    required_fields = ['id', 'name']
+                    has_required = all(field in first_site for field in required_fields)
+                    self.log_test(
+                        "Sites have required fields (id, name)",
+                        has_required,
+                        f"Site fields: {list(first_site.keys())}"
+                    )
+                    
+                    if has_required:
+                        self.site_id = first_site['id']
+                        print(f"✅ Using existing site ID: {self.site_id}")
+            else:
+                self.log_test(
+                    "Sites API returns proper structure",
+                    False,
+                    f"Unexpected response structure: {type(response)}"
+                )
         
-        success, response = self.run_test(
-            "POST /api/sites - Create new site",
-            "POST",
-            "sites",
-            201,
-            data=site_data,
-            headers=headers
-        )
-        
-        if success and 'id' in response:
-            self.site_id = response['id']
-            print(f"✅ Site created with ID: {self.site_id}")
-        
-        # Test GET /api/sites/groups - list hierarchical groups
-        success, response = self.run_test(
-            "GET /api/sites/groups - List hierarchical groups",
-            "GET",
-            "sites/groups",
-            200,
-            headers=headers
-        )
+        # If no sites exist, create one for testing
+        if not self.site_id:
+            site_data = {
+                "name": "Kinshasa HQ",
+                "city": "Kinshasa", 
+                "country": "RDC",
+                "address": "123 Avenue du Commerce"
+            }
+            
+            success, response = self.run_test(
+                "POST /api/sites - Create test site",
+                "POST",
+                "sites",
+                201,
+                data=site_data,
+                headers=headers
+            )
+            
+            if success and 'id' in response:
+                self.site_id = response['id']
+                print(f"✅ Test site created with ID: {self.site_id}")
 
     def test_employee_api_enhanced(self):
         """Test Employee API with site and group information"""

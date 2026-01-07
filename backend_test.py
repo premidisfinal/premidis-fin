@@ -504,7 +504,7 @@ class HRPlatformTester:
                 )
 
     def test_leaves_api(self):
-        """Test Leaves API for specific employee"""
+        """Test Leaves API - Focus on DELETE functionality for admins"""
         print("\n🏖️ Testing Leaves API...")
         
         if not self.admin_token or not self.employee_id:
@@ -513,7 +513,62 @@ class HRPlatformTester:
         
         headers = {'Authorization': f'Bearer {self.admin_token}'}
         
-        # Test GET /api/leaves?employee_id={id} - get leaves for specific employee
+        # First create a test leave to delete
+        leave_data = {
+            "leave_type": "annual",
+            "start_date": "2026-02-01",
+            "end_date": "2026-02-03",
+            "reason": "Test leave for deletion testing",
+            "employee_id": self.employee_id
+        }
+        
+        success, response = self.run_test(
+            "POST /api/leaves - Create test leave for deletion",
+            "POST",
+            "leaves",
+            201,
+            data=leave_data,
+            headers=headers
+        )
+        
+        leave_id = None
+        if success and 'id' in response:
+            leave_id = response['id']
+            print(f"✅ Test leave created with ID: {leave_id}")
+            
+            # Test DELETE /api/leaves/{leave_id} - admin should be able to delete
+            success, delete_response = self.run_test(
+                "DELETE /api/leaves/{leave_id} - Admin delete leave",
+                "DELETE",
+                f"leaves/{leave_id}",
+                200,
+                headers=headers
+            )
+            
+            if success:
+                self.log_test(
+                    "Admin can delete leaves",
+                    True,
+                    "Leave deletion successful"
+                )
+                
+                # Verify leave is actually deleted by trying to get it
+                success, get_response = self.run_test(
+                    "GET /api/leaves/{leave_id} - Verify leave deleted",
+                    "GET",
+                    f"leaves/{leave_id}",
+                    404,  # Should return 404 if deleted
+                    headers=headers
+                )
+                
+                if success:  # success here means we got the expected 404
+                    self.log_test(
+                        "Leave actually deleted from system",
+                        True,
+                        "Leave not found after deletion (expected)"
+                    )
+        
+        # Test GET /api/leaves with employee filter
         success, response = self.run_test(
             f"GET /api/leaves?employee_id={self.employee_id} - Get leaves for specific employee",
             "GET",
@@ -524,7 +579,7 @@ class HRPlatformTester:
         
         if success and 'leaves' in response:
             self.log_test(
-                "Leaves API returns leaves array",
+                "Leaves API supports employee_id filter",
                 True,
                 f"Found {len(response['leaves'])} leaves for employee"
             )

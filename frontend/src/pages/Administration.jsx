@@ -42,6 +42,9 @@ const Administration = () => {
   const [editEmployee, setEditEmployee] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef(null);
+  
+  // Delete confirmation dialog
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, permanent: false });
 
   const [formData, setFormData] = useState({
     first_name: '',

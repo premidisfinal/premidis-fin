@@ -53,6 +53,10 @@ const EmployeeProfile = () => {
   const [editingDocName, setEditingDocName] = useState(null);
   const [newDocName, setNewDocName] = useState('');
   
+  // Dialog states for replacing native prompts/confirms
+  const [deleteDocDialog, setDeleteDocDialog] = useState({ open: false, docId: null });
+  const [salaryDialog, setSalaryDialog] = useState({ open: false, salary: '', currency: 'USD' });
+  
   // For creating objectives (admin only)
   const [objectiveDialog, setObjectiveDialog] = useState(false);
   const [objectiveForm, setObjectiveForm] = useState({

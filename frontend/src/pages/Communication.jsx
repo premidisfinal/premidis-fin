@@ -29,6 +29,9 @@ const Communication = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Delete confirmation dialog
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
 
   const [formData, setFormData] = useState({
     title: '',

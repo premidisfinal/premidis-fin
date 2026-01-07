@@ -446,14 +446,14 @@ const Administration = () => {
                     <div className="space-y-2">
                       <Label>Site de travail</Label>
                       <Select
-                        value={formData.site_id}
-                        onValueChange={(value) => setFormData({ ...formData, site_id: value })}
+                        value={formData.site_id || 'none'}
+                        onValueChange={(value) => setFormData({ ...formData, site_id: value === 'none' ? '' : value })}
                       >
                         <SelectTrigger data-testid="emp-site">
                           <SelectValue placeholder="Sélectionner un site" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Non assigné</SelectItem>
+                          <SelectItem value="none">Non assigné</SelectItem>
                           {sites.map((site) => (
                             <SelectItem key={site.id} value={site.id}>{site.name} - {site.city}</SelectItem>
                           ))}

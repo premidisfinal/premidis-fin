@@ -103,8 +103,14 @@ const SitesManagement = () => {
     }
   };
 
-  const handleDeleteSite = async (siteId) => {
-    if (!confirm('Voulez-vous vraiment supprimer ce site ?')) return;
+  const handleDeleteSite = (siteId) => {
+    setDeleteSiteDialog({ open: true, siteId });
+  };
+  
+  const confirmDeleteSite = async () => {
+    const siteId = deleteSiteDialog.siteId;
+    setDeleteSiteDialog({ open: false, siteId: null });
+    
     try {
       await axios.delete(`${API_URL}/api/sites/${siteId}`);
       toast.success('Site supprimé');

@@ -839,157 +839,110 @@ const EmployeeProfile = () => {
             </Card>
           </TabsContent>
 
-          {/* Congés Tab */}
+          {/* Congés Tab - SIMPLIFIÉ : Calendrier + Historique uniquement */}
           <TabsContent value="conges" className="mt-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Solde de congés */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <CalendarCheck className="h-5 w-5 text-green-500" />
-                    Solde de congés
-                  </CardTitle>
-                  <CardDescription>Jours disponibles par type</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {employee?.leave_balance ? (
-                    <div className="space-y-4">
-                      {Object.entries(employee.leave_balance).map(([type, total]) => {
-                        const taken = employee.leave_taken?.[type] || 0;
-                        const remaining = total - taken;
-                        const percentage = total > 0 ? (remaining / total) * 100 : 0;
+            {/* Mini Calendrier des congés */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5 text-primary" />
+                  Calendrier des congés
+                </CardTitle>
+                <CardDescription>Congés attribués à cet employé</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {leaves.filter(l => l.status === 'approved').length === 0 ? (
+                  <p className="text-muted-foreground text-sm text-center py-4">Aucun congé approuvé</p>
+                ) : (
+                  <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                    {leaves
+                      .filter(l => l.status === 'approved')
+                      .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
+                      .map((leave) => {
                         const typeLabels = {
                           annual: 'Congé annuel',
                           sick: 'Congé maladie',
                           exceptional: 'Congé exceptionnel',
                           maternity: 'Congé maternité',
-                          paternity: 'Congé paternité'
+                          paternity: 'Congé paternité',
+                          public: 'Jour férié',
+                          collective: 'Congé collectif',
+                          permanent: 'Congé permanent'
                         };
+                        const isPast = new Date(leave.end_date) < new Date();
+                        const isOngoing = new Date(leave.start_date) <= new Date() && new Date(leave.end_date) >= new Date();
+                        
                         return (
-                          <div key={type} className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="capitalize">{typeLabels[type] || type}</span>
-                              <span className="font-medium">{remaining} / {total} jours</span>
+                          <div 
+                            key={leave.id} 
+                            className={`p-3 rounded-lg border ${
+                              isOngoing ? 'border-green-300 bg-green-50 dark:bg-green-900/20' :
+                              isPast ? 'border-gray-200 bg-gray-50 dark:bg-gray-900/20 opacity-60' :
+                              'border-blue-200 bg-blue-50 dark:bg-blue-900/20'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <CalendarCheck className={`h-4 w-4 ${
+                                isOngoing ? 'text-green-500' :
+                                isPast ? 'text-gray-400' : 'text-blue-500'
+                              }`} />
+                              <span className="font-medium text-sm">{typeLabels[leave.leave_type] || leave.leave_type}</span>
                             </div>
-                            <Progress value={percentage} className="h-2" />
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(leave.start_date), 'dd MMM', { locale: fr })} → {format(new Date(leave.end_date), 'dd MMM yyyy', { locale: fr })}
+                            </p>
+                            {isOngoing && (
+                              <Badge variant="outline" className="mt-2 text-xs border-green-400 text-green-600">
+                                En cours
+                              </Badge>
+                            )}
                           </div>
                         );
                       })}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">Aucun solde défini</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Statistiques rapides */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <History className="h-5 w-5 text-blue-500" />
-                    Statistiques
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-900/20">
-                      <CalendarCheck className="h-6 w-6 mx-auto mb-2 text-green-500" />
-                      <p className="text-2xl font-bold text-green-600">{leaves.filter(l => l.status === 'approved').length}</p>
-                      <p className="text-xs text-muted-foreground">Approuvés</p>
-                    </div>
-                    <div className="text-center p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
-                      <CalendarClock className="h-6 w-6 mx-auto mb-2 text-yellow-500" />
-                      <p className="text-2xl font-bold text-yellow-600">{leaves.filter(l => l.status === 'pending').length}</p>
-                      <p className="text-xs text-muted-foreground">En attente</p>
-                    </div>
-                    <div className="text-center p-4 rounded-lg bg-red-50 dark:bg-red-900/20">
-                      <CalendarX className="h-6 w-6 mx-auto mb-2 text-red-500" />
-                      <p className="text-2xl font-bold text-red-600">{leaves.filter(l => l.status === 'rejected').length}</p>
-                      <p className="text-xs text-muted-foreground">Rejetés</p>
-                    </div>
-                    <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                      <CalendarDays className="h-6 w-6 mx-auto mb-2 text-blue-500" />
-                      <p className="text-2xl font-bold text-blue-600">
-                        {leaves.filter(l => l.status === 'approved' && new Date(l.start_date) > new Date()).length}
-                      </p>
-                      <p className="text-xs text-muted-foreground">À venir</p>
-                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                )}
+              </CardContent>
+            </Card>
 
-            {/* Historique des congés */}
-            <Card className="mt-6">
+            {/* Historique complet */}
+            <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
+                  <History className="h-5 w-5" />
                   Historique des congés
                 </CardTitle>
-                <CardDescription>Toutes les demandes de congés</CardDescription>
               </CardHeader>
               <CardContent>
                 {leaves.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <CalendarDays className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CalendarDays className="h-10 w-10 mx-auto mb-3 opacity-50" />
                     <p>Aucune demande de congé</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {leaves.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map((leave) => {
+                  <div className="space-y-2">
+                    {leaves.sort((a, b) => new Date(b.start_date) - new Date(a.start_date)).map((leave) => {
                       const statusConfig = {
-                        approved: { label: 'Approuvé', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CalendarCheck },
-                        pending: { label: 'En attente', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: CalendarClock },
-                        rejected: { label: 'Rejeté', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: CalendarX }
+                        approved: { label: 'Approuvé', color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
+                        pending: { label: 'En attente', color: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30' },
+                        rejected: { label: 'Rejeté', color: 'text-red-600 bg-red-100 dark:bg-red-900/30' }
                       };
                       const config = statusConfig[leave.status] || statusConfig.pending;
-                      const StatusIcon = config.icon;
                       const typeLabels = {
-                        annual: 'Congé annuel',
-                        sick: 'Congé maladie',
-                        exceptional: 'Congé exceptionnel',
-                        maternity: 'Congé maternité',
-                        paternity: 'Congé paternité',
-                        public: 'Jour férié',
-                        collective: 'Congé collectif'
+                        annual: 'Annuel', sick: 'Maladie', exceptional: 'Exceptionnel',
+                        maternity: 'Maternité', paternity: 'Paternité', public: 'Férié',
+                        collective: 'Collectif', permanent: 'Permanent'
                       };
-                      const isUpcoming = leave.status === 'approved' && new Date(leave.start_date) > new Date();
                       
                       return (
-                        <div 
-                          key={leave.id} 
-                          className={`p-4 rounded-lg border ${isUpcoming ? 'border-blue-200 bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-3">
-                              <StatusIcon className={`h-5 w-5 mt-0.5 ${
-                                leave.status === 'approved' ? 'text-green-500' :
-                                leave.status === 'rejected' ? 'text-red-500' : 'text-yellow-500'
-                              }`} />
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">{typeLabels[leave.leave_type] || leave.leave_type}</span>
-                                  {isUpcoming && (
-                                    <Badge variant="outline" className="text-xs border-blue-300 text-blue-600">
-                                      À venir
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {format(new Date(leave.start_date), 'dd MMM yyyy', { locale: fr })} 
-                                  {' → '} 
-                                  {format(new Date(leave.end_date), 'dd MMM yyyy', { locale: fr })}
-                                  <span className="ml-2">({leave.working_days} jour{leave.working_days > 1 ? 's' : ''})</span>
-                                </p>
-                                {leave.reason && (
-                                  <p className="text-xs text-muted-foreground mt-1">Motif: {leave.reason}</p>
-                                )}
-                              </div>
-                            </div>
-                            <Badge className={config.color}>
-                              {config.label}
-                            </Badge>
+                        <div key={leave.id} className="flex items-center justify-between p-3 rounded border hover:bg-muted/50">
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="text-xs">{typeLabels[leave.leave_type] || leave.leave_type}</Badge>
+                            <span className="text-sm">
+                              {format(new Date(leave.start_date), 'dd/MM/yyyy', { locale: fr })} - {format(new Date(leave.end_date), 'dd/MM/yyyy', { locale: fr })}
+                            </span>
+                            <span className="text-xs text-muted-foreground">({leave.working_days}j)</span>
                           </div>
+                          <Badge className={config.color}>{config.label}</Badge>
                         </div>
                       );
                     })}

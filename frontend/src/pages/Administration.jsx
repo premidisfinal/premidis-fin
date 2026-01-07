@@ -32,9 +32,12 @@ const Administration = () => {
   const { user, isAdmin, canEdit } = useAuth();
   const { t } = useLanguage();
   const [employees, setEmployees] = useState([]);
+  const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [filterSite, setFilterSite] = useState('all');
+  const [filterHierarchy, setFilterHierarchy] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editEmployee, setEditEmployee] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -53,8 +56,9 @@ const Administration = () => {
     salary_currency: 'USD',
     role: 'employee',
     category: 'agent',
-    contract_type: 'CDI',
-    country: 'RDC'
+    country: 'RDC',
+    site_id: '',
+    hierarchy_level: 'employe'
   });
 
   const departments = [
@@ -66,23 +70,35 @@ const Administration = () => {
     { value: 'nettoyage', label: 'Nettoyage' },
     { value: 'securite', label: 'Sécurité' },
     { value: 'chauffeur', label: 'Chauffeur' },
-    { value: 'technicien', label: 'Technicien' }
+    { value: 'technicien', label: 'Technicien' },
+    { value: 'direction', label: 'Direction' },
+    { value: 'logistique', label: 'Logistique' },
+    { value: 'production', label: 'Production' },
+    { value: 'commercial', label: 'Commercial' },
+    { value: 'informatique', label: 'Informatique' }
   ];
 
-  const contractTypes = ['CDI', 'CDD', 'Stage', 'Consultant'];
-  const countries = ['RDC', 'Congo', 'Rwanda', 'Burundi', 'Uganda', 'Kenya'];
+  const hierarchyLevels = [
+    { value: 'employe', label: 'Employé simple' },
+    { value: 'chef_departement', label: 'Chef de département' }
+  ];
+
+  const countries = ['RDC', 'Congo', 'Rwanda', 'Burundi', 'Uganda', 'Kenya', 'Tanzanie', 'Cameroun'];
 
   useEffect(() => {
-    fetchEmployees();
-  }, [filterDepartment]);
+    fetchData();
+  }, [filterDepartment, filterSite, filterHierarchy]);
 
-  const fetchEmployees = async () => {
+  const fetchData = async () => {
     try {
-      const params = filterDepartment !== 'all' ? { department: filterDepartment } : {};
-      const response = await axios.get(`${API_URL}/api/employees`, { params });
-      setEmployees(response.data.employees);
+      const [empRes, sitesRes] = await Promise.all([
+        axios.get(`${API_URL}/api/employees`),
+        axios.get(`${API_URL}/api/sites`)
+      ]);
+      setEmployees(empRes.data.employees || []);
+      setSites(sitesRes.data.sites || []);
     } catch (error) {
-      toast.error('Erreur lors du chargement des employés');
+      toast.error('Erreur lors du chargement');
     } finally {
       setLoading(false);
     }

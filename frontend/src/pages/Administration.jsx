@@ -281,7 +281,7 @@ const Administration = () => {
       }
       
       toast.success(`${imported} employé(s) importé(s)`);
-      fetchEmployees();
+      fetchData();
     } catch (error) {
       toast.error('Erreur lors de l\'import');
     }

@@ -223,9 +223,15 @@ const EmployeeProfile = () => {
     }
   };
 
-  // Delete document
-  const handleDeleteDocument = async (docId) => {
-    if (!confirm('Voulez-vous vraiment supprimer ce document ?')) return;
+  // Delete document - opens confirmation dialog
+  const handleDeleteDocument = (docId) => {
+    setDeleteDocDialog({ open: true, docId });
+  };
+  
+  // Confirm document deletion
+  const confirmDeleteDocument = async () => {
+    const docId = deleteDocDialog.docId;
+    setDeleteDocDialog({ open: false, docId: null });
     
     try {
       const employeeId = id || user?.id;
@@ -234,6 +240,25 @@ const EmployeeProfile = () => {
       fetchEmployeeData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+    }
+  };
+  
+  // Update salary
+  const handleUpdateSalary = async () => {
+    const { salary, currency } = salaryDialog;
+    if (!salary || isNaN(parseFloat(salary))) {
+      toast.error('Veuillez entrer un montant valide');
+      return;
+    }
+    const validCurrency = ['USD', 'FC'].includes(currency?.toUpperCase()) ? currency.toUpperCase() : 'USD';
+    
+    try {
+      await axios.put(`${API_URL}/api/employees/${employee.id}/salary?salary=${salary}&currency=${validCurrency}`);
+      toast.success('Salaire mis à jour');
+      setSalaryDialog({ open: false, salary: '', currency: 'USD' });
+      fetchEmployeeData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Erreur lors de la mise à jour');
     }
   };
 

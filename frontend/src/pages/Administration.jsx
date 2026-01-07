@@ -525,15 +525,39 @@ const Administration = () => {
             />
           </div>
           <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-            <SelectTrigger className="w-[200px]" data-testid="department-filter">
+            <SelectTrigger className="w-[180px]" data-testid="department-filter">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Département" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les départements</SelectItem>
+              <SelectItem value="all">Tous départements</SelectItem>
               {departments.map((dept) => (
                 <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterSite} onValueChange={setFilterSite}>
+            <SelectTrigger className="w-[180px]" data-testid="site-filter">
+              <Building2 className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Site" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les sites</SelectItem>
+              {sites.map((site) => (
+                <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterHierarchy} onValueChange={setFilterHierarchy}>
+            <SelectTrigger className="w-[180px]" data-testid="hierarchy-filter">
+              <SelectValue placeholder="Niveau" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous niveaux</SelectItem>
+              <SelectItem value="chef_departement">Chefs de département</SelectItem>
+              <SelectItem value="employe">Employés simples</SelectItem>
             </SelectContent>
           </Select>
         </div>

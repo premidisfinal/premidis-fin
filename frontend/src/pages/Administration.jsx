@@ -212,18 +212,6 @@ const Administration = () => {
     
     return searchMatch && deptMatch && siteMatch && hierarchyMatch;
   });
-      phone: '',
-      department: 'administration',
-      position: '',
-      hire_date: '',
-      salary: '',
-      salary_currency: 'USD',
-      role: 'employee',
-      category: 'agent',
-      contract_type: 'CDI',
-      country: 'RDC'
-    });
-  };
 
   // Export employees to CSV
   const handleExport = () => {

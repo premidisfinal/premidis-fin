@@ -76,8 +76,13 @@ const Communication = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Supprimer cette annonce ?')) return;
+  const handleDelete = (id) => {
+    setDeleteDialog({ open: true, id });
+  };
+  
+  const confirmDelete = async () => {
+    const id = deleteDialog.id;
+    setDeleteDialog({ open: false, id: null });
     
     try {
       await axios.delete(`${API_URL}/api/communication/announcements/${id}`);

@@ -676,6 +676,35 @@ const Administration = () => {
             ))}
           </div>
         )}
+
+        {/* Delete Employee Confirmation Dialog */}
+        <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, id: null, permanent: false })}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="h-5 w-5" />
+                {deleteDialog.permanent ? 'Suppression définitive' : 'Désactiver l\'employé'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-muted-foreground">
+                {deleteDialog.permanent 
+                  ? 'ATTENTION: Cette action supprimera définitivement l\'employé et toutes ses données. Cette action est irréversible.'
+                  : 'Voulez-vous désactiver cet employé ? Il pourra être réactivé plus tard.'
+                }
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteDialog({ open: false, id: null, permanent: false })}>
+                Annuler
+              </Button>
+              <Button variant="destructive" onClick={confirmDelete}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                {deleteDialog.permanent ? 'Supprimer' : 'Désactiver'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

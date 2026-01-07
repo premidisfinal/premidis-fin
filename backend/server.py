@@ -565,6 +565,8 @@ async def create_employee(
         "salary": employee.salary,
         "salary_currency": employee.salary_currency or "USD",
         "birth_date": None,
+        "site_id": employee.site_id,
+        "hierarchy_level": employee.hierarchy_level,
         "is_active": True,
         "status": "active",
         "created_at": datetime.now(timezone.utc).isoformat(),

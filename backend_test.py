@@ -670,8 +670,9 @@ class HRPlatformTester:
             )
 
     def run_all_tests(self):
-        """Run all tests"""
+        """Run all tests - Focus on Review Request priorities"""
         print("🚀 Starting PREMIDIS HR Platform Backend Tests")
+        print("🎯 Focus: HR PWA Simplified - Sites, Employees, Leaves APIs")
         print("=" * 60)
         
         # Authentication is required for most tests
@@ -679,19 +680,21 @@ class HRPlatformTester:
             print("❌ Authentication failed - cannot proceed with other tests")
             return False
         
-        # Run the new API tests from review request
+        # Run the priority tests from review request
+        print("\n🎯 PRIORITY TESTS FROM REVIEW REQUEST:")
         self.test_sites_api()
         self.test_employee_api_enhanced()
         self.test_leaves_api()
+        
+        # Run additional relevant tests
+        print("\n📋 ADDITIONAL BACKEND TESTS:")
         self.test_documents_api()
         self.test_behavior_api()
-        
-        # Run existing tests
-        self.test_voice_assistant_removal()
-        self.test_live_chat_endpoints()
         self.test_multi_currency_system()
         self.test_forgot_password_endpoints()
         self.test_employee_creation_with_currency()
+        self.test_voice_assistant_removal()
+        self.test_live_chat_endpoints()
         
         # Print summary
         print("\n" + "=" * 60)

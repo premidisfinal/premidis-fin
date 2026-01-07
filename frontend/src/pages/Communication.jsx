@@ -311,6 +311,32 @@ const Communication = () => {
             <LiveChat />
           </TabsContent>
         </Tabs>
+
+        {/* Delete Announcement Confirmation Dialog */}
+        <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, id: null })}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="h-5 w-5" />
+                Supprimer l'annonce
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-muted-foreground">
+                Voulez-vous vraiment supprimer cette annonce ? Cette action est irréversible.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteDialog({ open: false, id: null })}>
+                Annuler
+              </Button>
+              <Button variant="destructive" onClick={confirmDelete}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

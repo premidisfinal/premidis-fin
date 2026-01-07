@@ -81,6 +81,8 @@ class UserCreate(BaseModel):
     hire_date: Optional[str] = None
     salary: Optional[float] = None
     salary_currency: Optional[str] = "USD"  # USD or FC
+    site_id: Optional[str] = None
+    hierarchy_level: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr

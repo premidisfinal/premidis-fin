@@ -283,6 +283,45 @@ const TimeManagement = () => {
     }
   };
 
+  // Delete a leave
+  const handleDeleteLeave = async (leaveId) => {
+    if (!confirm('Voulez-vous vraiment supprimer ce congé ?')) return;
+    try {
+      await axios.delete(`${API_URL}/api/leaves/${leaveId}`);
+      toast.success('Congé supprimé');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+    }
+  };
+
+  // Check for informational alerts (non-blocking)
+  const getInfoAlerts = (date) => {
+    const alerts = [];
+    
+    // Check if it's a Sunday
+    if (date && date.getDay() === 0) {
+      alerts.push({ type: 'info', message: 'Ce jour est un dimanche' });
+    }
+    
+    // Check if more than 50% of company is on leave that day (simplified check)
+    if (date && employees.length > 0) {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const leavesOnDate = calendarLeaves.filter(l => {
+        const start = parseISO(l.start_date);
+        const end = parseISO(l.end_date);
+        const checkDate = parseISO(dateStr);
+        return isWithinInterval(checkDate, { start, end });
+      });
+      
+      if (leavesOnDate.length >= employees.length / 2) {
+        alerts.push({ type: 'warning', message: `Plus de 50% des employés sont en congé ce jour (${leavesOnDate.length}/${employees.length})` });
+      }
+    }
+    
+    return alerts;
+  };
+
   const handleCheckIn = async () => {
     try {
       await axios.post(`${API_URL}/api/attendance/check-in`);

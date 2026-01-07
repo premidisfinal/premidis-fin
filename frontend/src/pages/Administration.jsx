@@ -156,12 +156,13 @@ const Administration = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id, permanent = false) => {
-    const confirmMsg = permanent 
-      ? 'ATTENTION: Cette action supprimera définitivement l\'employé et toutes ses données. Continuer ?'
-      : 'Désactiver cet employé ? Il pourra être réactivé plus tard.';
-    
-    if (!window.confirm(confirmMsg)) return;
+  const handleDelete = (id, permanent = false) => {
+    setDeleteDialog({ open: true, id, permanent });
+  };
+  
+  const confirmDelete = async () => {
+    const { id, permanent } = deleteDialog;
+    setDeleteDialog({ open: false, id: null, permanent: false });
     
     try {
       await axios.delete(`${API_URL}/api/employees/${id}`, {

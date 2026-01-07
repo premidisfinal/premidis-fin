@@ -41,6 +41,9 @@ const TimeManagement = () => {
   const [submitting, setSubmitting] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
+  // Delete leave confirmation dialog
+  const [deleteLeaveDialog, setDeleteLeaveDialog] = useState({ open: false, leaveId: null });
+  
   // Leave configuration state
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [leaveTypesConfig, setLeaveTypesConfig] = useState([]);

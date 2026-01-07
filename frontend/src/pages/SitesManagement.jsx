@@ -27,6 +27,9 @@ const SitesManagement = () => {
   // View state - null = list of sites, site object = viewing that site
   const [selectedSite, setSelectedSite] = useState(null);
   
+  // Delete site confirmation dialog
+  const [deleteSiteDialog, setDeleteSiteDialog] = useState({ open: false, siteId: null });
+  
   // Site dialog
   const [siteDialogOpen, setSiteDialogOpen] = useState(false);
   const [editSite, setEditSite] = useState(null);

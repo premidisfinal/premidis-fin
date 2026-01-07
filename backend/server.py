@@ -1096,6 +1096,42 @@ async def get_leave_details(leave_id: str, current_user: dict = Depends(get_curr
     
     return leave
 
+@leaves_router.delete("/{leave_id}")
+async def delete_leave(
+    leave_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a leave request - Admin can delete any, employees can delete their own pending"""
+    leave = await db.leaves.find_one({"id": leave_id}, {"_id": 0})
+    if not leave:
+        raise HTTPException(status_code=404, detail="Congé non trouvé")
+    
+    # Check permissions
+    is_admin = current_user["role"] in ["admin", "secretary"]
+    is_own = leave["employee_id"] == current_user["id"]
+    
+    if not is_admin and not is_own:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Employees can only delete pending leaves
+    if not is_admin and leave["status"] != "pending":
+        raise HTTPException(status_code=403, detail="Vous ne pouvez supprimer que les demandes en attente")
+    
+    # If was approved, restore the leave balance
+    if leave["status"] == "approved":
+        await db.users.update_one(
+            {"id": leave["employee_id"]},
+            {"$inc": {f"leave_taken.{leave['leave_type']}": -leave.get("working_days", 0)}}
+        )
+    
+    # Delete from leaves collection
+    await db.leaves.delete_one({"id": leave_id})
+    
+    # Also delete from calendar if exists
+    await db.calendar.delete_many({"leave_id": leave_id})
+    
+    return {"message": "Congé supprimé", "id": leave_id}
+
 # ==================== CALENDAR ROUTES ====================
 @calendar_router.get("")
 async def get_calendar(

@@ -78,7 +78,8 @@ const TimeManagement = () => {
     { value: 'maternity', label: 'Congé maternité', color: 'bg-pink-500' },
     { value: 'paternity', label: 'Congé paternité', color: 'bg-cyan-500' },
     { value: 'exceptional', label: 'Congé exceptionnel', color: 'bg-orange-500' },
-    { value: 'collective', label: 'Congé collectif (tous)', color: 'bg-green-500' }
+    { value: 'collective', label: 'Congé collectif (tous)', color: 'bg-green-500' },
+    { value: 'permanent', label: 'Congé permanent/récurrent', color: 'bg-purple-500' }
   ];
 
   // Computed leave types from config or defaults

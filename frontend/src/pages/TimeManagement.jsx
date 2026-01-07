@@ -1136,6 +1136,19 @@ const TimeManagement = () => {
                             </Button>
                           </div>
                         )}
+                        
+                        {/* Delete button - Admin can delete any, user can delete their own pending */}
+                        {(isAdmin() || (leave.status === 'pending' && leave.employee_id === user?.id)) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteLeave(leave.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Supprimer
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>

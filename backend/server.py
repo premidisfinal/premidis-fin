@@ -136,7 +136,6 @@ class LeaveRequest(BaseModel):
     for_all_employees: bool = False    # For public holidays - apply to all
 
 class LeaveUpdate(BaseModel):
-    status: str
     admin_comment: Optional[str] = None
 
 class EmployeeUpdate(BaseModel):
@@ -816,13 +815,12 @@ async def create_leave_request(
         leave_balance = user_for_balance.get("leave_balance", {})
         leave_taken = user_for_balance.get("leave_taken", {})
         available = leave_balance.get(leave.leave_type, 0) - leave_taken.get(leave.leave_type, 0)
-        
         if working_days > available:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Solde insuffisant. Disponible: {available} jours, Demandé: {working_days} jours"
-            )
-    
+         raise HTTPException(
+        status_code=400, 
+        detail=f"Solde insuffisant. Disponible: {available} jours, Demandé: {working_days} jours"
+    )
+
     # Check for overlapping leaves for this employee
     existing = await db.leaves.find_one({
         "employee_id": target_id,
@@ -1398,7 +1396,7 @@ class LeaveTypeConfig(BaseModel):
     duration_unit: str = "days"  # days, weeks, months
     min_days: int = 1
     max_days: int = 365
-    default_balance: int = 0
+    default_balance: int = 365
     requires_approval: bool = True
     is_active: bool = True
     color: str = "#4F46E5"

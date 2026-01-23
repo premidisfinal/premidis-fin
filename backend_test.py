@@ -69,7 +69,7 @@ class HRPlatformTester:
             return False, {}
 
     def test_authentication(self):
-        """Test login with provided credentials"""
+        """Test login with provided credentials and get/create employee"""
         print("\n🔐 Testing Authentication...")
         
         # Test admin login with provided credentials from review request
@@ -83,6 +83,50 @@ class HRPlatformTester:
         if success and 'access_token' in response:
             self.admin_token = response['access_token']
             print(f"✅ Admin token obtained successfully")
+            
+            # Get or create an employee for testing
+            headers = {'Authorization': f'Bearer {self.admin_token}'}
+            
+            # First, try to get existing employees
+            success, employees_response = self.run_test(
+                "GET /api/employees - Get employees for testing",
+                "GET",
+                "employees",
+                200,
+                headers=headers
+            )
+            
+            if success and 'employees' in employees_response and len(employees_response['employees']) > 0:
+                # Use the first employee found
+                self.employee_id = employees_response['employees'][0]['id']
+                print(f"✅ Using existing employee ID: {self.employee_id}")
+            else:
+                # Create a test employee
+                employee_data = {
+                    "first_name": "Jean",
+                    "last_name": "Dupont",
+                    "email": f"jean.dupont.test_{datetime.now().strftime('%H%M%S')}@premierdis.com",
+                    "password": "Employee123!",
+                    "department": "administration",
+                    "role": "employee",
+                    "category": "agent"
+                }
+                
+                success, emp_response = self.run_test(
+                    "POST /api/employees - Create test employee",
+                    "POST",
+                    "employees",
+                    201,
+                    data=employee_data,
+                    headers=headers
+                )
+                
+                if success and 'id' in emp_response:
+                    self.employee_id = emp_response['id']
+                    print(f"✅ Created test employee ID: {self.employee_id}")
+                else:
+                    print(f"❌ Failed to create test employee")
+                    return False
         else:
             print(f"❌ Failed to get admin token")
             return False

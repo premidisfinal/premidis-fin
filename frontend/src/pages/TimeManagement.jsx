@@ -228,10 +228,7 @@ const TimeManagement = () => {
       await fetchLeaveTypesConfig();
       setEditingLeaveType(null);
     } catch (error) {
-      const errorMsg = typeof error.response?.data?.detail === 'string' 
-        ? error.response.data.detail 
-        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur lors de la sauvegarde';
-      toast.error(errorMsg);
+      toast.error(getErrorMessage(error, 'Erreur lors de la sauvegarde'));
     } finally {
       setSavingConfig(false);
     }
@@ -274,10 +271,7 @@ const TimeManagement = () => {
       });
       fetchData();
     } catch (error) {
-      const errorMsg = typeof error.response?.data?.detail === 'string' 
-        ? error.response.data.detail 
-        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur';
-      toast.error(errorMsg);
+      toast.error(getErrorMessage(error, 'Erreur'));
     } finally {
       setSubmitting(false);
     }
@@ -308,10 +302,7 @@ const TimeManagement = () => {
       toast.success('Congé supprimé');
       fetchData();
     } catch (error) {
-      const errorMsg = typeof error.response?.data?.detail === 'string' 
-        ? error.response.data.detail 
-        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur lors de la suppression';
-      toast.error(errorMsg);
+      toast.error(getErrorMessage(error, 'Erreur lors de la suppression'));
     }
   };
 
@@ -348,10 +339,7 @@ const TimeManagement = () => {
       toast.success('Pointage d\'entrée enregistré');
       fetchData();
     } catch (error) {
-      const errorMsg = typeof error.response?.data?.detail === 'string' 
-        ? error.response.data.detail 
-        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur';
-      toast.error(errorMsg);
+      toast.error(getErrorMessage(error, 'Erreur'));
     }
   };
 
@@ -361,10 +349,7 @@ const TimeManagement = () => {
       toast.success('Pointage de sortie enregistré');
       fetchData();
     } catch (error) {
-      const errorMsg = typeof error.response?.data?.detail === 'string' 
-        ? error.response.data.detail 
-        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur';
-      toast.error(errorMsg);
+      toast.error(getErrorMessage(error, 'Erreur'));
     }
   };
 
@@ -378,10 +363,7 @@ const TimeManagement = () => {
       setAttendanceForm({ employee_id: '', date: format(new Date(), 'yyyy-MM-dd'), check_in: '', check_out: '', notes: '' });
       fetchData();
     } catch (error) {
-      const errorMsg = typeof error.response?.data?.detail === 'string' 
-        ? error.response.data.detail 
-        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur';
-      toast.error(errorMsg);
+      toast.error(getErrorMessage(error, 'Erreur'));
     } finally {
       setSubmitting(false);
     }

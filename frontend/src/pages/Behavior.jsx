@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog';
 import { 
   Plus, Clock, User, Search, Filter, Loader2, Download,
-  Upload, FileText, AlertTriangle, Award, MessageCircle, File, X
+  Upload, FileText, AlertTriangle, Award, MessageCircle, File, X, Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import axios from 'axios';

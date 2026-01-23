@@ -956,34 +956,38 @@ async def update_leave_status(
     update: LeaveUpdate,
     current_user: dict = Depends(require_roles(["admin", "secretary"]))
 ):
-    """Update leave status - Both admin and secretary can approve/reject"""
+    """Update leave status - NO VALIDATION, pure status update"""
     leave = await db.leaves.find_one({"id": leave_id}, {"_id": 0})
     if not leave:
         raise HTTPException(status_code=404, detail="Demande non trouvée")
     
-    update_data = {
-        "status": update.status,
-        "admin_comment": update.admin_comment,
-        "approved_by": current_user["id"],
-        "approved_at": datetime.now(timezone.utc).isoformat()
-    }
+    # Prepare update data
+    update_data = {}
+    if update.status:
+        update_data["status"] = update.status
+        update_data["approved_by"] = current_user["id"]
+        update_data["approved_at"] = datetime.now(timezone.utc).isoformat()
     
+    if update.admin_comment is not None:
+        update_data["admin_comment"] = update.admin_comment
+    
+    # Update leave - NO BALANCE CHECKS, NO VALIDATIONS
     await db.leaves.update_one({"id": leave_id}, {"$set": update_data})
     
-    # Update leave balance if approved
+    # Update leave balance if approved (optional tracking, not blocking)
     if update.status == "approved" and leave["status"] != "approved":
         await db.users.update_one(
             {"id": leave["employee_id"]},
             {"$inc": {f"leave_taken.{leave['leave_type']}": leave["working_days"]}}
         )
-    # Restore balance if rejected after approval
+    # Restore balance if rejected after approval (optional tracking)
     elif update.status == "rejected" and leave["status"] == "approved":
         await db.users.update_one(
             {"id": leave["employee_id"]},
             {"$inc": {f"leave_taken.{leave['leave_type']}": -leave["working_days"]}}
         )
     
-    # Add to calendar if approved
+    # Add to calendar if approved (for visualization only)
     if update.status == "approved":
         calendar_entry = {
             "id": str(uuid.uuid4()),

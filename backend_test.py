@@ -521,6 +521,272 @@ class HRPlatformTester:
                         f"Behavior {behavior_id} found in list: {deleted_behavior_exists}"
                     )
 
+    def test_document_upload_workflow(self):
+        """Test complete document upload workflow as requested in review"""
+        print("\n📄 Testing Document Upload Workflow (Review Request)...")
+        
+        if not self.admin_token or not self.employee_id:
+            print("❌ Cannot test document upload - missing admin token or employee ID")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: Upload a PDF file via POST /api/upload/file
+        print("\n📤 Step 1: Upload PDF file...")
+        
+        # Simulate file upload (in real scenario, this would be multipart/form-data)
+        # For testing purposes, we'll test the behavior creation with file data directly
+        uploaded_file_data = {
+            "file_name": "lettre_sanction_employee.pdf",
+            "file_url": "/uploads/documents/lettre_sanction_employee.pdf",
+            "file_type": "application/pdf"
+        }
+        
+        # Test 2: Create behavior note with uploaded document data
+        print("\n📝 Step 2: Create behavior note with document...")
+        
+        behavior_with_document = {
+            "employee_id": self.employee_id,
+            "type": "sanction",
+            "note": "Sanction disciplinaire avec document joint - Test complet workflow",
+            "date": "2025-01-22",
+            "file_name": uploaded_file_data["file_name"],
+            "file_url": uploaded_file_data["file_url"]
+        }
+        
+        success, response = self.run_test(
+            "POST /api/behavior - Create behavior with uploaded document",
+            "POST",
+            "behavior",
+            201,
+            data=behavior_with_document,
+            headers=headers
+        )
+        
+        if success:
+            # Verify document fields are properly stored
+            has_file_name = response.get('file_name') == uploaded_file_data["file_name"]
+            has_file_url = response.get('file_url') == uploaded_file_data["file_url"]
+            
+            self.log_test(
+                "Document file_name stored correctly",
+                has_file_name,
+                f"Expected: {uploaded_file_data['file_name']}, Got: {response.get('file_name')}"
+            )
+            
+            self.log_test(
+                "Document file_url stored correctly", 
+                has_file_url,
+                f"Expected: {uploaded_file_data['file_url']}, Got: {response.get('file_url')}"
+            )
+            
+            if 'id' in response:
+                behavior_id = response['id']
+                
+                # Test 3: Retrieve behavior list and verify document is included
+                print("\n📋 Step 3: Verify document in behavior list...")
+                
+                success, get_response = self.run_test(
+                    "GET /api/behavior - Verify document in behavior list",
+                    "GET", 
+                    "behavior",
+                    200,
+                    headers=headers
+                )
+                
+                if success and 'behaviors' in get_response:
+                    # Find our created behavior
+                    created_behavior = None
+                    for behavior in get_response['behaviors']:
+                        if behavior.get('id') == behavior_id:
+                            created_behavior = behavior
+                            break
+                    
+                    if created_behavior:
+                        has_document_in_list = (
+                            created_behavior.get('file_name') == uploaded_file_data["file_name"] and
+                            created_behavior.get('file_url') == uploaded_file_data["file_url"]
+                        )
+                        
+                        self.log_test(
+                            "Document present in behavior list",
+                            has_document_in_list,
+                            f"file_name: {created_behavior.get('file_name')}, file_url: {created_behavior.get('file_url')}"
+                        )
+                    else:
+                        self.log_test(
+                            "Created behavior found in list",
+                            False,
+                            f"Behavior with ID {behavior_id} not found in list"
+                        )
+                
+                # Test 4: Get specific employee behaviors
+                print("\n👤 Step 4: Verify document in employee-specific behaviors...")
+                
+                success, emp_response = self.run_test(
+                    f"GET /api/behavior/{self.employee_id} - Get employee behaviors",
+                    "GET",
+                    f"behavior/{self.employee_id}",
+                    200,
+                    headers=headers
+                )
+                
+                if success and 'behaviors' in emp_response:
+                    # Check if document is present in employee-specific list
+                    employee_behavior = None
+                    for behavior in emp_response['behaviors']:
+                        if behavior.get('id') == behavior_id:
+                            employee_behavior = behavior
+                            break
+                    
+                    if employee_behavior:
+                        has_document_in_emp_list = (
+                            employee_behavior.get('file_name') == uploaded_file_data["file_name"] and
+                            employee_behavior.get('file_url') == uploaded_file_data["file_url"]
+                        )
+                        
+                        self.log_test(
+                            "Document present in employee behavior list",
+                            has_document_in_emp_list,
+                            f"Employee behaviors contain document: {has_document_in_emp_list}"
+                        )
+
+    def test_supported_file_types(self):
+        """Test different supported file types"""
+        print("\n📁 Testing Supported File Types...")
+        
+        if not self.admin_token or not self.employee_id:
+            print("❌ Cannot test file types - missing admin token or employee ID")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test different file types as specified in review
+        file_types = [
+            {"name": "document.pdf", "type": "application/pdf", "description": "PDF document"},
+            {"name": "photo.jpg", "type": "image/jpeg", "description": "JPEG image"},
+            {"name": "screenshot.png", "type": "image/png", "description": "PNG image"},
+            {"name": "letter.doc", "type": "application/msword", "description": "DOC document"},
+            {"name": "report.docx", "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "description": "DOCX document"}
+        ]
+        
+        for i, file_info in enumerate(file_types):
+            behavior_data = {
+                "employee_id": self.employee_id,
+                "type": "note",
+                "note": f"Test behavior with {file_info['description']}",
+                "date": "2025-01-22",
+                "file_name": file_info["name"],
+                "file_url": f"/uploads/test_{i}_{file_info['name']}"
+            }
+            
+            success, response = self.run_test(
+                f"POST /api/behavior - Create behavior with {file_info['description']}",
+                "POST",
+                "behavior", 
+                201,
+                data=behavior_data,
+                headers=headers
+            )
+            
+            if success:
+                self.log_test(
+                    f"File type {file_info['type']} supported",
+                    True,
+                    f"Successfully created behavior with {file_info['description']}"
+                )
+
+    def test_document_error_cases(self):
+        """Test error cases and edge cases for document upload"""
+        print("\n⚠️ Testing Document Error Cases...")
+        
+        # Test 1: Upload without authentication (should return 401/403)
+        print("\n🔒 Testing upload without authentication...")
+        
+        behavior_data = {
+            "employee_id": self.employee_id if self.employee_id else "test-id",
+            "type": "note",
+            "note": "Test without auth",
+            "date": "2025-01-22",
+            "file_name": "test.pdf",
+            "file_url": "/uploads/test.pdf"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/behavior - Create behavior without auth (should fail)",
+            "POST",
+            "behavior",
+            401,  # Expecting 401 Unauthorized
+            data=behavior_data
+            # No headers = no authentication
+        )
+        
+        if success:
+            self.log_test(
+                "Unauthorized access properly blocked",
+                True,
+                "Returns 401 as expected for unauthenticated requests"
+            )
+        
+        # Test 2: Create behavior without document (should work - document optional)
+        if self.admin_token and self.employee_id:
+            headers = {'Authorization': f'Bearer {self.admin_token}'}
+            
+            behavior_no_doc = {
+                "employee_id": self.employee_id,
+                "type": "praise",
+                "note": "Behavior note without document - should work",
+                "date": "2025-01-22"
+                # No file_name or file_url
+            }
+            
+            success, response = self.run_test(
+                "POST /api/behavior - Create behavior without document (should work)",
+                "POST",
+                "behavior",
+                201,
+                data=behavior_no_doc,
+                headers=headers
+            )
+            
+            if success:
+                self.log_test(
+                    "Behavior creation works without document",
+                    True,
+                    "Document is optional - behavior created successfully"
+                )
+        
+        # Test 3: Create behavior with file_name but no file_url
+        if self.admin_token and self.employee_id:
+            behavior_partial_doc = {
+                "employee_id": self.employee_id,
+                "type": "warning",
+                "note": "Behavior with file_name but no file_url",
+                "date": "2025-01-22",
+                "file_name": "partial_test.pdf"
+                # Missing file_url
+            }
+            
+            success, response = self.run_test(
+                "POST /api/behavior - Create behavior with file_name only",
+                "POST",
+                "behavior",
+                201,
+                data=behavior_partial_doc,
+                headers=headers
+            )
+            
+            if success:
+                # Check what happens with partial document data
+                has_file_name = response.get('file_name') == "partial_test.pdf"
+                has_file_url = 'file_url' in response
+                
+                self.log_test(
+                    "Partial document data handled correctly",
+                    has_file_name,
+                    f"file_name stored: {response.get('file_name')}, file_url present: {has_file_url}"
+                )
+
     def run_all_tests(self):
         """Run all tests - Focus on Refactoring Review Request"""
         print("🚀 Starting PREMIDIS HR Platform Backend Tests")

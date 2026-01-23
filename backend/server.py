@@ -136,6 +136,7 @@ class LeaveRequest(BaseModel):
     for_all_employees: bool = False    # For public holidays - apply to all
 
 class LeaveUpdate(BaseModel):
+    status: Optional[str] = None  # approved, rejected, pending
     admin_comment: Optional[str] = None
 
 class EmployeeUpdate(BaseModel):

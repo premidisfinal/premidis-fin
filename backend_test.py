@@ -67,16 +67,16 @@ class HRPlatformTester:
             return False, {}
 
     def test_authentication(self):
-        """Test login for different roles"""
+        """Test login with provided credentials"""
         print("\n🔐 Testing Authentication...")
         
-        # Test admin login with provided credentials
+        # Test admin login with provided credentials from review request
         success, response = self.run_test(
             "Admin Login",
             "POST",
             "auth/login",
             200,
-            data={"email": "test@premidis.com", "password": "Test123!"}
+            data={"email": "superadmin@premierdis.com", "password": "SuperAdmin123!"}
         )
         if success and 'access_token' in response:
             self.admin_token = response['access_token']

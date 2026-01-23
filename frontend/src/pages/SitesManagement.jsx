@@ -168,6 +168,11 @@ const SitesManagement = () => {
     return dept ? dept.label : value?.replace('_', ' ') || 'Non défini';
   };
 
+  const handleEmployeeClick = (employeeId) => {
+    // Redirection vers le dossier de l'employé
+    navigate(`/employees/${employeeId}`);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>

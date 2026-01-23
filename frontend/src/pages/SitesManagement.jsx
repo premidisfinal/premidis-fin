@@ -21,6 +21,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const SitesManagement = () => {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [sites, setSites] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);

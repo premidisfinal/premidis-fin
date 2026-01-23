@@ -187,8 +187,8 @@ frontend:
 
 metadata:
   created_by: "testing_agent"
-  version: "1.0"
-  test_sequence: 2
+  version: "1.1"
+  test_sequence: 3
   run_ui: false
 
 test_plan:
@@ -202,3 +202,5 @@ agent_communication:
     message: "Starting backend API testing for HR PWA simplified version. Focus on Sites API, enhanced Employees API with filters and new fields, Leaves deletion, and enriched employee profile data."
   - agent: "testing"
     message: "✅ ALL BACKEND TESTS PASSING (100% success rate). Fixed UserCreate model to include site_id and hierarchy_level fields. All priority APIs from review request are working correctly: Sites API structure, Employee filters, Employee creation with new fields, Leave deletion, and Employee profile enrichment with site_name and hierarchical_group_name."
+  - agent: "testing"
+    message: "🎯 REFACTORING VALIDATION COMPLETE (100% success rate - 37/37 tests passed). ✅ CRITICAL BUG FIXED: Leave approval/rejection now works without errors. ✅ NON-BLOCKING SYSTEM: All leave validations removed (balance, overlap, duration). ✅ BEHAVIOR MODULE: Document support (file_name, file_url) and deletion functionality working. ✅ EXTENDED TYPES: All behavior types (sanction, warning, dismissal, praise, note) accepted. System is now purely declarative and non-blocking as required."

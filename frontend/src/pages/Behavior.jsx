@@ -119,9 +119,8 @@ const Behavior = () => {
     formDataUpload.append('file', file);
     
     try {
-      const response = await axios.post(`${API_URL}/api/upload/file`, formDataUpload, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      // Ne pas spécifier Content-Type, axios le fait automatiquement avec boundary
+      const response = await axios.post(`${API_URL}/api/upload/file`, formDataUpload);
       setFormData(prev => ({
         ...prev,
         file_name: file.name,
@@ -129,7 +128,8 @@ const Behavior = () => {
       }));
       toast.success('Document ajouté');
     } catch (error) {
-      toast.error('Erreur lors de l\'upload du document');
+      console.error('Upload error:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'upload du document');
     } finally {
       setUploadingDoc(false);
     }

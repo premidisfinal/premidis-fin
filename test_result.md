@@ -199,8 +199,8 @@ frontend:
 
 metadata:
   created_by: "testing_agent"
-  version: "1.1"
-  test_sequence: 3
+  version: "1.2"
+  test_sequence: 4
   run_ui: false
 
 test_plan:
@@ -216,3 +216,5 @@ agent_communication:
     message: "✅ ALL BACKEND TESTS PASSING (100% success rate). Fixed UserCreate model to include site_id and hierarchy_level fields. All priority APIs from review request are working correctly: Sites API structure, Employee filters, Employee creation with new fields, Leave deletion, and Employee profile enrichment with site_name and hierarchical_group_name."
   - agent: "testing"
     message: "🎯 REFACTORING VALIDATION COMPLETE (100% success rate - 37/37 tests passed). ✅ CRITICAL BUG FIXED: Leave approval/rejection now works without errors. ✅ NON-BLOCKING SYSTEM: All leave validations removed (balance, overlap, duration). ✅ BEHAVIOR MODULE: Document support (file_name, file_url) and deletion functionality working. ✅ EXTENDED TYPES: All behavior types (sanction, warning, dismissal, praise, note) accepted. System is now purely declarative and non-blocking as required."
+  - agent: "testing"
+    message: "📄 DOCUMENT UPLOAD WORKFLOW VALIDATION COMPLETE (100% success rate - 55/55 tests passed). ✅ COMPLETE WORKFLOW TESTED: 1) File upload via POST /api/upload/file works for all supported types (PDF, JPEG, PNG, DOC, DOCX). 2) Behavior note creation with documents via POST /api/behavior stores file_name and file_url correctly. 3) Document retrieval via GET /api/behavior shows documents in behavior lists. 4) Document preview via GET /api/preview/{filepath} works with correct headers. 5) Authentication and error handling working properly. 6) All edge cases covered (no auth, unsupported types, optional documents). The complete document upload workflow from the review request is fully functional and validated."

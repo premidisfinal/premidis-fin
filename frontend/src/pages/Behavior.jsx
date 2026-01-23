@@ -117,22 +117,61 @@ const Behavior = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    // Validation du type de fichier côté client
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'image/webp',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.doc', '.docx'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!allowedExtensions.includes(fileExtension)) {
+      toast.error(`Type de fichier non supporté: ${fileExtension}. Utilisez PDF, JPEG, PNG, DOC ou DOCX.`);
+      e.target.value = ''; // Reset input
+      return;
+    }
+    
+    // Vérification de la taille (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error('Le fichier est trop volumineux (max 10 MB)');
+      e.target.value = '';
+      return;
+    }
+    
     setUploadingDoc(true);
     const formDataUpload = new FormData();
     formDataUpload.append('file', file);
     
     try {
+      console.log('Starting file upload:', file.name, 'Size:', file.size, 'Type:', file.type);
+      
       // Ne pas spécifier Content-Type, axios le fait automatiquement avec boundary
       const response = await axios.post(`${API_URL}/api/upload/file`, formDataUpload);
+      
+      console.log('Upload successful:', response.data);
+      
       setFormData(prev => ({
         ...prev,
         file_name: file.name,
         file_url: response.data.url
       }));
-      toast.success('Document ajouté');
+      toast.success(`Document "${file.name}" ajouté avec succès`);
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de l\'upload du document');
+      console.error('Error response:', error.response);
+      
+      const errorMessage = error.response?.data?.detail || error.message || 'Erreur lors de l\'upload du document';
+      toast.error(errorMessage);
+      
+      // Reset input en cas d'erreur
+      e.target.value = '';
     } finally {
       setUploadingDoc(false);
     }

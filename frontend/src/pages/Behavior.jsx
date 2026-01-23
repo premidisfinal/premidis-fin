@@ -91,6 +91,7 @@ const Behavior = () => {
 
     setSubmitting(true);
     try {
+      console.log('Submitting behavior note with data:', formData);
       await axios.post(`${API_URL}/api/behavior`, formData);
       toast.success('Note de comportement ajoutée avec succès');
       setDialogOpen(false);
@@ -104,7 +105,9 @@ const Behavior = () => {
       });
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur lors de l\'ajout');
+      console.error('Behavior creation error:', error);
+      console.error('Error response:', error.response);
+      toast.error(error.response?.data?.detail || error.message || 'Erreur lors de l\'ajout');
     } finally {
       setSubmitting(false);
     }

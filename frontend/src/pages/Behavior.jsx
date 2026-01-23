@@ -174,10 +174,6 @@ const Behavior = () => {
     return true;
   });
 
-  const getBehaviorTypeInfo = (type) => {
-    return BEHAVIOR_TYPES.find(t => t.value === type) || BEHAVIOR_TYPES[BEHAVIOR_TYPES.length - 1];
-  };
-
   const stats = {
     total: behaviors.length,
     sanctions: behaviors.filter(b => ['sanction', 'warning', 'dismissal', 'note'].includes(b.type)).length,

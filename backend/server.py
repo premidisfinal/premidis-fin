@@ -1593,6 +1593,19 @@ async def get_employee_behaviors(
     ).sort("date", -1).to_list(100)
     return {"behaviors": behaviors}
 
+@behavior_router.delete("/{behavior_id}")
+async def delete_behavior_note(
+    behavior_id: str,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Delete a behavior note (admin/secretary only)"""
+    behavior = await db.behaviors.find_one({"id": behavior_id}, {"_id": 0})
+    if not behavior:
+        raise HTTPException(status_code=404, detail="Note de comportement non trouvée")
+    
+    await db.behaviors.delete_one({"id": behavior_id})
+    return {"message": "Note de comportement supprimée", "id": behavior_id}
+
 # ==================== DOCUMENT UPLOAD ROUTES ====================
 @employees_router.post("/{employee_id}/documents")
 async def upload_document(

@@ -335,10 +335,13 @@ const TimeManagement = () => {
   const handleCheckIn = async () => {
     try {
       await axios.post(`${API_URL}/api/attendance/check-in`);
-      toast.success('Pointage d&apos;entrée enregistré');
+      toast.success('Pointage d\'entrée enregistré');
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur');
+      const errorMsg = typeof error.response?.data?.detail === 'string' 
+        ? error.response.data.detail 
+        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur';
+      toast.error(errorMsg);
     }
   };
 
@@ -348,7 +351,10 @@ const TimeManagement = () => {
       toast.success('Pointage de sortie enregistré');
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur');
+      const errorMsg = typeof error.response?.data?.detail === 'string' 
+        ? error.response.data.detail 
+        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur';
+      toast.error(errorMsg);
     }
   };
 
@@ -362,7 +368,10 @@ const TimeManagement = () => {
       setAttendanceForm({ employee_id: '', date: format(new Date(), 'yyyy-MM-dd'), check_in: '', check_out: '', notes: '' });
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur');
+      const errorMsg = typeof error.response?.data?.detail === 'string' 
+        ? error.response.data.detail 
+        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur';
+      toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }

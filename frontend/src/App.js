@@ -106,6 +106,7 @@ function AppRoutes() {
       {/* Employee Profile Routes */}
       <Route path="/my-profile" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
       <Route path="/employee/:id" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
+      <Route path="/employees/:id" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
       
       {/* Default Redirect */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

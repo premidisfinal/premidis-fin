@@ -735,27 +735,16 @@ async def create_leave_request(
     leave: LeaveRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    # Validate dates
+    """Create leave request - NO VALIDATION, pure registration system"""
+    # Validate dates format only
     try:
         start = datetime.strptime(leave.start_date, "%Y-%m-%d")
         end = datetime.strptime(leave.end_date, "%Y-%m-%d")
-        if end < start:
-            raise HTTPException(status_code=400, detail="La date de fin doit être après la date de début")
     except ValueError:
-        raise HTTPException(status_code=400, detail="Format de date invalide")
+        raise HTTPException(status_code=400, detail="Format de date invalide (YYYY-MM-DD)")
     
-    # Calculate working days
+    # Calculate working days (no validation on duration)
     working_days = calculate_working_days(leave.start_date, leave.end_date)
-    
-    # Get leave type configuration to check minimum days
-    leave_type_config = await db.leave_types.find_one({"code": leave.leave_type}, {"_id": 0})
-    if leave_type_config:
-        min_days = leave_type_config.get("min_days", 1)
-        if working_days < min_days:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Le type de congé '{leave_type_config['name']}' requiert au minimum {min_days} jours"
-            )
     
     # Admin/Secretary can create for others or for all employees
     can_create_for_others = current_user["role"] in ["admin", "secretary"]
@@ -801,84 +790,11 @@ async def create_leave_request(
         target_name = f"{target_employee['first_name']} {target_employee['last_name']}"
         target_dept = target_employee.get("department", "")
         target_position = target_employee.get("position", "")
-        target_role = target_employee.get("role", "employee")
-        user_for_balance = target_employee
     else:
         target_id = current_user["id"]
         target_name = f"{current_user['first_name']} {current_user['last_name']}"
         target_dept = current_user.get("department", "")
         target_position = current_user.get("position", "")
-        target_role = current_user.get("role", "employee")
-        user_for_balance = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
-    
-    # Check leave balance (skip for collective/public holidays)
-    if leave.leave_type not in ["public", "collective"]:
-        leave_balance = user_for_balance.get("leave_balance", {})
-        leave_taken = user_for_balance.get("leave_taken", {})
-        available = leave_balance.get(leave.leave_type, 0) - leave_taken.get(leave.leave_type, 0)
-        if working_days > available:
-         raise HTTPException(
-        status_code=400, 
-        detail=f"Solde insuffisant. Disponible: {available} jours, Demandé: {working_days} jours"
-    )
-
-    # Check for overlapping leaves for this employee
-    existing = await db.leaves.find_one({
-        "employee_id": target_id,
-        "status": {"$ne": "rejected"},
-        "$or": [
-            {"start_date": {"$lte": leave.end_date}, "end_date": {"$gte": leave.start_date}}
-        ]
-    })
-    
-    if existing:
-        raise HTTPException(status_code=400, detail="Chevauchement avec une demande existante")
-    
-    # Check for overlapping leaves for KEY POSITIONS (admin, secretary)
-    key_positions = ["admin", "secretary"]
-    overlap_warnings = []
-    
-    if target_role in key_positions:
-        # Find other employees with same role who have approved leaves during this period
-        overlapping_key_leaves = await db.leaves.find({
-            "employee_id": {"$ne": target_id},
-            "status": {"$in": ["approved", "pending"]},
-            "$or": [
-                {"start_date": {"$lte": leave.end_date}, "end_date": {"$gte": leave.start_date}}
-            ]
-        }, {"_id": 0}).to_list(100)
-        
-        for ol in overlapping_key_leaves:
-            emp = await db.users.find_one({"id": ol["employee_id"]}, {"_id": 0})
-            if emp and emp.get("role") in key_positions:
-                overlap_warnings.append({
-                    "type": "key_position",
-                    "employee_name": ol["employee_name"],
-                    "role": emp.get("role"),
-                    "dates": f"{ol['start_date']} - {ol['end_date']}"
-                })
-    
-    # Check for overlapping leaves in same department/position
-    dept_overlaps = await db.leaves.find({
-        "employee_id": {"$ne": target_id},
-        "department": target_dept,
-        "status": {"$in": ["approved", "pending"]},
-        "$or": [
-            {"start_date": {"$lte": leave.end_date}, "end_date": {"$gte": leave.start_date}}
-        ]
-    }, {"_id": 0}).to_list(100)
-    
-    for do in dept_overlaps:
-        overlap_warnings.append({
-            "type": "department",
-            "employee_name": do["employee_name"],
-            "department": target_dept,
-            "dates": f"{do['start_date']} - {do['end_date']}"
-        })
-    
-    # Create notification for admin if there are overlaps
-    if overlap_warnings:
-        await create_overlap_notification(target_name, target_dept, leave.start_date, leave.end_date, overlap_warnings)
     
     leave_id = str(uuid.uuid4())
     leave_doc = {

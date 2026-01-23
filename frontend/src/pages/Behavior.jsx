@@ -385,10 +385,19 @@ const Behavior = () => {
                       </p>
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={submitting}>
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={submitting || uploadingDoc}
+                    >
                       {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Enregistrer la note
+                      {uploadingDoc ? 'Upload du document en cours...' : 'Enregistrer la note'}
                     </Button>
+                    {uploadingDoc && (
+                      <p className="text-xs text-amber-600 text-center">
+                        ⏳ Veuillez patienter pendant l'upload du document
+                      </p>
+                    )}
                   </form>
                 </DialogContent>
               </Dialog>

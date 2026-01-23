@@ -252,7 +252,11 @@ const SitesManagement = () => {
                           <Crown className="h-3 w-3 text-yellow-500" />
                           Chef de département
                         </p>
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                        <div 
+                          className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
+                          onClick={() => handleEmployeeClick(deptData.chef.id)}
+                          title="Cliquer pour voir le dossier complet"
+                        >
                           <Avatar className="h-12 w-12 border-2 border-primary">
                             <AvatarImage src={getAvatarUrl(deptData.chef.avatar_url)} />
                             <AvatarFallback className="bg-primary text-primary-foreground font-semibold">

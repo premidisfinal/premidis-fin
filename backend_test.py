@@ -752,38 +752,97 @@ class HRPlatformTester:
         
         # Test different file types as specified in review
         file_types = [
-            {"name": "document.pdf", "type": "application/pdf", "description": "PDF document"},
-            {"name": "photo.jpg", "type": "image/jpeg", "description": "JPEG image"},
-            {"name": "screenshot.png", "type": "image/png", "description": "PNG image"},
-            {"name": "letter.doc", "type": "application/msword", "description": "DOC document"},
-            {"name": "report.docx", "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "description": "DOCX document"}
+            {"name": "document.pdf", "type": "application/pdf", "description": "PDF document", "content": b"%PDF-1.4\nTest PDF"},
+            {"name": "photo.jpg", "type": "image/jpeg", "description": "JPEG image", "content": b"\xff\xd8\xff\xe0\x00\x10JFIF"},
+            {"name": "screenshot.png", "type": "image/png", "description": "PNG image", "content": b"\x89PNG\r\n\x1a\n"},
+            {"name": "letter.doc", "type": "application/msword", "description": "DOC document", "content": b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"},
+            {"name": "report.docx", "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "description": "DOCX document", "content": b"PK\x03\x04"}
         ]
         
         for i, file_info in enumerate(file_types):
-            behavior_data = {
-                "employee_id": self.employee_id,
-                "type": "note",
-                "note": f"Test behavior with {file_info['description']}",
-                "date": "2025-01-22",
-                "file_name": file_info["name"],
-                "file_url": f"/uploads/test_{i}_{file_info['name']}"
-            }
+            # Test actual file upload for each type
+            files = {'file': (file_info["name"], file_info["content"], file_info["type"])}
+            upload_headers = {'Authorization': f'Bearer {self.admin_token}'}
             
-            success, response = self.run_test(
-                f"POST /api/behavior - Create behavior with {file_info['description']}",
-                "POST",
-                "behavior", 
-                201,
-                data=behavior_data,
-                headers=headers
-            )
+            try:
+                upload_url = f"{self.base_url}/api/upload/file"
+                upload_response = requests.post(upload_url, files=files, headers=upload_headers)
+                
+                if upload_response.status_code == 200:
+                    upload_data = upload_response.json()
+                    self.log_test(
+                        f"File type {file_info['type']} upload succeeds",
+                        True,
+                        f"Successfully uploaded {file_info['description']}: {upload_data.get('filename')}"
+                    )
+                    
+                    # Test creating behavior with this file type
+                    behavior_data = {
+                        "employee_id": self.employee_id,
+                        "type": "note",
+                        "note": f"Test behavior with {file_info['description']}",
+                        "date": "2025-01-22",
+                        "file_name": upload_data.get('filename'),
+                        "file_url": upload_data.get('url')
+                    }
+                    
+                    success, response = self.run_test(
+                        f"POST /api/behavior - Create behavior with {file_info['description']}",
+                        "POST",
+                        "behavior", 
+                        201,
+                        data=behavior_data,
+                        headers=headers
+                    )
+                    
+                    if success:
+                        self.log_test(
+                            f"Behavior creation with {file_info['type']} succeeds",
+                            True,
+                            f"Successfully created behavior with {file_info['description']}"
+                        )
+                else:
+                    self.log_test(
+                        f"File type {file_info['type']} upload",
+                        False,
+                        f"Upload failed with status {upload_response.status_code}: {upload_response.text[:100]}"
+                    )
             
-            if success:
+            except Exception as e:
                 self.log_test(
-                    f"File type {file_info['type']} supported",
-                    True,
-                    f"Successfully created behavior with {file_info['description']}"
+                    f"File type {file_info['type']} upload",
+                    False,
+                    f"Exception during upload: {str(e)}"
                 )
+        
+        # Test unsupported file type (should return 400)
+        print("\n🚫 Testing unsupported file type...")
+        unsupported_file = {'file': ('test.txt', b'This is a text file', 'text/plain')}
+        upload_headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        try:
+            upload_url = f"{self.base_url}/api/upload/file"
+            upload_response = requests.post(upload_url, files=unsupported_file, headers=upload_headers)
+            
+            if upload_response.status_code == 400:
+                self.log_test(
+                    "Unsupported file type properly rejected",
+                    True,
+                    f"Correctly returned 400 for text/plain file type"
+                )
+            else:
+                self.log_test(
+                    "Unsupported file type properly rejected",
+                    False,
+                    f"Expected 400, got {upload_response.status_code}"
+                )
+        
+        except Exception as e:
+            self.log_test(
+                "Unsupported file type test",
+                False,
+                f"Exception during test: {str(e)}"
+            )
 
     def test_document_error_cases(self):
         """Test error cases and edge cases for document upload"""

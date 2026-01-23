@@ -227,7 +227,10 @@ const TimeManagement = () => {
       await fetchLeaveTypesConfig();
       setEditingLeaveType(null);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+      const errorMsg = typeof error.response?.data?.detail === 'string' 
+        ? error.response.data.detail 
+        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur lors de la sauvegarde';
+      toast.error(errorMsg);
     } finally {
       setSavingConfig(false);
     }
@@ -270,7 +273,10 @@ const TimeManagement = () => {
       });
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur');
+      const errorMsg = typeof error.response?.data?.detail === 'string' 
+        ? error.response.data.detail 
+        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur';
+      toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -301,7 +307,10 @@ const TimeManagement = () => {
       toast.success('Congé supprimé');
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+      const errorMsg = typeof error.response?.data?.detail === 'string' 
+        ? error.response.data.detail 
+        : error.response?.data?.detail?.[0]?.msg || error.message || 'Erreur lors de la suppression';
+      toast.error(errorMsg);
     }
   };
 

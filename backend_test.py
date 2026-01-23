@@ -788,9 +788,9 @@ class HRPlatformTester:
                 )
 
     def run_all_tests(self):
-        """Run all tests - Focus on Refactoring Review Request"""
+        """Run all tests - Focus on Document Upload Workflow Review Request"""
         print("🚀 Starting PREMIDIS HR Platform Backend Tests")
-        print("🎯 Focus: REFACTORING CONGÉS & COMPORTEMENT - Non-blocking System")
+        print("🎯 Focus: MODULE COMPORTEMENT UPLOAD DOCUMENTS - Complete Workflow Testing")
         print("=" * 70)
         
         # Authentication is required for all tests
@@ -798,15 +798,18 @@ class HRPlatformTester:
             print("❌ Authentication failed - cannot proceed with other tests")
             return False
         
-        # Run the priority tests from refactoring review request
-        print("\n🎯 PRIORITY TESTS - REFACTORING VALIDATION:")
-        print("1. MODULE CONGÉS - Bug Critique Corrigé")
-        self.test_leaves_approval_rejection()
+        # Run the priority tests from document upload review request
+        print("\n🎯 PRIORITY TESTS - DOCUMENT UPLOAD WORKFLOW VALIDATION:")
+        print("1. Complete Document Upload Workflow")
+        self.test_document_upload_workflow()
         
-        print("\n2. MODULE CONGÉS - Suppression Validations")
-        self.test_leaves_no_validations()
+        print("\n2. Supported File Types Testing")
+        self.test_supported_file_types()
         
-        print("\n3. MODULE COMPORTEMENT - Gestion Documentaire")
+        print("\n3. Error Cases and Edge Cases")
+        self.test_document_error_cases()
+        
+        print("\n4. Previous Behavior Module Tests")
         self.test_behavior_module_documents()
         self.test_behavior_deletion()
         
@@ -817,11 +820,11 @@ class HRPlatformTester:
         print(f"📈 Success Rate: {success_rate:.1f}%")
         
         if success_rate >= 80:
-            print("✅ REFACTORING VALIDATION: PASSED")
-            print("✅ System is now non-blocking and purely declarative")
+            print("✅ DOCUMENT UPLOAD WORKFLOW VALIDATION: PASSED")
+            print("✅ Document upload and association with behavior notes working correctly")
         else:
-            print("❌ REFACTORING VALIDATION: FAILED")
-            print("❌ Some blocking behaviors still exist")
+            print("❌ DOCUMENT UPLOAD WORKFLOW VALIDATION: FAILED")
+            print("❌ Issues found in document upload workflow")
         
         return success_rate >= 80
 

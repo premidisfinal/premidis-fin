@@ -1912,6 +1912,54 @@ async def upload_avatar(
         "message": "Photo de profil mise à jour"
     }
 
+# ==================== FILE PREVIEW ENDPOINT ====================
+@api_router.get("/preview/{filepath:path}")
+async def preview_file(filepath: str):
+    """
+    Serve files with proper headers for browser preview
+    Supports: PDF, images (JPEG, PNG, WebP)
+    """
+    # Clean and validate filepath
+    filepath = filepath.strip('/')
+    
+    # Determine full path
+    if filepath.startswith('api/uploads/'):
+        filename = filepath.replace('api/uploads/', '')
+    elif filepath.startswith('uploads/'):
+        filename = filepath.replace('uploads/', '')
+    else:
+        filename = filepath
+    
+    full_path = os.path.join(UPLOAD_DIR, filename)
+    
+    # Check if file exists
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    # Determine content type based on file extension
+    ext = filename.split('.')[-1].lower()
+    content_type_map = {
+        'pdf': 'application/pdf',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'webp': 'image/webp',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    }
+    
+    content_type = content_type_map.get(ext, 'application/octet-stream')
+    
+    # Return file with inline disposition for browser preview
+    return FileResponse(
+        path=full_path,
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f"inline; filename=\"{filename}\"",
+            "Cache-Control": "public, max-age=3600"
+        }
+    )
+
 # Serve uploaded files
 from fastapi.staticfiles import StaticFiles
 

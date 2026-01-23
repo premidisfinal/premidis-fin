@@ -908,7 +908,7 @@ class HRPlatformTester:
             "POST /api/behavior - Create behavior without auth (should fail)",
             "POST",
             "behavior",
-            401,  # Expecting 401 Unauthorized
+            403,  # Expecting 403 Forbidden (FastAPI returns 403 for "Not authenticated")
             data=behavior_data
             # No headers = no authentication
         )

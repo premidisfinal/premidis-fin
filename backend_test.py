@@ -5,13 +5,15 @@ import json
 import uuid
 
 class HRPlatformTester:
-    def __init__(self, base_url="https://simplihr-app.preview.emergentagent.com"):
+    def __init__(self, base_url="https://rh-continuation.preview.emergentagent.com"):
         self.base_url = base_url
         self.admin_token = None
         self.employee_token = None
         self.employee_id = None
         self.site_id = None
         self.document_id = None
+        self.leave_id = None
+        self.behavior_id = None
         self.tests_run = 0
         self.tests_passed = 0
         self.test_results = []

@@ -454,102 +454,18 @@ const Behavior = () => {
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredBehaviors.map((behavior) => {
-                  const typeInfo = getBehaviorTypeInfo(behavior.type);
-                  const Icon = typeInfo.icon;
-                  const hasDocument = behavior.file_url || (behavior.document_urls && behavior.document_urls.length > 0);
-                  const documentUrl = behavior.file_url || (behavior.document_urls && behavior.document_urls[0]);
-                  
-                  return (
-                    <Card 
-                      key={behavior.id}
-                      className={`border-l-4 ${typeInfo.borderColor} hover:shadow-lg transition-shadow`}
-                    >
-                      <CardContent className="pt-4">
-                        <div className="space-y-3">
-                          {/* Header */}
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className={`p-2 rounded-lg ${typeInfo.bgColor}`}>
-                                <Icon className={`h-5 w-5 ${typeInfo.color}`} />
-                              </div>
-                              <div>
-                                <Badge variant="outline" className={typeInfo.color}>
-                                  {typeInfo.label}
-                                </Badge>
-                              </div>
-                            </div>
-                            {isAdmin() && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
-                                onClick={() => {
-                                  setBehaviorToDelete(behavior);
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-
-                          {/* Employee Info */}
-                          <div>
-                            <p className="font-semibold text-foreground">{behavior.employee_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(behavior.date), 'dd MMMM yyyy', { locale: fr })}
-                            </p>
-                          </div>
-
-                          {/* Note */}
-                          <p className="text-sm text-foreground line-clamp-3">
-                            {behavior.note}
-                          </p>
-
-                          {/* Document Section */}
-                          {hasDocument && (
-                            <div className="pt-3 border-t">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <FileText className="h-4 w-4 text-primary" />
-                                  <span className="text-xs font-medium text-primary">
-                                    {behavior.file_name || 'Document joint'}
-                                  </span>
-                                </div>
-                                <div className="flex gap-1">
-                                  <a 
-                                    href={getDocUrl(documentUrl)} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                  >
-                                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                                      <Eye className="h-3 w-3" />
-                                    </Button>
-                                  </a>
-                                  <a 
-                                    href={getDocUrl(documentUrl)} 
-                                    download
-                                  >
-                                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                                      <Download className="h-3 w-3" />
-                                    </Button>
-                                  </a>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Footer */}
-                          <div className="pt-2 border-t text-xs text-muted-foreground">
-                            {behavior.created_by_name && `Par ${behavior.created_by_name} • `}
-                            {format(new Date(behavior.created_at || behavior.date), 'dd/MM/yyyy HH:mm')}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                {filteredBehaviors.map((behavior) => (
+                  <BehaviorCard
+                    key={behavior.id}
+                    behavior={behavior}
+                    showEmployeeName={true}
+                    canDelete={isAdmin()}
+                    onDelete={(beh) => {
+                      setBehaviorToDelete(beh);
+                      setDeleteDialogOpen(true);
+                    }}
+                  />
+                ))}
               </div>
             )}
           </CardContent>

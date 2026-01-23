@@ -3,6 +3,8 @@ import sys
 from datetime import datetime
 import json
 import uuid
+import io
+import os
 
 class HRPlatformTester:
     def __init__(self, base_url="https://rh-continuation.preview.emergentagent.com"):

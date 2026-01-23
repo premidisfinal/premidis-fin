@@ -1844,11 +1844,22 @@ async def upload_file(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload a file (PDF, JPEG, PNG)"""
-    allowed_types = ["application/pdf", "image/jpeg", "image/jpg", "image/png", "image/webp"]
+    """Upload a file (PDF, JPEG, PNG, DOC, DOCX)"""
+    allowed_types = [
+        "application/pdf", 
+        "image/jpeg", 
+        "image/jpg", 
+        "image/png", 
+        "image/webp",
+        "application/msword",  # .doc
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"  # .docx
+    ]
     
     if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail=f"Type de fichier non supporté. Utilisez PDF, JPEG ou PNG.")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Type de fichier non supporté: {file.content_type}. Utilisez PDF, JPEG, PNG, DOC ou DOCX."
+        )
     
     # Generate unique filename
     file_id = str(uuid.uuid4())

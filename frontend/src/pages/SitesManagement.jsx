@@ -286,7 +286,9 @@ const SitesManagement = () => {
                           {deptData.employees.map(emp => (
                             <div 
                               key={emp.id} 
-                              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer hover:shadow-md"
+                              onClick={() => handleEmployeeClick(emp.id)}
+                              title="Cliquer pour voir le dossier complet"
                             >
                               <Avatar className="h-10 w-10">
                                 <AvatarImage src={getAvatarUrl(emp.avatar_url)} />

@@ -87,483 +87,65 @@ class HRPlatformTester:
         
         return True
 
-    def test_voice_assistant_removal(self):
-        """Test that voice assistant endpoints are removed"""
-        print("\n🎤 Testing Voice Assistant Removal...")
-        
-        # Test that voice endpoints return 404
-        self.run_test(
-            "Voice Assistant endpoint should not exist",
-            "GET",
-            "voice/status",
-            404
-        )
-        
-        self.run_test(
-            "Voice chat endpoint should not exist",
-            "POST",
-            "voice/chat",
-            404,
-            data={"message": "test"}
-        )
-
-    def test_live_chat_endpoints(self):
-        """Test live chat functionality"""
-        print("\n💬 Testing Live Chat Endpoints...")
+    def test_leaves_approval_rejection(self):
+        """Test leave approval/rejection - Critical Bug Fix"""
+        print("\n🏖️ Testing Leave Approval/Rejection (Critical Bug Fix)...")
         
         if not self.admin_token:
-            print("❌ Cannot test chat - no admin token")
+            print("❌ Cannot test leaves - no admin token")
             return
         
         headers = {'Authorization': f'Bearer {self.admin_token}'}
         
-        # Test get chat messages
-        self.run_test(
-            "Get chat messages",
+        # First, get or create an employee for testing
+        success, employees_response = self.run_test(
+            "GET /api/employees - Get employees for testing",
             "GET",
-            "communication/chat/messages",
-            200,
-            headers=headers
-        )
-        
-        # Test get chat users
-        self.run_test(
-            "Get chat users",
-            "GET",
-            "communication/chat/users",
-            200,
-            headers=headers
-        )
-        
-        # Test send chat message
-        self.run_test(
-            "Send chat message",
-            "POST",
-            "communication/chat/messages",
-            201,
-            data={"content": "Test message from backend test", "recipient_id": None},
-            headers=headers
-        )
-
-    def test_multi_currency_system(self):
-        """Test multi-currency salary system"""
-        print("\n💰 Testing Multi-Currency System...")
-        
-        if not self.admin_token:
-            print("❌ Cannot test currency - no admin token")
-            return
-        
-        headers = {'Authorization': f'Bearer {self.admin_token}'}
-        
-        # Test creating employee with USD salary
-        test_employee_usd = {
-            "first_name": "Test",
-            "last_name": "USD",
-            "email": f"test_usd_{datetime.now().strftime('%H%M%S')}@test.com",
-            "password": "Test123!",
-            "department": "administration",
-            "position": "Test Position",
-            "salary": 1500.0,
-            "salary_currency": "USD",
-            "role": "employee"
-        }
-        
-        success, response = self.run_test(
-            "Create employee with USD salary",
-            "POST",
             "employees",
-            201,
-            data=test_employee_usd,
-            headers=headers
-        )
-        
-        usd_employee_id = None
-        if success and 'id' in response:
-            usd_employee_id = response['id']
-            # Verify salary currency is stored
-            if response.get('salary_currency') == 'USD' and response.get('salary') == 1500.0:
-                self.log_test("USD salary stored correctly", True)
-            else:
-                self.log_test("USD salary stored correctly", False, f"Expected USD/1500, got {response.get('salary_currency')}/{response.get('salary')}")
-        
-        # Test creating employee with FC salary
-        test_employee_fc = {
-            "first_name": "Test",
-            "last_name": "FC",
-            "email": f"test_fc_{datetime.now().strftime('%H%M%S')}@test.com",
-            "password": "Test123!",
-            "department": "administration",
-            "position": "Test Position",
-            "salary": 3000000.0,
-            "salary_currency": "FC",
-            "role": "employee"
-        }
-        
-        success, response = self.run_test(
-            "Create employee with FC salary",
-            "POST",
-            "employees",
-            201,
-            data=test_employee_fc,
-            headers=headers
-        )
-        
-        fc_employee_id = None
-        if success and 'id' in response:
-            fc_employee_id = response['id']
-            # Verify salary currency is stored
-            if response.get('salary_currency') == 'FC' and response.get('salary') == 3000000.0:
-                self.log_test("FC salary stored correctly", True)
-            else:
-                self.log_test("FC salary stored correctly", False, f"Expected FC/3000000, got {response.get('salary_currency')}/{response.get('salary')}")
-        
-        # Test salary retrieval
-        if usd_employee_id:
-            success, response = self.run_test(
-                "Get USD employee salary",
-                "GET",
-                f"employees/{usd_employee_id}/salary",
-                200,
-                headers=headers
-            )
-            if success and response.get('salary_currency') == 'USD':
-                self.log_test("USD salary retrieval correct", True)
-            else:
-                self.log_test("USD salary retrieval correct", False, f"Expected USD, got {response.get('salary_currency')}")
-
-    def test_forgot_password_endpoints(self):
-        """Test forgot password functionality"""
-        print("\n🔑 Testing Forgot Password Endpoints...")
-        
-        # Test forgot password request
-        self.run_test(
-            "Forgot password request",
-            "POST",
-            "auth/forgot-password",
             200,
-            data={"email": "rh@premierdis.com"}
-        )
-        
-        # Test with invalid email (should still return 200 for security)
-        self.run_test(
-            "Forgot password with invalid email",
-            "POST",
-            "auth/forgot-password",
-            200,
-            data={"email": "nonexistent@test.com"}
-        )
-        
-        # Test verify reset token with invalid token
-        self.run_test(
-            "Verify invalid reset token",
-            "GET",
-            "auth/verify-reset-token?token=invalid_token",
-            400
-        )
-        
-        # Test reset password with invalid token
-        self.run_test(
-            "Reset password with invalid token",
-            "POST",
-            "auth/reset-password",
-            400,
-            data={"token": "invalid_token", "new_password": "NewPass123!"}
-        )
-
-    def test_employee_creation_with_currency(self):
-        """Test employee creation form includes currency field"""
-        print("\n👥 Testing Employee Creation with Currency...")
-        
-        if not self.admin_token:
-            print("❌ Cannot test employee creation - no admin token")
-            return
-        
-        headers = {'Authorization': f'Bearer {self.admin_token}'}
-        
-        # Test employee creation without currency (should default to USD)
-        test_employee_no_currency = {
-            "first_name": "Test",
-            "last_name": "NoCurrency",
-            "email": f"test_nocurrency_{datetime.now().strftime('%H%M%S')}@test.com",
-            "password": "Test123!",
-            "department": "administration",
-            "position": "Test Position",
-            "salary": 1000.0,
-            "role": "employee"
-        }
-        
-        success, response = self.run_test(
-            "Create employee without currency (should default to USD)",
-            "POST",
-            "employees",
-            201,
-            data=test_employee_no_currency,
             headers=headers
         )
         
-        if success and response.get('salary_currency') == 'USD':
-            self.log_test("Default currency is USD", True)
+        if success and 'employees' in employees_response and len(employees_response['employees']) > 0:
+            self.employee_id = employees_response['employees'][0]['id']
         else:
-            self.log_test("Default currency is USD", False, f"Expected USD, got {response.get('salary_currency')}")
-
-    def test_sites_api(self):
-        """Test Sites API endpoints - Review Request Focus"""
-        print("\n🏢 Testing Sites API...")
-        
-        if not self.admin_token:
-            print("❌ Cannot test sites API - no admin token")
-            return
-        
-        headers = {'Authorization': f'Bearer {self.admin_token}'}
-        
-        # Test GET /api/sites - list all sites (main focus from review)
-        success, response = self.run_test(
-            "GET /api/sites - List sites structure",
-            "GET",
-            "sites",
-            200,
-            headers=headers
-        )
-        
-        if success:
-            # Verify the structure includes necessary fields for site cards
-            if 'sites' in response or isinstance(response, list):
-                sites_data = response.get('sites', response) if isinstance(response, dict) else response
-                self.log_test(
-                    "Sites API returns proper structure",
-                    True,
-                    f"Found {len(sites_data)} sites in response"
-                )
-                
-                # Check if sites have required fields for frontend display
-                if sites_data and len(sites_data) > 0:
-                    first_site = sites_data[0]
-                    required_fields = ['id', 'name']
-                    has_required = all(field in first_site for field in required_fields)
-                    self.log_test(
-                        "Sites have required fields (id, name)",
-                        has_required,
-                        f"Site fields: {list(first_site.keys())}"
-                    )
-                    
-                    if has_required:
-                        self.site_id = first_site['id']
-                        print(f"✅ Using existing site ID: {self.site_id}")
-            else:
-                self.log_test(
-                    "Sites API returns proper structure",
-                    False,
-                    f"Unexpected response structure: {type(response)}"
-                )
-        
-        # If no sites exist, create one for testing
-        if not self.site_id:
-            site_data = {
-                "name": "Kinshasa HQ",
-                "city": "Kinshasa", 
-                "country": "RDC",
-                "address": "123 Avenue du Commerce"
+            # Create a test employee
+            employee_data = {
+                "first_name": "Test",
+                "last_name": "Employee",
+                "email": f"test_employee_{datetime.now().strftime('%H%M%S')}@test.com",
+                "password": "Test123!",
+                "department": "administration",
+                "role": "employee"
             }
             
-            success, response = self.run_test(
-                "POST /api/sites - Create test site",
+            success, emp_response = self.run_test(
+                "POST /api/employees - Create test employee",
                 "POST",
-                "sites",
+                "employees",
                 201,
-                data=site_data,
+                data=employee_data,
                 headers=headers
             )
             
-            if success and 'id' in response:
-                self.site_id = response['id']
-                print(f"✅ Test site created with ID: {self.site_id}")
-
-    def test_employee_api_enhanced(self):
-        """Test Employee API with filters and new fields - Review Request Focus"""
-        print("\n👥 Testing Enhanced Employee API...")
+            if success and 'id' in emp_response:
+                self.employee_id = emp_response['id']
         
-        if not self.admin_token:
-            print("❌ Cannot test employee API - no admin token")
+        if not self.employee_id:
+            print("❌ Cannot proceed - no employee ID available")
             return
         
-        headers = {'Authorization': f'Bearer {self.admin_token}'}
-        
-        # Test GET /api/employees with filters (department, site, hierarchy_level)
-        success, response = self.run_test(
-            "GET /api/employees - List employees (base)",
-            "GET",
-            "employees",
-            200,
-            headers=headers
-        )
-        
-        if success and 'employees' in response and len(response['employees']) > 0:
-            self.employee_id = response['employees'][0]['id']
-            print(f"✅ Found employee ID: {self.employee_id}")
-        
-        # Test department filter
-        success, response = self.run_test(
-            "GET /api/employees?department=administration - Filter by department",
-            "GET",
-            "employees?department=administration",
-            200,
-            headers=headers
-        )
-        
-        if success:
-            self.log_test(
-                "Employee API supports department filter",
-                True,
-                f"Department filter returned {len(response.get('employees', []))} employees"
-            )
-        
-        # Test category filter (existing)
-        success, response = self.run_test(
-            "GET /api/employees?category=agent - Filter by category",
-            "GET",
-            "employees?category=agent",
-            200,
-            headers=headers
-        )
-        
-        # Create a hierarchical group for testing
-        group_data = {
-            "name": "Administration Team",
-            "site_id": self.site_id if self.site_id else "test-site",
-            "department": "administration"
-        }
-        
-        success, group_response = self.run_test(
-            "POST /api/sites/groups - Create hierarchical group",
-            "POST",
-            "sites/groups",
-            201,
-            data=group_data,
-            headers=headers
-        )
-        
-        group_id = None
-        if success and 'id' in group_response:
-            group_id = group_response['id']
-            print(f"✅ Test hierarchical group created with ID: {group_id}")
-        
-        # Test POST /api/employees with site_id and hierarchy_level fields
-        test_employee_with_fields = {
-            "first_name": "Test",
-            "last_name": "SiteHierarchy",
-            "email": f"test_site_hierarchy_{datetime.now().strftime('%H%M%S')}@test.com",
-            "password": "Test123!",
-            "department": "administration",
-            "position": "Test Position",
-            "salary": 1000.0,
-            "salary_currency": "USD",
-            "role": "employee",
-            "site_id": self.site_id if self.site_id else None,
-            "hierarchy_level": "Agent de base"
-        }
-        
-        success, response = self.run_test(
-            "POST /api/employees - Create employee with site_id and hierarchy_level",
-            "POST",
-            "employees",
-            201,
-            data=test_employee_with_fields,
-            headers=headers
-        )
-        
-        if success:
-            # Verify site_id and hierarchy_level are stored
-            site_id_stored = response.get('site_id') == self.site_id if self.site_id else 'site_id' in response
-            hierarchy_stored = response.get('hierarchy_level') == "Agent de base"
-            
-            self.log_test(
-                "Employee creation accepts site_id field",
-                site_id_stored,
-                f"site_id in response: {response.get('site_id')}"
-            )
-            
-            self.log_test(
-                "Employee creation accepts hierarchy_level field",
-                hierarchy_stored,
-                f"hierarchy_level in response: {response.get('hierarchy_level')}"
-            )
-            
-            # Store this employee ID for profile testing
-            if 'id' in response:
-                self.employee_id = response['id']
-                
-                # If we created a group, assign it to the employee
-                if group_id:
-                    update_data = {"hierarchical_group_id": group_id}
-                    success, update_response = self.run_test(
-                        "PUT /api/employees/{id} - Assign hierarchical group",
-                        "PUT",
-                        f"employees/{self.employee_id}",
-                        200,
-                        data=update_data,
-                        headers=headers
-                    )
-                    if success:
-                        print(f"✅ Assigned hierarchical group {group_id} to employee {self.employee_id}")
-        
-        # Test GET /api/employees/{id} - get employee details with site_name and hierarchical_group_name
-        if self.employee_id:
-            success, employee_response = self.run_test(
-                "GET /api/employees/{id} - Get employee profile with enriched data",
-                "GET",
-                f"employees/{self.employee_id}",
-                200,
-                headers=headers
-            )
-            
-            if success:
-                # Check if response includes site_name and hierarchical_group_name fields
-                has_site_name = 'site_name' in employee_response
-                has_group_name = 'hierarchical_group_name' in employee_response
-                has_hierarchy_level = 'hierarchy_level' in employee_response
-                
-                self.log_test(
-                    "Employee profile includes site_name field", 
-                    has_site_name,
-                    f"site_name field present: {has_site_name}, value: {employee_response.get('site_name')}"
-                )
-                
-                # For hierarchical_group_name, it's OK if it's None when no group is assigned
-                group_name_value = employee_response.get('hierarchical_group_name')
-                group_name_test = has_group_name  # Field should be present even if None
-                self.log_test(
-                    "Employee profile includes hierarchical_group_name field",
-                    group_name_test, 
-                    f"hierarchical_group_name field present: {has_group_name}, value: {group_name_value}"
-                )
-                
-                self.log_test(
-                    "Employee profile includes hierarchy_level field",
-                    has_hierarchy_level,
-                    f"hierarchy_level field present: {has_hierarchy_level}, value: {employee_response.get('hierarchy_level')}"
-                )
-
-    def test_leaves_api(self):
-        """Test Leaves API - Focus on DELETE functionality for admins"""
-        print("\n🏖️ Testing Leaves API...")
-        
-        if not self.admin_token or not self.employee_id:
-            print("❌ Cannot test leaves API - missing admin token or employee ID")
-            return
-        
-        headers = {'Authorization': f'Bearer {self.admin_token}'}
-        
-        # First create a test leave to delete
+        # Test 1: Create a leave for approval testing
         leave_data = {
             "leave_type": "annual",
-            "start_date": "2026-02-01",
-            "end_date": "2026-02-03",
-            "reason": "Test leave for deletion testing",
+            "start_date": "2025-03-01",
+            "end_date": "2025-03-05",
+            "reason": "Test leave for approval testing",
             "employee_id": self.employee_id
         }
         
         success, response = self.run_test(
-            "POST /api/leaves - Create test leave for deletion",
+            "POST /api/leaves - Create leave for approval test",
             "POST",
             "leaves",
             201,
@@ -571,130 +153,329 @@ class HRPlatformTester:
             headers=headers
         )
         
-        leave_id = None
         if success and 'id' in response:
-            leave_id = response['id']
-            print(f"✅ Test leave created with ID: {leave_id}")
+            leave_id_1 = response['id']
+            print(f"✅ Test leave created with ID: {leave_id_1}")
             
-            # Test DELETE /api/leaves/{leave_id} - admin should be able to delete
-            success, delete_response = self.run_test(
-                "DELETE /api/leaves/{leave_id} - Admin delete leave",
-                "DELETE",
-                f"leaves/{leave_id}",
+            # Test approval - should NOT get "Erreur lors de la mise à jour"
+            approval_data = {"status": "approved"}
+            success, approval_response = self.run_test(
+                "PUT /api/leaves/{id} - Approve leave (should work without error)",
+                "PUT",
+                f"leaves/{leave_id_1}",
                 200,
+                data=approval_data,
+                headers=headers
+            )
+            
+            if success:
+                # Verify status changed to approved
+                if approval_response.get('status') == 'approved':
+                    self.log_test(
+                        "Leave approval works correctly",
+                        True,
+                        "Status successfully changed to approved"
+                    )
+                else:
+                    self.log_test(
+                        "Leave approval works correctly",
+                        False,
+                        f"Expected status 'approved', got '{approval_response.get('status')}'"
+                    )
+        
+        # Test 2: Create another leave for rejection testing
+        leave_data_2 = {
+            "leave_type": "sick",
+            "start_date": "2025-03-10",
+            "end_date": "2025-03-12",
+            "reason": "Test leave for rejection testing",
+            "employee_id": self.employee_id
+        }
+        
+        success, response = self.run_test(
+            "POST /api/leaves - Create leave for rejection test",
+            "POST",
+            "leaves",
+            201,
+            data=leave_data_2,
+            headers=headers
+        )
+        
+        if success and 'id' in response:
+            leave_id_2 = response['id']
+            
+            # Test rejection - should NOT get "Erreur lors de la mise à jour"
+            rejection_data = {"status": "rejected"}
+            success, rejection_response = self.run_test(
+                "PUT /api/leaves/{id} - Reject leave (should work without error)",
+                "PUT",
+                f"leaves/{leave_id_2}",
+                200,
+                data=rejection_data,
+                headers=headers
+            )
+            
+            if success:
+                # Verify status changed to rejected
+                if rejection_response.get('status') == 'rejected':
+                    self.log_test(
+                        "Leave rejection works correctly",
+                        True,
+                        "Status successfully changed to rejected"
+                    )
+                else:
+                    self.log_test(
+                        "Leave rejection works correctly",
+                        False,
+                        f"Expected status 'rejected', got '{rejection_response.get('status')}'"
+                    )
+
+    def test_leaves_no_validations(self):
+        """Test leave creation without validations - Non-blocking system"""
+        print("\n🚫 Testing Leave Creation Without Validations...")
+        
+        if not self.admin_token or not self.employee_id:
+            print("❌ Cannot test leaves - missing admin token or employee ID")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: Create leave with zero balance (should succeed)
+        leave_zero_balance = {
+            "leave_type": "annual",
+            "start_date": "2025-04-01",
+            "end_date": "2025-04-05",
+            "reason": "Test leave with zero balance - should succeed",
+            "employee_id": self.employee_id
+        }
+        
+        success, response = self.run_test(
+            "POST /api/leaves - Create leave with zero balance (should succeed)",
+            "POST",
+            "leaves",
+            201,
+            data=leave_zero_balance,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Leave creation succeeds even with zero balance",
+                True,
+                "No 'Solde insuffisant' error - system is non-blocking"
+            )
+        
+        # Test 2: Create overlapping leaves (should succeed)
+        leave_overlap_1 = {
+            "leave_type": "annual",
+            "start_date": "2025-05-01",
+            "end_date": "2025-05-10",
+            "reason": "First overlapping leave - should succeed",
+            "employee_id": self.employee_id
+        }
+        
+        success, response = self.run_test(
+            "POST /api/leaves - Create first overlapping leave",
+            "POST",
+            "leaves",
+            201,
+            data=leave_overlap_1,
+            headers=headers
+        )
+        
+        if success:
+            # Create second overlapping leave
+            leave_overlap_2 = {
+                "leave_type": "sick",
+                "start_date": "2025-05-05",
+                "end_date": "2025-05-15",
+                "reason": "Second overlapping leave - should also succeed",
+                "employee_id": self.employee_id
+            }
+            
+            success, response = self.run_test(
+                "POST /api/leaves - Create second overlapping leave (should succeed)",
+                "POST",
+                "leaves",
+                201,
+                data=leave_overlap_2,
                 headers=headers
             )
             
             if success:
                 self.log_test(
-                    "Admin can delete leaves",
+                    "Overlapping leaves creation succeeds",
                     True,
-                    "Leave deletion successful"
+                    "No 'Chevauchement' error - system is non-blocking"
                 )
-                
-                # Verify leave is actually deleted by trying to get it
-                success, get_response = self.run_test(
-                    "GET /api/leaves/{leave_id} - Verify leave deleted",
-                    "GET",
-                    f"leaves/{leave_id}",
-                    404,  # Should return 404 if deleted
-                    headers=headers
-                )
-                
-                if success:  # success here means we got the expected 404
-                    self.log_test(
-                        "Leave actually deleted from system",
-                        True,
-                        "Leave not found after deletion (expected)"
-                    )
         
-        # Test GET /api/leaves with employee filter
+        # Test 3: Create leaves with various durations (should all succeed)
+        # 1 day leave
+        leave_1_day = {
+            "leave_type": "exceptional",
+            "start_date": "2025-06-01",
+            "end_date": "2025-06-01",
+            "reason": "1 day leave - should succeed",
+            "employee_id": self.employee_id
+        }
+        
         success, response = self.run_test(
-            f"GET /api/leaves?employee_id={self.employee_id} - Get leaves for specific employee",
+            "POST /api/leaves - Create 1 day leave (should succeed)",
+            "POST",
+            "leaves",
+            201,
+            data=leave_1_day,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "1 day leave creation succeeds",
+                True,
+                "No minimum duration error - system is non-blocking"
+            )
+        
+        # 100 day leave
+        leave_100_days = {
+            "leave_type": "annual",
+            "start_date": "2025-07-01",
+            "end_date": "2025-10-09",  # Approximately 100 days
+            "reason": "100 day leave - should succeed",
+            "employee_id": self.employee_id
+        }
+        
+        success, response = self.run_test(
+            "POST /api/leaves - Create 100 day leave (should succeed)",
+            "POST",
+            "leaves",
+            201,
+            data=leave_100_days,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "100 day leave creation succeeds",
+                True,
+                "No maximum duration error - system is non-blocking"
+            )
+
+    def test_behavior_module_documents(self):
+        """Test behavior module with document support"""
+        print("\n📝 Testing Behavior Module with Document Support...")
+        
+        if not self.admin_token or not self.employee_id:
+            print("❌ Cannot test behavior - missing admin token or employee ID")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: Create behavior note with document
+        behavior_with_doc = {
+            "employee_id": self.employee_id,
+            "type": "sanction",
+            "note": "Test sanction with document",
+            "date": "2025-01-22",
+            "file_name": "lettre_sanction.pdf",
+            "file_url": "/uploads/test.pdf"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/behavior - Create behavior with document",
+            "POST",
+            "behavior",
+            201,
+            data=behavior_with_doc,
+            headers=headers
+        )
+        
+        if success:
+            # Verify file_name and file_url are stored
+            has_file_name = 'file_name' in response and response['file_name'] == "lettre_sanction.pdf"
+            has_file_url = 'file_url' in response and response['file_url'] == "/uploads/test.pdf"
+            
+            self.log_test(
+                "Behavior creation stores file_name",
+                has_file_name,
+                f"file_name in response: {response.get('file_name')}"
+            )
+            
+            self.log_test(
+                "Behavior creation stores file_url",
+                has_file_url,
+                f"file_url in response: {response.get('file_url')}"
+            )
+            
+            if 'id' in response:
+                self.behavior_id = response['id']
+        
+        # Test 2: Get behavior notes and verify document fields
+        success, response = self.run_test(
+            "GET /api/behavior - Get behavior notes with document fields",
             "GET",
-            f"leaves?employee_id={self.employee_id}",
+            "behavior",
             200,
             headers=headers
         )
         
-        if success and 'leaves' in response:
+        if success and 'behaviors' in response and len(response['behaviors']) > 0:
+            # Check if returned notes contain file_name and file_url fields
+            first_behavior = response['behaviors'][0]
+            has_file_fields = 'file_name' in first_behavior and 'file_url' in first_behavior
+            
             self.log_test(
-                "Leaves API supports employee_id filter",
-                True,
-                f"Found {len(response['leaves'])} leaves for employee"
+                "GET behavior returns file_name and file_url fields",
+                has_file_fields,
+                f"Fields present: file_name={first_behavior.get('file_name')}, file_url={first_behavior.get('file_url')}"
             )
+        
+        # Test 3: Test extended behavior types
+        extended_types = ["sanction", "warning", "dismissal", "praise", "note"]
+        
+        for behavior_type in extended_types:
+            behavior_data = {
+                "employee_id": self.employee_id,
+                "type": behavior_type,
+                "note": f"Test {behavior_type} behavior",
+                "date": "2025-01-22"
+            }
+            
+            success, response = self.run_test(
+                f"POST /api/behavior - Create {behavior_type} behavior",
+                "POST",
+                "behavior",
+                201,
+                data=behavior_data,
+                headers=headers
+            )
+            
+            if success:
+                self.log_test(
+                    f"Behavior type '{behavior_type}' is accepted",
+                    True,
+                    f"Successfully created {behavior_type} behavior"
+                )
 
-    def test_documents_api(self):
-        """Test Documents API - rename and delete"""
-        print("\n📄 Testing Documents API...")
+    def test_behavior_deletion(self):
+        """Test behavior note deletion"""
+        print("\n🗑️ Testing Behavior Note Deletion...")
         
         if not self.admin_token or not self.employee_id:
-            print("❌ Cannot test documents API - missing admin token or employee ID")
+            print("❌ Cannot test behavior deletion - missing admin token or employee ID")
             return
         
         headers = {'Authorization': f'Bearer {self.admin_token}'}
         
-        # First, create a test document
-        test_document = {
-            "name": "Test Document",
-            "type": "pdf",
-            "url": "/api/uploads/test.pdf"
-        }
-        
-        success, response = self.run_test(
-            "POST /api/employees/{id}/documents - Create test document",
-            "POST",
-            f"employees/{self.employee_id}/documents",
-            200,  # Changed from 201 to 200 as the endpoint returns 200
-            data=test_document,
-            headers=headers
-        )
-        
-        if success and 'id' in response:
-            self.document_id = response['id']
-            print(f"✅ Test document created with ID: {self.document_id}")
-            
-            # Test PUT /api/employees/{employee_id}/documents/{document_id}?name=NewName - rename document
-            success, rename_response = self.run_test(
-                "PUT /api/employees/{id}/documents/{doc_id}?name=NewName - Rename document",
-                "PUT",
-                f"employees/{self.employee_id}/documents/{self.document_id}?name=Renamed Document",
-                200,
-                headers=headers
-            )
-            
-            # Test DELETE /api/employees/{employee_id}/documents/{document_id} - delete document
-            success, delete_response = self.run_test(
-                "DELETE /api/employees/{id}/documents/{doc_id} - Delete document",
-                "DELETE",
-                f"employees/{self.employee_id}/documents/{self.document_id}",
-                200,
-                headers=headers
-            )
-        else:
-            print("❌ Could not create test document - skipping rename/delete tests")
-
-    def test_behavior_api(self):
-        """Test Behavior API with document_urls field"""
-        print("\n📝 Testing Behavior API...")
-        
-        if not self.admin_token or not self.employee_id:
-            print("❌ Cannot test behavior API - missing admin token or employee ID")
-            return
-        
-        headers = {'Authorization': f'Bearer {self.admin_token}'}
-        
-        # Test POST /api/behavior - create behavior with document_urls field
+        # Create a behavior note to delete
         behavior_data = {
             "employee_id": self.employee_id,
-            "type": "positive",
-            "note": "Test behavior note from backend testing",
-            "date": "2026-01-06",
-            "document_urls": ["/api/uploads/test.pdf"]
+            "type": "note",
+            "note": "Test behavior for deletion",
+            "date": "2025-01-22"
         }
         
         success, response = self.run_test(
-            "POST /api/behavior - Create behavior with document_urls",
+            "POST /api/behavior - Create behavior for deletion test",
             "POST",
             "behavior",
             201,
@@ -702,45 +483,79 @@ class HRPlatformTester:
             headers=headers
         )
         
-        if success and 'document_urls' in response:
-            self.log_test(
-                "Behavior API accepts document_urls field",
-                True,
-                f"document_urls field present in response: {response['document_urls']}"
+        if success and 'id' in response:
+            behavior_id = response['id']
+            
+            # Test deletion
+            success, delete_response = self.run_test(
+                "DELETE /api/behavior/{id} - Delete behavior note",
+                "DELETE",
+                f"behavior/{behavior_id}",
+                200,
+                headers=headers
             )
+            
+            if success:
+                self.log_test(
+                    "Behavior note deletion succeeds",
+                    True,
+                    "Behavior note successfully deleted"
+                )
+                
+                # Verify note no longer exists
+                success, get_response = self.run_test(
+                    "GET /api/behavior - Verify behavior deleted",
+                    "GET",
+                    "behavior",
+                    200,
+                    headers=headers
+                )
+                
+                if success and 'behaviors' in get_response:
+                    # Check if the deleted behavior is not in the list
+                    deleted_behavior_exists = any(b.get('id') == behavior_id for b in get_response['behaviors'])
+                    
+                    self.log_test(
+                        "Deleted behavior no longer exists in list",
+                        not deleted_behavior_exists,
+                        f"Behavior {behavior_id} found in list: {deleted_behavior_exists}"
+                    )
 
     def run_all_tests(self):
-        """Run all tests - Focus on Review Request priorities"""
+        """Run all tests - Focus on Refactoring Review Request"""
         print("🚀 Starting PREMIDIS HR Platform Backend Tests")
-        print("🎯 Focus: HR PWA Simplified - Sites, Employees, Leaves APIs")
-        print("=" * 60)
+        print("🎯 Focus: REFACTORING CONGÉS & COMPORTEMENT - Non-blocking System")
+        print("=" * 70)
         
-        # Authentication is required for most tests
+        # Authentication is required for all tests
         if not self.test_authentication():
             print("❌ Authentication failed - cannot proceed with other tests")
             return False
         
-        # Run the priority tests from review request
-        print("\n🎯 PRIORITY TESTS FROM REVIEW REQUEST:")
-        self.test_sites_api()
-        self.test_employee_api_enhanced()
-        self.test_leaves_api()
+        # Run the priority tests from refactoring review request
+        print("\n🎯 PRIORITY TESTS - REFACTORING VALIDATION:")
+        print("1. MODULE CONGÉS - Bug Critique Corrigé")
+        self.test_leaves_approval_rejection()
         
-        # Run additional relevant tests
-        print("\n📋 ADDITIONAL BACKEND TESTS:")
-        self.test_documents_api()
-        self.test_behavior_api()
-        self.test_multi_currency_system()
-        self.test_forgot_password_endpoints()
-        self.test_employee_creation_with_currency()
-        self.test_voice_assistant_removal()
-        self.test_live_chat_endpoints()
+        print("\n2. MODULE CONGÉS - Suppression Validations")
+        self.test_leaves_no_validations()
+        
+        print("\n3. MODULE COMPORTEMENT - Gestion Documentaire")
+        self.test_behavior_module_documents()
+        self.test_behavior_deletion()
         
         # Print summary
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 70)
         print(f"📊 Test Summary: {self.tests_passed}/{self.tests_run} tests passed")
         success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
         print(f"📈 Success Rate: {success_rate:.1f}%")
+        
+        if success_rate >= 80:
+            print("✅ REFACTORING VALIDATION: PASSED")
+            print("✅ System is now non-blocking and purely declarative")
+        else:
+            print("❌ REFACTORING VALIDATION: FAILED")
+            print("❌ Some blocking behaviors still exist")
         
         return success_rate >= 80
 

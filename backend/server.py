@@ -175,10 +175,12 @@ class ExitAuthorization(BaseModel):
 
 class BehaviorNote(BaseModel):
     employee_id: str
-    type: str  # 'positive' or 'negative'
+    type: str  # 'sanction', 'warning', 'dismissal', 'praise', etc.
     note: str
     date: str
-    document_urls: Optional[List[str]] = []  # Documents liés au comportement
+    file_name: Optional[str] = None  # Nom du fichier (ex: "Lettre_renvoi_123.pdf")
+    file_url: Optional[str] = None   # URL ou chemin du fichier
+    document_urls: Optional[List[str]] = []  # Support pour plusieurs documents (legacy)
 
 class DocumentUpload(BaseModel):
     name: str

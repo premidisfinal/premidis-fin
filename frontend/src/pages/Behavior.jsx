@@ -10,10 +10,10 @@ import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog';
 import { 
-  Plus, ThumbsUp, ThumbsDown, Clock, User, Search, Filter, Loader2, Download,
-  Upload, FileText, X, Eye
+  Plus, Clock, User, Search, Filter, Loader2, Download,
+  Upload, FileText, X, Eye, Trash2, File, AlertTriangle, Award, MessageCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -21,6 +21,16 @@ import axios from 'axios';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Types de comportement étendus
+const BEHAVIOR_TYPES = [
+  { value: 'sanction', label: 'Sanction', icon: AlertTriangle, color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-500' },
+  { value: 'warning', label: 'Avertissement', icon: AlertTriangle, color: 'text-orange-600', bgColor: 'bg-orange-50', borderColor: 'border-orange-500' },
+  { value: 'dismissal', label: 'Lettre de renvoi', icon: FileText, color: 'text-red-700', bgColor: 'bg-red-100', borderColor: 'border-red-600' },
+  { value: 'note', label: 'Note disciplinaire', icon: MessageCircle, color: 'text-yellow-700', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-500' },
+  { value: 'praise', label: 'Félicitations', icon: Award, color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-500' },
+  { value: 'other', label: 'Autre', icon: File, color: 'text-gray-600', bgColor: 'bg-gray-50', borderColor: 'border-gray-500' }
+];
 
 const Behavior = () => {
   const { user, isAdmin } = useAuth();
@@ -32,13 +42,16 @@ const Behavior = () => {
   const [submitting, setSubmitting] = useState(false);
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [behaviorToDelete, setBehaviorToDelete] = useState(null);
 
   const [formData, setFormData] = useState({
     employee_id: '',
-    type: 'positive',
+    type: 'sanction',
     note: '',
     date: format(new Date(), 'yyyy-MM-dd'),
-    document_urls: []
+    file_name: '',
+    file_url: ''
   });
   
   const [uploadingDoc, setUploadingDoc] = useState(false);
@@ -50,11 +63,9 @@ const Behavior = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch behaviors
       const behaviorRes = await axios.get(`${API_URL}/api/behavior`);
       setBehaviors(behaviorRes.data.behaviors || []);
 
-      // Fetch employees for admin
       if (isAdmin()) {
         const empRes = await axios.get(`${API_URL}/api/employees`);
         setEmployees(empRes.data.employees || []);
@@ -69,26 +80,32 @@ const Behavior = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.employee_id || !formData.note) {
-      toast.error('Veuillez remplir tous les champs');
+      toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
 
     setSubmitting(true);
     try {
       await axios.post(`${API_URL}/api/behavior`, formData);
-      toast.success('Note de comportement ajoutée');
+      toast.success('Note de comportement ajoutée avec succès');
       setDialogOpen(false);
-      setFormData({ employee_id: '', type: 'positive', note: '', date: format(new Date(), 'yyyy-MM-dd'), document_urls: [] });
+      setFormData({ 
+        employee_id: '', 
+        type: 'sanction', 
+        note: '', 
+        date: format(new Date(), 'yyyy-MM-dd'),
+        file_name: '',
+        file_url: ''
+      });
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur');
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'ajout');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Upload document for behavior
-  const handleBehaviorDocUpload = async (e) => {
+  const handleDocUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -102,20 +119,22 @@ const Behavior = () => {
       });
       setFormData(prev => ({
         ...prev,
-        document_urls: [...prev.document_urls, response.data.url]
+        file_name: file.name,
+        file_url: response.data.url
       }));
       toast.success('Document ajouté');
     } catch (error) {
-      toast.error('Erreur lors de l\'upload');
+      toast.error('Erreur lors de l\'upload du document');
     } finally {
       setUploadingDoc(false);
     }
   };
 
-  const removeDocument = (index) => {
+  const removeDocument = () => {
     setFormData(prev => ({
       ...prev,
-      document_urls: prev.document_urls.filter((_, i) => i !== index)
+      file_name: '',
+      file_url: ''
     }));
   };
 
@@ -125,11 +144,25 @@ const Behavior = () => {
     return `${API_URL}${url.startsWith('/api/') ? '' : '/api'}${url}`;
   };
 
+  const handleDelete = async () => {
+    if (!behaviorToDelete) return;
+    
+    try {
+      await axios.delete(`${API_URL}/api/behavior/${behaviorToDelete.id}`);
+      toast.success('Note de comportement supprimée');
+      setDeleteDialogOpen(false);
+      setBehaviorToDelete(null);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+    }
+  };
+
   const handleExport = () => {
     const csv = [
-      'Date,Employé,Type,Note',
+      'Date,Employé,Type,Note,Document',
       ...behaviors.map(b => 
-        `${b.date},"${b.employee_name}",${b.type},"${b.note.replace(/"/g, '""')}"`
+        `${b.date},"${b.employee_name}",${b.type},"${b.note.replace(/"/g, '""')}",${b.file_name || 'N/A'}`
       )
     ].join('\n');
     
@@ -148,10 +181,15 @@ const Behavior = () => {
     return true;
   });
 
+  const getBehaviorTypeInfo = (type) => {
+    return BEHAVIOR_TYPES.find(t => t.value === type) || BEHAVIOR_TYPES[BEHAVIOR_TYPES.length - 1];
+  };
+
   const stats = {
     total: behaviors.length,
-    positive: behaviors.filter(b => b.type === 'positive').length,
-    negative: behaviors.filter(b => b.type === 'negative').length
+    sanctions: behaviors.filter(b => ['sanction', 'warning', 'dismissal', 'note'].includes(b.type)).length,
+    praise: behaviors.filter(b => b.type === 'praise').length,
+    withDocs: behaviors.filter(b => b.file_url || (b.document_urls && b.document_urls.length > 0)).length
   };
 
   return (
@@ -160,9 +198,9 @@ const Behavior = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Suivi du Comportement</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Dossier Comportement</h1>
             <p className="text-muted-foreground">
-              {isAdmin() ? 'Gérez les notes de comportement des employés' : 'Votre historique de comportement'}
+              {isAdmin() ? 'Gestion professionnelle des notes disciplinaires et documents RH' : 'Votre dossier comportement'}
             </p>
           </div>
           
@@ -179,13 +217,13 @@ const Behavior = () => {
                     Ajouter une note
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Nouvelle note de comportement</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Employé</Label>
+                      <Label>Employé *</Label>
                       <Select
                         value={formData.employee_id}
                         onValueChange={(value) => setFormData({ ...formData, employee_id: value })}
@@ -196,7 +234,7 @@ const Behavior = () => {
                         <SelectContent>
                           {employees.map((emp) => (
                             <SelectItem key={emp.id} value={emp.id}>
-                              {emp.first_name} {emp.last_name}
+                              {emp.first_name} {emp.last_name} - {emp.department}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -204,7 +242,7 @@ const Behavior = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Type</Label>
+                      <Label>Type de note *</Label>
                       <Select
                         value={formData.type}
                         onValueChange={(value) => setFormData({ ...formData, type: value })}
@@ -213,103 +251,106 @@ const Behavior = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="positive">
-                            <div className="flex items-center gap-2">
-                              <ThumbsUp className="h-4 w-4 text-green-500" />
-                              Positif
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="negative">
-                            <div className="flex items-center gap-2">
-                              <ThumbsDown className="h-4 w-4 text-red-500" />
-                              Négatif
-                            </div>
-                          </SelectItem>
+                          {BEHAVIOR_TYPES.map(type => {
+                            const Icon = type.icon;
+                            return (
+                              <SelectItem key={type.value} value={type.value}>
+                                <div className="flex items-center gap-2">
+                                  <Icon className={`h-4 w-4 ${type.color}`} />
+                                  {type.label}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Date</Label>
+                      <Label>Date *</Label>
                       <Input
                         type="date"
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Note</Label>
-                      <Textarea
-                        value={formData.note}
-                        onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                        placeholder="Décrivez le comportement observé..."
-                        rows={4}
                         required
                       />
                     </div>
 
-                    {/* Documents section */}
                     <div className="space-y-2">
-                      <Label>Documents justificatifs</Label>
-                      <div className="border rounded-lg p-3">
-                        {formData.document_urls.length > 0 && (
-                          <div className="space-y-2 mb-3">
-                            {formData.document_urls.map((url, index) => (
-                              <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                                <div className="flex items-center gap-2">
-                                  <FileText className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm truncate max-w-[200px]">
-                                    Document {index + 1}
-                                  </span>
-                                </div>
-                                <div className="flex gap-1">
-                                  <a href={getDocUrl(url)} target="_blank" rel="noopener noreferrer">
-                                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                                      <Eye className="h-3 w-3" />
-                                    </Button>
-                                  </a>
-                                  <Button 
-                                    type="button" 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-7 w-7 text-destructive"
-                                    onClick={() => removeDocument(index)}
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
+                      <Label>Description / Motif *</Label>
+                      <Textarea
+                        value={formData.note}
+                        onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                        placeholder="Décrivez la cause, le contexte et les faits observés..."
+                        rows={5}
+                        required
+                      />
+                    </div>
+
+                    {/* Document upload section */}
+                    <div className="space-y-2">
+                      <Label>Document officiel</Label>
+                      <div className="border-2 border-dashed rounded-lg p-4">
+                        {formData.file_url ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <FileText className="h-8 w-8 text-primary flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{formData.file_name}</p>
+                                  <p className="text-xs text-muted-foreground">Document ajouté</p>
                                 </div>
                               </div>
-                            ))}
+                              <div className="flex gap-1 flex-shrink-0">
+                                <a href={getDocUrl(formData.file_url)} target="_blank" rel="noopener noreferrer">
+                                  <Button type="button" variant="ghost" size="icon">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </a>
+                                <Button 
+                                  type="button" 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="text-destructive"
+                                  onClick={removeDocument}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                        )}
-                        <label className="cursor-pointer">
-                          <input
-                            type="file"
-                            accept=".pdf,image/jpeg,image/jpg,image/png"
-                            onChange={handleBehaviorDocUpload}
-                            className="hidden"
-                          />
-                          <Button type="button" variant="outline" size="sm" className="w-full" asChild>
-                            <span>
+                        ) : (
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              accept=".pdf,image/jpeg,image/jpg,image/png,.doc,.docx"
+                              onChange={handleDocUpload}
+                              className="hidden"
+                            />
+                            <div className="flex flex-col items-center justify-center py-6 text-center">
                               {uploadingDoc ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
                               ) : (
-                                <Upload className="mr-2 h-4 w-4" />
+                                <Upload className="h-10 w-10 text-muted-foreground mb-3" />
                               )}
-                              Ajouter un document
-                            </span>
-                          </Button>
-                        </label>
+                              <p className="text-sm font-medium mb-1">
+                                {uploadingDoc ? 'Upload en cours...' : 'Cliquez pour uploader un document'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                PDF, Images, Word (Max 10 MB)
+                              </p>
+                            </div>
+                          </label>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Ajoutez des preuves ou documents justificatifs (PDF, images)
+                        Lettre de sanction, avertissement, justificatif, etc.
                       </p>
                     </div>
 
                     <Button type="submit" className="w-full" disabled={submitting}>
                       {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Enregistrer
+                      Enregistrer la note
                     </Button>
                   </form>
                 </DialogContent>
@@ -319,26 +360,15 @@ const Behavior = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card className="border-l-4 border-l-primary">
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total des notes</p>
+                  <p className="text-sm text-muted-foreground">Total</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
                 <Clock className="h-8 w-8 text-primary/50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-green-500">
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Notes positives</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.positive}</p>
-                </div>
-                <ThumbsUp className="h-8 w-8 text-green-500/50" />
               </div>
             </CardContent>
           </Card>
@@ -346,10 +376,32 @@ const Behavior = () => {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Notes négatives</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.negative}</p>
+                  <p className="text-sm text-muted-foreground">Sanctions/Avertissements</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.sanctions}</p>
                 </div>
-                <ThumbsDown className="h-8 w-8 text-red-500/50" />
+                <AlertTriangle className="h-8 w-8 text-red-500/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-green-500">
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Félicitations</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.praise}</p>
+                </div>
+                <Award className="h-8 w-8 text-green-500/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-blue-500">
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Avec documents</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.withDocs}</p>
+                </div>
+                <FileText className="h-8 w-8 text-blue-500/50" />
               </div>
             </CardContent>
           </Card>
@@ -368,75 +420,167 @@ const Behavior = () => {
               />
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[220px]">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les types</SelectItem>
-                <SelectItem value="positive">Positifs</SelectItem>
-                <SelectItem value="negative">Négatifs</SelectItem>
+                {BEHAVIOR_TYPES.map(type => (
+                  <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         )}
 
-        {/* Behavior List */}
+        {/* Behavior List - Card Style like Documents Module */}
         <Card>
           <CardHeader>
-            <CardTitle>Historique</CardTitle>
+            <CardTitle>Historique Comportement</CardTitle>
             <CardDescription>
-              {isAdmin() ? 'Toutes les notes de comportement' : 'Votre historique personnel'}
+              Dossier RH professionnel avec documents associés
             </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="flex justify-center py-8">
+              <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : filteredBehaviors.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Aucune note de comportement</p>
+              <div className="text-center py-12 text-muted-foreground">
+                <User className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                <p className="text-lg font-medium mb-2">Aucune note de comportement</p>
+                <p className="text-sm">Le dossier comportement est vide</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {filteredBehaviors.map((behavior) => (
-                  <div
-                    key={behavior.id}
-                    className={`p-4 rounded-lg border-l-4 bg-card hover:bg-muted/50 transition-colors ${
-                      behavior.type === 'positive' ? 'border-l-green-500' : 'border-l-red-500'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3">
-                        {behavior.type === 'positive' ? (
-                          <ThumbsUp className="h-5 w-5 text-green-500 mt-0.5" />
-                        ) : (
-                          <ThumbsDown className="h-5 w-5 text-red-500 mt-0.5" />
-                        )}
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{behavior.employee_name}</span>
-                            <Badge variant={behavior.type === 'positive' ? 'default' : 'destructive'}>
-                              {behavior.type === 'positive' ? 'Positif' : 'Négatif'}
-                            </Badge>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredBehaviors.map((behavior) => {
+                  const typeInfo = getBehaviorTypeInfo(behavior.type);
+                  const Icon = typeInfo.icon;
+                  const hasDocument = behavior.file_url || (behavior.document_urls && behavior.document_urls.length > 0);
+                  const documentUrl = behavior.file_url || (behavior.document_urls && behavior.document_urls[0]);
+                  
+                  return (
+                    <Card 
+                      key={behavior.id}
+                      className={`border-l-4 ${typeInfo.borderColor} hover:shadow-lg transition-shadow`}
+                    >
+                      <CardContent className="pt-4">
+                        <div className="space-y-3">
+                          {/* Header */}
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`p-2 rounded-lg ${typeInfo.bgColor}`}>
+                                <Icon className={`h-5 w-5 ${typeInfo.color}`} />
+                              </div>
+                              <div>
+                                <Badge variant="outline" className={typeInfo.color}>
+                                  {typeInfo.label}
+                                </Badge>
+                              </div>
+                            </div>
+                            {isAdmin() && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                                onClick={() => {
+                                  setBehaviorToDelete(behavior);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
-                          <p className="text-sm text-foreground">{behavior.note}</p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {format(new Date(behavior.date), 'dd MMMM yyyy', { locale: fr })}
-                            {behavior.created_by_name && ` • Par ${behavior.created_by_name}`}
+
+                          {/* Employee Info */}
+                          <div>
+                            <p className="font-semibold text-foreground">{behavior.employee_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(behavior.date), 'dd MMMM yyyy', { locale: fr })}
+                            </p>
+                          </div>
+
+                          {/* Note */}
+                          <p className="text-sm text-foreground line-clamp-3">
+                            {behavior.note}
                           </p>
+
+                          {/* Document Section */}
+                          {hasDocument && (
+                            <div className="pt-3 border-t">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-primary" />
+                                  <span className="text-xs font-medium text-primary">
+                                    {behavior.file_name || 'Document joint'}
+                                  </span>
+                                </div>
+                                <div className="flex gap-1">
+                                  <a 
+                                    href={getDocUrl(documentUrl)} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                  >
+                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                      <Eye className="h-3 w-3" />
+                                    </Button>
+                                  </a>
+                                  <a 
+                                    href={getDocUrl(documentUrl)} 
+                                    download
+                                  >
+                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                      <Download className="h-3 w-3" />
+                                    </Button>
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Footer */}
+                          <div className="pt-2 border-t text-xs text-muted-foreground">
+                            {behavior.created_by_name && `Par ${behavior.created_by_name} • `}
+                            {format(new Date(behavior.created_at || behavior.date), 'dd/MM/yyyy HH:mm')}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette note de comportement pour{' '}
+              <span className="font-semibold">{behaviorToDelete?.employee_name}</span> ?
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBehaviorToDelete(null)}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };

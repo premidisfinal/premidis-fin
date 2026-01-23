@@ -1252,26 +1252,22 @@ async def check_out(current_user: dict = Depends(get_current_user)):
 
 @attendance_router.post("")
 async def create_attendance_manual(
-    employee_id: str,
-    date: str,
-    check_in: Optional[str] = None,
-    check_out: Optional[str] = None,
-    notes: Optional[str] = "",
+    attendance: AttendanceCreate,
     current_user: dict = Depends(require_roles(["admin", "secretary"]))
 ):
     """Manually create attendance record (admin/secretary only)"""
-    employee = await db.users.find_one({"id": employee_id}, {"_id": 0})
+    employee = await db.users.find_one({"id": attendance.employee_id}, {"_id": 0})
     if not employee:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
     attendance_doc = {
         "id": str(uuid.uuid4()),
-        "employee_id": employee_id,
+        "employee_id": attendance.employee_id,
         "employee_name": f"{employee['first_name']} {employee['last_name']}",
-        "date": date,
-        "check_in": check_in,
-        "check_out": check_out,
-        "notes": notes,
+        "date": attendance.date,
+        "check_in": attendance.check_in,
+        "check_out": attendance.check_out,
+        "notes": attendance.notes or "",
         "created_by": current_user["id"],
         "created_at": datetime.now(timezone.utc).isoformat()
     }

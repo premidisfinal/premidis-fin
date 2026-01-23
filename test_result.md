@@ -76,6 +76,54 @@ backend:
         agent: "testing"
         comment: "✅ Employee profile enrichment working correctly. GET /api/employees/{id} returns site_name, hierarchical_group_name, and hierarchy_level fields. Site name is populated from site_id lookup, hierarchical group name from hierarchical_group_id lookup."
 
+  - task: "REFACTORING - Leave Approval/Rejection Bug Fix"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ CRITICAL BUG FIXED: Leave approval and rejection now work without 'Erreur lors de la mise à jour'. PUT /api/leaves/{id} with status 'approved' and 'rejected' both succeed correctly. Status changes are properly applied and returned in response."
+
+  - task: "REFACTORING - Remove Leave Validations (Non-blocking System)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ VALIDATION REMOVAL CONFIRMED: System is now purely declarative and non-blocking. Leave creation succeeds with zero balance (no 'Solde insuffisant' error), overlapping dates (no 'Chevauchement' error), and any duration from 1 day to 100+ days (no min/max duration errors). All validations successfully removed."
+
+  - task: "REFACTORING - Behavior Module Document Support"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ DOCUMENT SUPPORT IMPLEMENTED: POST /api/behavior now accepts and stores file_name and file_url fields. GET /api/behavior returns these document fields. All extended behavior types (sanction, warning, dismissal, praise, note) are accepted. Document management fully functional."
+
+  - task: "REFACTORING - Behavior Note Deletion"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ DELETION FUNCTIONALITY WORKING: DELETE /api/behavior/{id} successfully removes behavior notes. Deleted notes no longer appear in GET /api/behavior responses. Deletion endpoint fully functional for admin/secretary roles."
+
 frontend:
   - task: "Sites de travail - Click on site shows employees by department"
     implemented: true

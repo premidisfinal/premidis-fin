@@ -124,6 +124,18 @@ backend:
         agent: "testing"
         comment: "✅ DELETION FUNCTIONALITY WORKING: DELETE /api/behavior/{id} successfully removes behavior notes. Deleted notes no longer appear in GET /api/behavior responses. Deletion endpoint fully functional for admin/secretary roles."
 
+  - task: "DOCUMENT UPLOAD WORKFLOW - Complete File Upload and Association"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPLETE DOCUMENT UPLOAD WORKFLOW VALIDATED (100% success - 55/55 tests passed): 1) POST /api/upload/file successfully uploads PDF, JPEG, PNG, DOC, DOCX files with proper validation. 2) POST /api/behavior creates behavior notes with file_name and file_url fields correctly stored. 3) GET /api/behavior and GET /api/behavior/{employee_id} return behavior notes with document fields. 4) GET /api/preview/{filepath} serves documents with correct Content-Type and inline disposition. 5) Authentication properly blocks unauthorized access (403). 6) Unsupported file types properly rejected (400). 7) Document fields are optional - behavior creation works without documents. All workflow steps from review request working perfectly."
+
 frontend:
   - task: "Sites de travail - Click on site shows employees by department"
     implemented: true

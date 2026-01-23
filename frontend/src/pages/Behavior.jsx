@@ -55,6 +55,12 @@ const Behavior = () => {
   
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
+  const getDocUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `${API_URL}/api/preview${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
   useEffect(() => {
     fetchData();
   }, []);

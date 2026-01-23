@@ -796,6 +796,7 @@ async def create_leave_request(
         target_dept = current_user.get("department", "")
         target_position = current_user.get("position", "")
     
+    # Create leave request - NO VALIDATIONS, pure data registration
     leave_id = str(uuid.uuid4())
     leave_doc = {
         "id": leave_id,
@@ -813,9 +814,7 @@ async def create_leave_request(
         "created_by": current_user["id"] if leave.employee_id else None,
         "admin_comment": None,
         "approved_by": None,
-        "approved_at": None,
-        "has_overlap_warning": len(overlap_warnings) > 0,
-        "overlap_warnings": overlap_warnings
+        "approved_at": None
     }
     
     await db.leaves.insert_one(leave_doc)

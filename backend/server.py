@@ -183,6 +183,13 @@ class BehaviorNote(BaseModel):
     file_url: Optional[str] = None   # URL ou chemin du fichier
     document_urls: Optional[List[str]] = []  # Support pour plusieurs documents (legacy)
 
+class AttendanceCreate(BaseModel):
+    employee_id: str
+    date: str
+    check_in: Optional[str] = None
+    check_out: Optional[str] = None
+    notes: Optional[str] = ""
+
 class DocumentUpload(BaseModel):
     name: str
     type: str  # 'certificate', 'pdf', 'image'

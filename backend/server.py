@@ -1552,9 +1552,9 @@ async def list_behaviors(current_user: dict = Depends(get_current_user)):
 @behavior_router.post("", status_code=status.HTTP_201_CREATED)
 async def create_behavior_note(
     behavior: BehaviorNote,
-    current_user: dict = Depends(require_roles(["admin"]))
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
 ):
-    """Create a behavior note (admin only)"""
+    """Create a behavior note with document support"""
     employee = await db.users.find_one({"id": behavior.employee_id}, {"_id": 0})
     if not employee:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
@@ -1566,6 +1566,8 @@ async def create_behavior_note(
         "type": behavior.type,
         "note": behavior.note,
         "date": behavior.date,
+        "file_name": behavior.file_name,
+        "file_url": behavior.file_url,
         "document_urls": behavior.document_urls or [],
         "created_by": current_user["id"],
         "created_by_name": f"{current_user['first_name']} {current_user['last_name']}",

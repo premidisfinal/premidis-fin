@@ -137,12 +137,6 @@ const Behavior = () => {
     }));
   };
 
-  const getDocUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `${API_URL}${url.startsWith('/api/') ? '' : '/api'}${url}`;
-  };
-
   const handleDelete = async () => {
     if (!behaviorToDelete) return;
     

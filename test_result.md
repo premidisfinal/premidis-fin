@@ -139,7 +139,7 @@ backend:
 frontend:
   - task: "Sites de travail - Click on site shows employees by department"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/App.js"
     stuck_count: 0
     priority: "high"
@@ -148,6 +148,9 @@ frontend:
       - working: "NA"
         agent: "testing"
         comment: "Frontend testing not performed by testing agent - requires UI interaction testing"
+      - working: true
+        agent: "testing"
+        comment: "✅ REDIRECTION FUNCTIONALITY WORKING PERFECTLY: 1) Sites module accessible with proper description 'Cliquez sur un site pour voir ses employés par département'. 2) Found 5 sites available for testing. 3) Site selection works - clicked on Norkivu site and employees displayed by department (Comptabilité, Chauffeur, Technicien). 4) Employee cards are clickable with proper cursor pointer and tooltip 'Cliquer pour voir le dossier complet'. 5) Redirection to employee profiles works correctly with URL pattern /employees/:id. 6) Complete employee dossier accessible with all tabs (Informations, Documents, Comportement, Congés). 7) UX elements properly implemented (hover effects, cursor pointer, tooltips). 8) Multi-site functionality working. 9) Both department heads (with Chef badge) and regular employees are clickable and redirect properly. All requirements from review request successfully validated."
 
   - task: "Gestion Personnel - 3 filter dropdowns (Département, Site, Niveau hiérarchique)"
     implemented: true

@@ -798,56 +798,35 @@ const EmployeeProfile = () => {
             </Card>
           </TabsContent>
 
-          {/* Comportement Tab */}
+          {/* Comportement Tab - MIROIR DU MODULE GLOBAL (Mode Lecture Seule) */}
           <TabsContent value="comportement" className="mt-6">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <UserCheck className="h-5 w-5" />
-                  Historique du comportement
+                  Dossier Comportement Complet
                 </CardTitle>
-                <CardDescription>Notes et observations de la hiérarchie</CardDescription>
+                <CardDescription>
+                  Historique disciplinaire RH - Consultation complète (lecture seule)
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {behaviors.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Aucune note de comportement</p>
-                    <p className="text-sm mt-2">Les notes sont ajoutées par l'administration</p>
+                    <UserCheck className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                    <p className="text-lg font-medium mb-2">Aucune note de comportement</p>
+                    <p className="text-sm">Le dossier comportement est vide</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {behaviors.map((behavior) => (
-                      <div
+                      <BehaviorCard
                         key={behavior.id}
-                        className={`p-4 rounded-lg border-l-4 ${
-                          behavior.type === 'positive' ? 'border-l-green-500 bg-green-50 dark:bg-green-900/20' : 'border-l-red-500 bg-red-50 dark:bg-red-900/20'
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          {behavior.type === 'positive' ? (
-                            <ThumbsUp className="h-5 w-5 text-green-500 mt-0.5" />
-                          ) : (
-                            <ThumbsDown className="h-5 w-5 text-red-500 mt-0.5" />
-                          )}
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-1">
-                              <Badge variant={behavior.type === 'positive' ? 'default' : 'destructive'}>
-                                {behavior.type === 'positive' ? 'Positif' : 'Négatif'}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(behavior.date), 'dd MMMM yyyy', { locale: fr })}
-                              </span>
-                            </div>
-                            <p className="text-sm">{behavior.note}</p>
-                            {behavior.created_by_name && (
-                              <p className="text-xs text-muted-foreground mt-2">
-                                Par {behavior.created_by_name}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                        behavior={behavior}
+                        showEmployeeName={false}
+                        canDelete={false}
+                        onDelete={null}
+                      />
                     ))}
                   </div>
                 )}

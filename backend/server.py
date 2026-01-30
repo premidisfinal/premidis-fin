@@ -1842,7 +1842,8 @@ async def get_unread_count(current_user: dict = Depends(get_current_user)):
         {
             "$match": {
                 "recipient_id": current_user["id"],
-                "sender_id": {"$ne": current_user["id"]}
+                "sender_id": {"$ne": current_user["id"]},
+                "read": {"$ne": True}
             }
         },
         {
@@ -1861,7 +1862,26 @@ async def get_unread_count(current_user: dict = Depends(get_current_user)):
             "last_message": doc["last_message"]
         }
     
-    return {"unread": unread_counts}
+    # Total unread count
+    total = sum(uc["count"] for uc in unread_counts.values())
+    
+    return {"unread": unread_counts, "total": total}
+
+@communication_router.post("/chat/mark-read/{sender_id}")
+async def mark_messages_read(
+    sender_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mark all messages from a specific sender as read"""
+    result = await db.chat_messages.update_many(
+        {
+            "sender_id": sender_id,
+            "recipient_id": current_user["id"],
+            "read": {"$ne": True}
+        },
+        {"$set": {"read": True}}
+    )
+    return {"marked_read": result.modified_count}
 
 # ==================== FILE UPLOAD ROUTES ====================
 from fastapi import UploadFile, File

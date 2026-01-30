@@ -219,29 +219,38 @@ const Administration = () => {
 
   // Export employees to CSV
   const handleExport = () => {
-    const headers = ['Prénom', 'Nom', 'Email', 'Téléphone', 'Département', 'Poste', 'Date embauche', 'Statut'];
-    const csv = [
-      headers.join(','),
-      ...filteredEmployees.map(emp => [
-        emp.first_name,
-        emp.last_name,
-        emp.email,
-        emp.phone || '',
-        emp.department,
-        emp.position || '',
-        emp.hire_date || '',
-        emp.is_active ? 'Actif' : 'Inactif'
-      ].map(val => `"${val}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `employes_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    toast.success('Export réussi');
+    try {
+      const headers = ['Prénom', 'Nom', 'Email', 'Téléphone', 'Département', 'Poste', 'Date embauche', 'Statut'];
+      const csv = [
+        headers.join(','),
+        ...filteredEmployees.map(emp => [
+          emp.first_name,
+          emp.last_name,
+          emp.email,
+          emp.phone || '',
+          emp.department,
+          emp.position || '',
+          emp.hire_date || '',
+          emp.is_active ? 'Actif' : 'Inactif'
+        ].map(val => `"${val}"`).join(','))
+      ].join('\n');
+      
+      // Add BOM for UTF-8 compatibility
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `employes_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(a); // Required for Firefox
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast.success('Export réussi');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Erreur lors de l\'export');
+    }
   };
 
   // Import employees from CSV

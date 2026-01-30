@@ -2240,6 +2240,99 @@ async def delete_hierarchical_group(
     await db.hierarchical_groups.delete_one({"id": group_id})
     return {"message": "Groupe supprimé"}
 
+# ==================== DEPARTMENTS MANAGEMENT ====================
+departments_router = APIRouter(prefix="/departments", tags=["Départements"])
+
+class DepartmentCreate(BaseModel):
+    code: str
+    name: str
+    description: Optional[str] = None
+
+@departments_router.get("")
+async def list_departments(current_user: dict = Depends(get_current_user)):
+    """Get all departments"""
+    departments = await db.departments.find({}, {"_id": 0}).to_list(100)
+    
+    # If no departments in DB, return default list
+    if not departments:
+        default_departments = [
+            {"code": "marketing", "name": "Marketing", "description": "Marketing et communication"},
+            {"code": "comptabilite", "name": "Comptabilité", "description": "Comptabilité et finances"},
+            {"code": "administration", "name": "Administration", "description": "Administration générale"},
+            {"code": "ressources_humaines", "name": "Ressources Humaines", "description": "Gestion RH"},
+            {"code": "juridique", "name": "Juridique", "description": "Service juridique"},
+            {"code": "nettoyage", "name": "Nettoyage", "description": "Services de nettoyage"},
+            {"code": "securite", "name": "Sécurité", "description": "Sécurité et surveillance"},
+            {"code": "chauffeur", "name": "Chauffeur", "description": "Chauffeurs et transport"},
+            {"code": "technicien", "name": "Technicien", "description": "Services techniques"},
+            {"code": "direction", "name": "Direction", "description": "Direction générale"},
+            {"code": "logistique", "name": "Logistique", "description": "Logistique et approvisionnement"},
+            {"code": "production", "name": "Production", "description": "Production"},
+            {"code": "commercial", "name": "Commercial", "description": "Service commercial"},
+            {"code": "informatique", "name": "Informatique", "description": "Informatique et IT"}
+        ]
+        return {"departments": default_departments}
+    
+    return {"departments": departments}
+
+@departments_router.post("", status_code=status.HTTP_201_CREATED)
+async def create_department(
+    dept: DepartmentCreate,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Create a new department (admin only)"""
+    # Check if code already exists
+    existing = await db.departments.find_one({"code": dept.code})
+    if existing:
+        raise HTTPException(status_code=400, detail="Ce code de département existe déjà")
+    
+    dept_doc = {
+        "id": str(uuid.uuid4()),
+        "code": dept.code,
+        "name": dept.name,
+        "description": dept.description,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    
+    await db.departments.insert_one(dept_doc)
+    dept_doc.pop("_id", None)
+    return dept_doc
+
+@departments_router.put("/{dept_id}")
+async def update_department(
+    dept_id: str,
+    dept: DepartmentCreate,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Update a department (admin only)"""
+    existing = await db.departments.find_one({"id": dept_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Département non trouvé")
+    
+    update_data = dept.model_dump()
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.departments.update_one({"id": dept_id}, {"$set": update_data})
+    return {"message": "Département mis à jour"}
+
+@departments_router.delete("/{dept_id}")
+async def delete_department(
+    dept_id: str,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Delete a department (admin only)"""
+    # Check if department is used by employees
+    employees_count = await db.users.count_documents({"department": dept_id})
+    if employees_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Impossible de supprimer ce département, {employees_count} employé(s) y sont affectés"
+        )
+    
+    await db.departments.delete_one({"id": dept_id})
+    return {"message": "Département supprimé"}
+
 @api_router.get("/")
 async def root():
     return {"message": "PREMIDIS SARL - HR Platform", "version": "2.0.0"}

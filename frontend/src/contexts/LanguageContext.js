@@ -278,7 +278,26 @@ export const LanguageProvider = ({ children }) => {
   }, [language]);
 
   const t = (key) => {
-    return translations[language]?.[key] || translations['fr'][key] || key;
+    // Get translation for current language
+    const translation = translations[language]?.[key];
+    
+    // If translation exists, return it
+    if (translation) {
+      return translation;
+    }
+    
+    // Fallback: try French
+    if (language !== 'fr' && translations.fr?.[key]) {
+      return translations.fr[key];
+    }
+    
+    // Fallback: try English
+    if (language !== 'en' && translations.en?.[key]) {
+      return translations.en[key];
+    }
+    
+    // If no translation found, return the key formatted nicely
+    return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
   };
 
   const changeLanguage = (lang) => {

@@ -206,23 +206,37 @@ const LiveChat = () => {
               <Users className="h-4 w-4 mr-2" />
               Tous
             </Button>
-            {users.map((u) => (
-              <Button
-                key={u.id}
-                variant={selectedUser?.id === u.id ? 'secondary' : 'ghost'}
-                size="sm"
-                className="w-full justify-start mb-1"
-                onClick={() => setSelectedUser(u)}
-              >
-                <Avatar className="h-5 w-5 mr-2">
-                  <AvatarImage src={u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `${API_URL}${u.avatar_url.startsWith('/api/') ? '' : '/api'}${u.avatar_url}`) : null} />
-                  <AvatarFallback className="text-xs">
-                    {u.first_name?.[0]}{u.last_name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="truncate text-xs">{u.first_name}</span>
-              </Button>
-            ))}
+            {users.map((u) => {
+              const unreadCount = unreadCounts[u.id]?.count || 0;
+              return (
+                <Button
+                  key={u.id}
+                  variant={selectedUser?.id === u.id ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="w-full justify-start mb-1 relative"
+                  onClick={() => handleUserSelect(u)}
+                >
+                  <Avatar className="h-5 w-5 mr-2">
+                    <AvatarImage src={u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `${API_URL}${u.avatar_url.startsWith('/api/') ? '' : '/api'}${u.avatar_url}`) : null} />
+                    <AvatarFallback className="text-xs">
+                      {u.first_name?.[0]}{u.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate text-xs flex-1 text-left">{u.first_name}</span>
+                  {unreadCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="ml-auto h-5 min-w-[20px] px-1 text-[10px] rounded-full"
+                    >
+                      {unreadCount}
+                    </Badge>
+                  )}
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                  )}
+                </Button>
+              );
+            })}
           </div>
         )}
 

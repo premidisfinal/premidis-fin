@@ -18,6 +18,8 @@ const LiveChat = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [users, setUsers] = useState([]);
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [totalUnread, setTotalUnread] = useState(0);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -29,9 +31,13 @@ const LiveChat = () => {
   useEffect(() => {
     fetchMessages();
     fetchUsers();
+    fetchUnreadCounts();
     
     // Poll for new messages every 5 seconds
-    pollIntervalRef.current = setInterval(fetchMessages, 5000);
+    pollIntervalRef.current = setInterval(() => {
+      fetchMessages();
+      fetchUnreadCounts();
+    }, 5000);
     
     return () => {
       if (pollIntervalRef.current) {
@@ -43,6 +49,13 @@ const LiveChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // Mark messages as read when viewing a conversation
+    if (selectedUser) {
+      markAsRead(selectedUser.id);
+    }
+  }, [selectedUser, messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -69,6 +82,25 @@ const LiveChat = () => {
     }
   };
 
+  const fetchUnreadCounts = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/communication/chat/unread`);
+      setUnreadCounts(response.data.unread || {});
+      setTotalUnread(response.data.total || 0);
+    } catch (error) {
+      console.error('Error fetching unread counts:', error);
+    }
+  };
+
+  const markAsRead = async (senderId) => {
+    try {
+      await axios.post(`${API_URL}/api/communication/chat/mark-read/${senderId}`);
+      fetchUnreadCounts(); // Refresh counts
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
@@ -83,10 +115,19 @@ const LiveChat = () => {
       await axios.post(`${API_URL}/api/communication/chat/messages`, payload);
       setNewMessage('');
       fetchMessages();
+      fetchUnreadCounts();
     } catch (error) {
       toast.error('Erreur lors de l\'envoi du message');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleUserSelect = (u) => {
+    setSelectedUser(u);
+    // Mark messages as read immediately on selection
+    if (unreadCounts[u.id]) {
+      markAsRead(u.id);
     }
   };
 

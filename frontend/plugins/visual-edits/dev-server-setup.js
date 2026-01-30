@@ -1,5 +1,3 @@
-import "dotenv/config";
-console.log("https://oepveaztlesdzwcjsnkx.supabase.co",process,env.SUPABASE_URL ? "OK" : "MISSING")
 // dev-server-setup.js
 // Dev server middleware configuration for visual editing
 const fs = require("fs");

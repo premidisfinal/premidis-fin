@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { getErrorMessage } from '../utils/errorHandler';
+import { exportToCSV } from '../utils/csvExport';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -375,17 +376,18 @@ const TimeManagement = () => {
 
   const handleExport = () => {
     const data = activeTab === 'attendance' ? attendance : leaves;
-    const csv = [
-      Object.keys(data[0] || {}).join(','),
-      ...data.map(row => Object.values(row).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${activeTab}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
+    const headers = Object.keys(data[0] || {});
+    const success = exportToCSV(
+      data,
+      headers,
+      (row) => Object.values(row),
+      `${activeTab}_${format(new Date(), 'yyyy-MM-dd')}`
+    );
+    if (success) {
+      toast.success('Export réussi');
+    } else {
+      toast.error('Erreur lors de l\'export');
+    }
   };
 
   const getStatusBadge = (status) => {

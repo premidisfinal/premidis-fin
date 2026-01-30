@@ -1061,18 +1061,22 @@ const TimeManagement = () => {
                           {format(day, 'd')}
                         </div>
                         <div className="space-y-0.5 overflow-hidden">
-                          {dayLeaves.slice(0, 3).map((leave) => (
-                            <div
-                              key={leave.id}
-                              className={`text-[10px] px-1 py-0.5 rounded truncate text-white ${getLeaveColor(leave.leave_type)}`}
-                              title={`${leave.employee_name}: ${leave.leave_type}`}
-                            >
-                              {leave.employee_name?.split(' ')[0]}
-                            </div>
-                          ))}
+                          {dayLeaves.slice(0, 3).map((leave) => {
+                            const leaveColor = getLeaveColor(leave.leave_type);
+                            const displayName = leave.employee_name || 'Employé';
+                            return (
+                              <div
+                                key={leave.id}
+                                className={`text-[10px] px-1.5 py-1 rounded truncate text-white font-medium ${leaveColor}`}
+                                title={`${displayName} - ${leaveTypes.find(t => t.value === leave.leave_type)?.label || leave.leave_type}`}
+                              >
+                                {displayName.split(' ')[0]}
+                              </div>
+                            );
+                          })}
                           {dayLeaves.length > 3 && (
-                            <div className="text-[10px] text-muted-foreground">
-                              +{dayLeaves.length - 3} autres
+                            <div className="text-[10px] text-muted-foreground px-1">
+                              +{dayLeaves.length - 3}
                             </div>
                           )}
                         </div>

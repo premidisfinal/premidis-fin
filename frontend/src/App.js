@@ -19,6 +19,7 @@ import Settings from './pages/Settings';
 import EmployeeProfile from './pages/EmployeeProfile';
 import PermissionsManagement from './pages/PermissionsManagement';
 import SitesManagement from './pages/SitesManagement';
+import DepartmentsManagement from './pages/DepartmentsManagement';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -99,6 +100,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
             <SitesManagement />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/departments" 
+        element={
+          <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
+            <DepartmentsManagement />
           </ProtectedRoute>
         } 
       />

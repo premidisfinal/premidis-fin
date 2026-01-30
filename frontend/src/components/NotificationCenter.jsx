@@ -37,6 +37,10 @@ const NotificationCenter = () => {
 
   const fetchNotifications = async () => {
     try {
+      // Fetch chat unread messages
+      const chatUnreadRes = await axios.get(`${API_URL}/api/communication/chat/unread`);
+      const chatUnread = chatUnreadRes.data.total || 0;
+      
       // Fetch messages
       const messagesRes = await axios.get(`${API_URL}/api/communication/messages`);
       const messages = messagesRes.data.messages || [];
@@ -54,6 +58,18 @@ const NotificationCenter = () => {
 
       // Combine and format notifications
       const notifs = [
+        // Add chat unread as notification
+        ...(chatUnread > 0 ? [{
+          id: 'chat-unread',
+          type: 'chat',
+          title: 'Messages non lus',
+          content: `Vous avez ${chatUnread} message${chatUnread > 1 ? 's' : ''} non lu${chatUnread > 1 ? 's' : ''}`,
+          timestamp: new Date().toISOString(),
+          icon: MessageSquare,
+          color: 'text-green-500',
+          read: false,
+          count: chatUnread
+        }] : []),
         ...messages
           .filter(m => m.receiver_id === user?.id && !m.read)
           .slice(0, 5)

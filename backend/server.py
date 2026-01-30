@@ -1834,6 +1834,35 @@ async def get_chat_users(current_user: dict = Depends(get_current_user)):
     ).to_list(100)
     return {"users": users}
 
+@communication_router.get("/chat/unread")
+async def get_unread_count(current_user: dict = Depends(get_current_user)):
+    """Get unread message counts per user"""
+    # Get all users who have sent messages to current user
+    pipeline = [
+        {
+            "$match": {
+                "recipient_id": current_user["id"],
+                "sender_id": {"$ne": current_user["id"]}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$sender_id",
+                "count": {"$sum": 1},
+                "last_message": {"$max": "$created_at"}
+            }
+        }
+    ]
+    
+    unread_counts = {}
+    async for doc in db.chat_messages.aggregate(pipeline):
+        unread_counts[doc["_id"]] = {
+            "count": doc["count"],
+            "last_message": doc["last_message"]
+        }
+    
+    return {"unread": unread_counts}
+
 # ==================== FILE UPLOAD ROUTES ====================
 from fastapi import UploadFile, File
 import base64

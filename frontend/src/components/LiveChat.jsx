@@ -168,6 +168,11 @@ const LiveChat = () => {
             ) : (
               <span>Chat général</span>
             )}
+            {totalUnread > 0 && !selectedUser && (
+              <Badge variant="destructive" className="ml-2">
+                {totalUnread} nouveau{totalUnread > 1 ? 'x' : ''}
+              </Badge>
+            )}
           </CardTitle>
           <div className="flex gap-2">
             {selectedUser && (

@@ -19,6 +19,28 @@ import Settings from './pages/Settings';
 import EmployeeProfile from './pages/EmployeeProfile';
 import PermissionsManagement from './pages/PermissionsManagement';
 import SitesManagement from './pages/SitesManagement';
+import "dotenv/config";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
+
+export async function saveData(data) {
+  await supabase.from("app_data").insert({
+    payload: data
+  });
+}
+
+export async function loadData() {
+  const { data } = await supabase
+    .from("app_data")
+    .select("*")
+    .order("id", { ascending: false });
+
+  return data;
+}
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {

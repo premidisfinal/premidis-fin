@@ -25,7 +25,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import API_URL from "../config/api";
 
 const Administration = () => {
   const navigate = useNavigate();

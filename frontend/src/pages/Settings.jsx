@@ -15,7 +15,7 @@ import { User, Globe, Bell, Shield, Palette, Loader2, Moon, Sun, Lock, Camera } 
 import { toast } from 'sonner';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import API_URL from "../config/api";
 
 const Settings = () => {
   const { user, updateUser } = useAuth();

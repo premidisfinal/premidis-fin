@@ -19,7 +19,7 @@ import { format } from 'date-fns';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import API_URL from "../config/api";
 
 // Types de comportement étendus
 const BEHAVIOR_TYPES = [

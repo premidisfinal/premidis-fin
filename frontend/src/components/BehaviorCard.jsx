@@ -9,7 +9,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import API_URL from "../config/api";
 
 // Types de comportement avec leurs styles
 const BEHAVIOR_TYPES = {

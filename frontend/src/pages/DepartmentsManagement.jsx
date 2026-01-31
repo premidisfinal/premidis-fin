@@ -10,7 +10,7 @@ import { Plus, Edit, Trash2, Loader2, Briefcase } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import API_URL from "../config/api";
 
 const DepartmentsManagement = () => {
   const [departments, setDepartments] = useState([]);

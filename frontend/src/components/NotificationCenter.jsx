@@ -18,7 +18,7 @@ import axios from 'axios';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import API_URL from "../config/api";
 
 const NotificationCenter = () => {
   const { user } = useAuth();

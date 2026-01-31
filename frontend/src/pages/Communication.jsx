@@ -20,7 +20,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import LiveChat from '../components/LiveChat';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import API_URL from "../config/api";
 
 const Communication = () => {
   const { user, isAdmin, canEdit } = useAuth();

@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Loader2, Key, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import API_URL from "../config/api";
 
 const ResetPassword = () => {
   const navigate = useNavigate();

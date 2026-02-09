@@ -201,14 +201,36 @@ class DocumentTemplate(BaseModel):
 class DocumentCreate(BaseModel):
     template_id: str
     employee_id: str
-    source_module: str  # 'leaves', 'behaviors', etc.
+    beneficiary_name: str
+    beneficiary_matricule: str
+    document_type: str  # Type de document
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    reason: str
+    source_module: Optional[str] = None  # 'leaves', 'behaviors', etc.
     source_id: Optional[str] = None  # ID du congé, comportement, etc.
     custom_data: Optional[dict] = {}  # Données personnalisées supplémentaires
 
 class DocumentUpdate(BaseModel):
     content: Optional[str] = None
-    status: Optional[str] = None  # 'draft', 'pending_signature', 'approved'
-    signature_data: Optional[str] = None
+    status: Optional[str] = None  # 'draft', 'pending_approval', 'approved', 'rejected'
+
+class DocumentApproval(BaseModel):
+    document_id: str
+    action: str  # 'approve' or 'reject'
+    signature_password: str
+    comment: Optional[str] = None
+
+class SignaturePasswordCreate(BaseModel):
+    password: str
+    confirm_password: str
+
+class SignaturePasswordVerify(BaseModel):
+    password: str
+
+class SignatureSettings(BaseModel):
+    signature_image_url: Optional[str] = None
+    stamp_image_url: Optional[str] = None
 
 class DocumentUpload(BaseModel):
     name: str

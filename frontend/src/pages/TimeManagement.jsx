@@ -430,6 +430,15 @@ const TimeManagement = () => {
     return type?.color || 'bg-primary';
   };
 
+  const getLeaveTextColor = (leaveType) => {
+    const type = leaveTypes.find(t => t.value === leaveType);
+    const bgColor = type?.color || 'bg-primary';
+    
+    // Convertir la classe bg-* en text-*
+    // Ex: bg-blue-500 -> text-blue-500, bg-primary -> text-primary
+    return bgColor.replace('bg-', 'text-');
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6" data-testid="time-management-page">

@@ -7,7 +7,7 @@ import io
 import os
 
 class HRPlatformTester:
-    def __init__(self, base_url="https://rh-continuation.preview.emergentagent.com"):
+    def __init__(self, base_url="https://smartdoc-35.preview.emergentagent.com"):
         self.base_url = base_url
         self.admin_token = None
         self.employee_token = None

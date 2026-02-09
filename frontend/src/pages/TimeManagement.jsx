@@ -1071,12 +1071,12 @@ const TimeManagement = () => {
                         </div>
                         <div className="space-y-0.5 overflow-hidden">
                           {dayLeaves.slice(0, 3).map((leave) => {
-                            const leaveTextColor = getLeaveTextColor(leave.leave_type);
+                            const leaveBorderColor = getLeaveBorderColor(leave.leave_type);
                             const displayName = leave.employee_name || 'Employé';
                             return (
                               <div
                                 key={leave.id}
-                                className={`text-[10px] px-1.5 py-1 rounded truncate font-bold ${leaveTextColor} bg-muted/20 dark:bg-muted/40`}
+                                className={`text-[10px] px-1.5 py-1 rounded truncate font-semibold text-foreground bg-background/95 border-2 ${leaveBorderColor}`}
                                 title={`${displayName} - ${leaveTypes.find(t => t.value === leave.leave_type)?.label || leave.leave_type}`}
                               >
                                 {displayName.split(' ')[0]}

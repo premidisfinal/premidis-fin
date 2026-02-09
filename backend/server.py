@@ -2611,6 +2611,7 @@ api_router.include_router(upload_router)
 api_router.include_router(notifications_router)
 api_router.include_router(sites_router)
 api_router.include_router(departments_router)
+api_router.include_router(documents_router)
 
 app.include_router(api_router)
 

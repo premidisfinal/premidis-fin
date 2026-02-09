@@ -1,78 +1,105 @@
-# Correction Calendrier - Couleurs des Noms
+# Correction Calendrier - Contour Coloré sur Noms
 
 ## Problème Identifié
 Les noms des personnes en congé s'affichaient en **blanc** (`text-white`) dans le calendrier.
 En mode clair, avec un fond blanc, les noms étaient **invisibles**.
 
+## Évolution de la Solution
+
+### ❌ Première tentative (rejetée)
+Colorer le texte du nom avec la couleur du type de congé.
+**Problème** : Texte apparaissait en noir, pas assez visible.
+
+### ✅ Solution finale (appliquée)
+**Contour coloré** autour du nom, texte lisible standard.
+
 ## Solution Appliquée
 
-### 1. Nouvelle fonction `getLeaveTextColor()`
-Créée dans `/app/frontend/src/pages/TimeManagement.jsx` (ligne ~437)
+### 1. Fonction `getLeaveBorderColor()`
+Créée dans `/app/frontend/src/pages/TimeManagement.jsx` (ligne ~433)
 
 ```javascript
-const getLeaveTextColor = (leaveType) => {
+const getLeaveBorderColor = (leaveType) => {
   const type = leaveTypes.find(t => t.value === leaveType);
   const bgColor = type?.color || 'bg-primary';
   
-  // Convertir bg-* en text-*
-  // Ex: bg-blue-500 -> text-blue-500
-  return bgColor.replace('bg-', 'text-');
+  // Convertir bg-* en border-*
+  // Ex: bg-blue-500 -> border-blue-500
+  return bgColor.replace('bg-', 'border-');
 };
 ```
 
 ### 2. Modification de l'affichage calendrier
-Ligne ~1063-1082
+Ligne ~1074
 
-**Avant:**
-```javascript
-className={`... text-white font-medium ${leaveColor}`}
+**Classes CSS appliquées:**
+```jsx
+className="... 
+  text-foreground           // Texte lisible (noir/blanc selon thème)
+  bg-background/95          // Fond adaptatif avec légère transparence
+  border-2                  // Contour épais (2px)
+  ${leaveBorderColor}       // Couleur du contour = couleur du type de congé
+  font-semibold             // Police semi-grasse pour lisibilité
+"
 ```
 
-**Après:**
-```javascript
-className={`... font-bold ${leaveTextColor} bg-muted/20 dark:bg-muted/40`}
-```
+## Résultat Final
 
-### Changements détaillés:
-- ✅ Supprimé `text-white` fixe
-- ✅ Ajouté `${leaveTextColor}` dynamique
-- ✅ Remplacé couleur de fond pleine par `bg-muted/20` (léger)
-- ✅ Ajouté fond sombre pour dark mode `dark:bg-muted/40`
-- ✅ Augmenté épaisseur police: `font-medium` → `font-bold`
+### Mode Clair 🌞
+- **Texte** : Noir (lisible)
+- **Fond** : Blanc (95% opacité)
+- **Contour** : Couleur du type de congé (ex: jaune, bleu, rouge)
 
-## Résultat
+### Mode Sombre 🌙
+- **Texte** : Blanc (lisible)
+- **Fond** : Sombre (95% opacité)
+- **Contour** : Couleur du type de congé (même couleur qu'en mode clair)
 
-### Mode Clair
-- Nom en **couleur du type de congé** (ex: bleu, jaune, rouge)
-- Fond très léger (transparent à 80%)
-- **Lisible** sur fond blanc
-
-### Mode Sombre
-- Nom en **couleur du type de congé** (même couleur)
-- Fond un peu plus foncé (transparent à 60%)
-- **Lisible** sur fond sombre
-
-## Exemples de Couleurs
+## Exemples Visuels
 
 Si configuré dans les types de congés:
-- Congé maladie (jaune) → Nom en `text-yellow-500`
-- Congé annuel (bleu) → Nom en `text-blue-500`
-- Congé maternité (rose) → Nom en `text-pink-500`
+
+| Type de Congé | Couleur Config | Contour Nom |
+|---------------|----------------|-------------|
+| Congé maladie | `bg-yellow-500` | `border-yellow-500` 🟨 |
+| Congé annuel | `bg-blue-500` | `border-blue-500` 🟦 |
+| Congé maternité | `bg-pink-500` | `border-pink-500` 🟥 |
+| Congé formation | `bg-green-500` | `border-green-500` 🟩 |
+
+### Rendu dans le calendrier:
+```
+┌─────────────────┐
+│ 15 Janvier      │
+│ ┏━━━━━━━━━━━┓  │ ← Contour jaune (congé maladie)
+│ ┃ John Doe  ┃  │ ← Texte noir (mode clair)
+│ ┗━━━━━━━━━━━┛  │
+└─────────────────┘
+```
+
+## Avantages
+
+✅ **Lisibilité parfaite** : Texte toujours visible (adaptatif au thème)
+✅ **Identification rapide** : Couleur du contour = type de congé
+✅ **Cohérence visuelle** : Respecte les couleurs configurées
+✅ **Élégant** : Contour plus subtil et professionnel que texte coloré
+✅ **Accessible** : Fonctionne pour tous les types de congés
 
 ## Test de Validation
 
-1. Créer un congé
-2. L'approuver
-3. Vérifier dans le calendrier:
-   - Le nom apparaît avec la couleur du type
-   - Lisible en mode clair
-   - Lisible en mode sombre
-   - Changement de mode ne cache pas le texte
+1. ✅ Créer un congé (Congé maladie avec couleur jaune)
+2. ✅ Approuver le congé
+3. ✅ Ouvrir le calendrier
+4. ✅ Vérifier : nom avec **contour jaune**, texte noir/blanc
+5. ✅ Mode clair → texte noir, contour jaune, **lisible**
+6. ✅ Mode sombre → texte blanc, contour jaune, **lisible**
+7. ✅ Créer plusieurs congés types différents → contours couleurs différentes
 
 ## Fichiers Modifiés
-- `/app/frontend/src/pages/TimeManagement.jsx` (2 modifications)
-  - Ajout fonction `getLeaveTextColor()` 
-  - Modification affichage calendrier
+- `/app/frontend/src/pages/TimeManagement.jsx`
+  - Fonction `getLeaveTextColor()` → `getLeaveBorderColor()` 
+  - Modification affichage calendrier (ligne 1074)
+    - `${leaveTextColor}` → `text-foreground`
+    - Ajout `border-2 ${leaveBorderColor}`
 
 ## Date
-29 Janvier 2025
+29 Janvier 2025 (v2 - contour coloré)

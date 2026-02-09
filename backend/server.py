@@ -2402,6 +2402,197 @@ async def delete_department(
     await db.departments.delete_one({"id": dept_id})
     return {"message": "Département supprimé"}
 
+# ==================== DOCUMENTS RH ROUTES ====================
+documents_router = APIRouter(prefix="/hr-documents", tags=["Documents RH"])
+
+@documents_router.get("/templates")
+async def list_templates(current_user: dict = Depends(get_current_user)):
+    """Get all document templates"""
+    templates = await db.document_templates.find({}, {"_id": 0}).to_list(100)
+    return {"templates": templates}
+
+@documents_router.post("/templates", status_code=status.HTTP_201_CREATED)
+async def create_template(
+    template: DocumentTemplate,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Create a document template"""
+    template_doc = {
+        "id": str(uuid.uuid4()),
+        **template.model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    
+    await db.document_templates.insert_one(template_doc)
+    template_doc.pop("_id", None)
+    return template_doc
+
+@documents_router.put("/templates/{template_id}")
+async def update_template(
+    template_id: str,
+    template: DocumentTemplate,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Update a document template"""
+    existing = await db.document_templates.find_one({"id": template_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    update_data = template.model_dump()
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.document_templates.update_one({"id": template_id}, {"$set": update_data})
+    return {"message": "Modèle mis à jour"}
+
+@documents_router.delete("/templates/{template_id}")
+async def delete_template(
+    template_id: str,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Delete a document template"""
+    await db.document_templates.delete_one({"id": template_id})
+    return {"message": "Modèle supprimé"}
+
+@documents_router.post("/generate", status_code=status.HTTP_201_CREATED)
+async def generate_document(
+    doc: DocumentCreate,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Generate a document from template with employee data"""
+    # Get template
+    template = await db.document_templates.find_one({"id": doc.template_id}, {"_id": 0})
+    if not template:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    # Get employee
+    employee = await db.users.find_one({"id": doc.employee_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    # Get source data if provided
+    source_data = {}
+    if doc.source_id:
+        if doc.source_module == "leaves":
+            source_data = await db.leaves.find_one({"id": doc.source_id}, {"_id": 0}) or {}
+        elif doc.source_module == "behaviors":
+            source_data = await db.behaviors.find_one({"id": doc.source_id}, {"_id": 0}) or {}
+    
+    # Prepare replacement data
+    replacements = {
+        "employee_name": f"{employee['first_name']} {employee['last_name']}",
+        "employee_first_name": employee['first_name'],
+        "employee_last_name": employee['last_name'],
+        "employee_email": employee['email'],
+        "employee_phone": employee.get('phone', ''),
+        "employee_department": employee.get('department', ''),
+        "employee_position": employee.get('position', ''),
+        "employee_hire_date": employee.get('hire_date', ''),
+        "current_date": datetime.now().strftime('%d/%m/%Y'),
+        **source_data,
+        **doc.custom_data
+    }
+    
+    # Replace placeholders in content (WITHOUT modifying template structure)
+    content = template["content"]
+    for key, value in replacements.items():
+        placeholder = f"{{{key}}}"  # Format: {employee_name}
+        content = content.replace(placeholder, str(value))
+    
+    # Create document
+    document_doc = {
+        "id": str(uuid.uuid4()),
+        "template_id": doc.template_id,
+        "template_name": template["name"],
+        "employee_id": doc.employee_id,
+        "employee_name": f"{employee['first_name']} {employee['last_name']}",
+        "source_module": doc.source_module,
+        "source_id": doc.source_id,
+        "content": content,
+        "original_template": template["content"],  # Garder l'original
+        "status": "draft",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"],
+        "created_by_name": f"{current_user['first_name']} {current_user['last_name']}"
+    }
+    
+    await db.hr_documents.insert_one(document_doc)
+    document_doc.pop("_id", None)
+    return document_doc
+
+@documents_router.get("")
+async def list_documents(
+    employee_id: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """List documents (filtered by employee if not admin)"""
+    query = {}
+    
+    # Non-admin can only see their own documents
+    if current_user["role"] not in ["super_admin", "admin", "secretary"]:
+        query["employee_id"] = current_user["id"]
+    elif employee_id:
+        query["employee_id"] = employee_id
+    
+    if status:
+        query["status"] = status
+    
+    documents = await db.hr_documents.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"documents": documents}
+
+@documents_router.get("/{document_id}")
+async def get_document(
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific document"""
+    document = await db.hr_documents.find_one({"id": document_id}, {"_id": 0})
+    if not document:
+        raise HTTPException(status_code=404, detail="Document non trouvé")
+    
+    # Check permissions
+    if current_user["role"] not in ["super_admin", "admin", "secretary"]:
+        if document["employee_id"] != current_user["id"]:
+            raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    return document
+
+@documents_router.put("/{document_id}")
+async def update_document(
+    document_id: str,
+    update: DocumentUpdate,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Update document content or status"""
+    document = await db.hr_documents.find_one({"id": document_id})
+    if not document:
+        raise HTTPException(status_code=404, detail="Document non trouvé")
+    
+    update_data = {}
+    if update.content:
+        update_data["content"] = update.content
+    if update.status:
+        update_data["status"] = update.status
+    if update.signature_data:
+        update_data["signature_data"] = update.signature_data
+        update_data["signed_at"] = datetime.now(timezone.utc).isoformat()
+        update_data["signed_by"] = current_user["id"]
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.hr_documents.update_one({"id": document_id}, {"$set": update_data})
+    return {"message": "Document mis à jour"}
+
+@documents_router.delete("/{document_id}")
+async def delete_document(
+    document_id: str,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Delete a document"""
+    await db.hr_documents.delete_one({"id": document_id})
+    return {"message": "Document supprimé"}
+
 @api_router.get("/")
 async def root():
     return {"message": "PREMIDIS SARL - HR Platform", "version": "2.0.0"}

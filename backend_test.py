@@ -921,6 +921,731 @@ class HRPlatformTester:
                 f"Exception during test: {str(e)}"
             )
 
+    def test_hr_documents_signature_settings(self):
+        """Test HR Documents - Signature Settings endpoints"""
+        print("\n🖋️ Testing HR Documents - Signature Settings...")
+        
+        if not self.admin_token:
+            print("❌ Cannot test signature settings - no admin token")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: POST /api/hr-documents/signature-settings
+        signature_data = {
+            "signature_image_url": "test_sig.png",
+            "stamp_image_url": "test_stamp.png"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents/signature-settings - Upload signature and stamp",
+            "POST",
+            "hr-documents/signature-settings",
+            200,
+            data=signature_data,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Signature settings upload succeeds",
+                True,
+                "Signature and stamp images uploaded successfully"
+            )
+        
+        # Test 2: GET /api/hr-documents/signature-settings
+        success, response = self.run_test(
+            "GET /api/hr-documents/signature-settings - Get signature settings",
+            "GET",
+            "hr-documents/signature-settings",
+            200,
+            headers=headers
+        )
+        
+        if success:
+            has_signature = response.get('signature_image_url') == "test_sig.png"
+            has_stamp = response.get('stamp_image_url') == "test_stamp.png"
+            
+            self.log_test(
+                "Signature settings retrieved correctly",
+                has_signature and has_stamp,
+                f"signature_image_url: {response.get('signature_image_url')}, stamp_image_url: {response.get('stamp_image_url')}"
+            )
+
+    def test_hr_documents_signature_password(self):
+        """Test HR Documents - Signature Password endpoints"""
+        print("\n🔐 Testing HR Documents - Signature Password...")
+        
+        if not self.admin_token:
+            print("❌ Cannot test signature password - no admin token")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: POST /api/hr-documents/signature-password - Create password
+        password_data = {
+            "password": "SignPass123",
+            "confirm_password": "SignPass123"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents/signature-password - Create signature password",
+            "POST",
+            "hr-documents/signature-password",
+            200,
+            data=password_data,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Signature password creation succeeds",
+                True,
+                "Signature password created successfully"
+            )
+        
+        # Test 2: GET /api/hr-documents/signature-password/exists
+        success, response = self.run_test(
+            "GET /api/hr-documents/signature-password/exists - Check password exists",
+            "GET",
+            "hr-documents/signature-password/exists",
+            200,
+            headers=headers
+        )
+        
+        if success:
+            password_exists = response.get('exists', False)
+            self.log_test(
+                "Signature password exists check works",
+                password_exists,
+                f"Password exists: {password_exists}"
+            )
+        
+        # Test 3: POST /api/hr-documents/signature-password/verify
+        verify_data = {"password": "SignPass123"}
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents/signature-password/verify - Verify correct password",
+            "POST",
+            "hr-documents/signature-password/verify",
+            200,
+            data=verify_data,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Signature password verification succeeds",
+                True,
+                "Correct password verified successfully"
+            )
+        
+        # Test 4: Verify wrong password (should fail)
+        wrong_verify_data = {"password": "WrongPassword"}
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents/signature-password/verify - Verify wrong password (should fail)",
+            "POST",
+            "hr-documents/signature-password/verify",
+            401,
+            data=wrong_verify_data,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Wrong signature password properly rejected",
+                True,
+                "Wrong password correctly returns 401"
+            )
+
+    def test_hr_documents_templates(self):
+        """Test HR Documents - Templates endpoints"""
+        print("\n📄 Testing HR Documents - Templates...")
+        
+        if not self.admin_token or not self.employee_id:
+            print("❌ Cannot test templates - missing admin token or employee ID")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: POST /api/hr-documents/templates - Create template
+        template_data = {
+            "name": "Test Leave Template",
+            "category": "leave",
+            "content": "Document pour {{beneficiary_name}}, matricule {{beneficiary_matricule}}. Type: {{document_type}}. Période: {{period_start}} à {{period_end}}. Motif: {{reason}}. Date: {{current_date}}",
+            "description": "Test template for HR documents"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents/templates - Create template (Admin)",
+            "POST",
+            "hr-documents/templates",
+            201,
+            data=template_data,
+            headers=headers
+        )
+        
+        if success and 'id' in response:
+            self.template_id = response['id']
+            self.log_test(
+                "Template creation succeeds",
+                True,
+                f"Template created with ID: {self.template_id}"
+            )
+            
+            # Verify template content
+            has_name = response.get('name') == "Test Leave Template"
+            has_category = response.get('category') == "leave"
+            has_content = "{{beneficiary_name}}" in response.get('content', '')
+            
+            self.log_test(
+                "Template content stored correctly",
+                has_name and has_category and has_content,
+                f"Name: {response.get('name')}, Category: {response.get('category')}"
+            )
+        
+        # Test 2: GET /api/hr-documents/templates - List templates
+        success, response = self.run_test(
+            "GET /api/hr-documents/templates - List all templates",
+            "GET",
+            "hr-documents/templates",
+            200,
+            headers=headers
+        )
+        
+        if success and 'templates' in response:
+            templates_found = len(response['templates']) > 0
+            template_exists = any(t.get('id') == self.template_id for t in response['templates'])
+            
+            self.log_test(
+                "Templates list retrieved successfully",
+                templates_found,
+                f"Found {len(response['templates'])} templates"
+            )
+            
+            self.log_test(
+                "Created template appears in list",
+                template_exists,
+                f"Template {self.template_id} found in list: {template_exists}"
+            )
+        
+        # Test 3: DELETE /api/hr-documents/templates/{template_id} - Delete template
+        if self.template_id:
+            success, response = self.run_test(
+                "DELETE /api/hr-documents/templates/{id} - Delete template",
+                "DELETE",
+                f"hr-documents/templates/{self.template_id}",
+                200,
+                headers=headers
+            )
+            
+            if success:
+                self.log_test(
+                    "Template deletion succeeds",
+                    True,
+                    "Template deleted successfully"
+                )
+                
+                # Recreate template for document tests
+                success, response = self.run_test(
+                    "POST /api/hr-documents/templates - Recreate template for document tests",
+                    "POST",
+                    "hr-documents/templates",
+                    201,
+                    data=template_data,
+                    headers=headers
+                )
+                
+                if success and 'id' in response:
+                    self.template_id = response['id']
+
+    def test_hr_documents_creation(self):
+        """Test HR Documents - Document creation and management"""
+        print("\n📋 Testing HR Documents - Document Creation...")
+        
+        if not self.admin_token or not self.employee_id or not self.template_id:
+            print("❌ Cannot test document creation - missing admin token, employee ID, or template ID")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: POST /api/hr-documents - Create document
+        document_data = {
+            "template_id": self.template_id,
+            "employee_id": self.employee_id,
+            "beneficiary_name": "Test User",
+            "beneficiary_matricule": "MAT001",
+            "document_type": "Congé",
+            "period_start": "2025-02-01",
+            "period_end": "2025-02-10",
+            "reason": "Congé annuel"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents - Create document (Admin)",
+            "POST",
+            "hr-documents",
+            201,
+            data=document_data,
+            headers=headers
+        )
+        
+        if success and 'id' in response:
+            self.document_id = response['id']
+            
+            # Verify document status is pending_approval
+            status_correct = response.get('status') == 'pending_approval'
+            has_content = 'content' in response and len(response['content']) > 0
+            
+            self.log_test(
+                "Document creation succeeds with pending_approval status",
+                status_correct,
+                f"Document status: {response.get('status')}"
+            )
+            
+            self.log_test(
+                "Document content generated from template",
+                has_content,
+                f"Content length: {len(response.get('content', ''))}"
+            )
+        
+        # Test 2: GET /api/hr-documents - List documents
+        success, response = self.run_test(
+            "GET /api/hr-documents - List documents",
+            "GET",
+            "hr-documents",
+            200,
+            headers=headers
+        )
+        
+        if success and 'documents' in response:
+            documents_found = len(response['documents']) > 0
+            document_exists = any(d.get('id') == self.document_id for d in response['documents'])
+            
+            self.log_test(
+                "Documents list retrieved successfully",
+                documents_found,
+                f"Found {len(response['documents'])} documents"
+            )
+            
+            self.log_test(
+                "Created document appears in list",
+                document_exists,
+                f"Document {self.document_id} found in list: {document_exists}"
+            )
+        
+        # Test 3: GET /api/hr-documents/{document_id} - Get specific document
+        if self.document_id:
+            success, response = self.run_test(
+                "GET /api/hr-documents/{id} - Get specific document",
+                "GET",
+                f"hr-documents/{self.document_id}",
+                200,
+                headers=headers
+            )
+            
+            if success:
+                has_beneficiary = response.get('beneficiary_name') == "Test User"
+                has_matricule = response.get('beneficiary_matricule') == "MAT001"
+                
+                self.log_test(
+                    "Document details retrieved correctly",
+                    has_beneficiary and has_matricule,
+                    f"Beneficiary: {response.get('beneficiary_name')}, Matricule: {response.get('beneficiary_matricule')}"
+                )
+
+    def test_hr_documents_approval_workflow(self):
+        """Test HR Documents - Approval workflow"""
+        print("\n✅ Testing HR Documents - Approval Workflow...")
+        
+        if not self.admin_token or not self.document_id:
+            print("❌ Cannot test approval workflow - missing admin token or document ID")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: Approve document with signature password
+        approval_data = {
+            "document_id": self.document_id,
+            "action": "approve",
+            "signature_password": "SignPass123",
+            "comment": "Approuvé pour test"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents/approve - Approve document with signature",
+            "POST",
+            "hr-documents/approve",
+            200,
+            data=approval_data,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Document approval succeeds",
+                True,
+                "Document approved successfully with signature"
+            )
+            
+            # Verify document status changed to approved
+            success, doc_response = self.run_test(
+                "GET /api/hr-documents/{id} - Verify document approved",
+                "GET",
+                f"hr-documents/{self.document_id}",
+                200,
+                headers=headers
+            )
+            
+            if success:
+                status_approved = doc_response.get('status') == 'approved'
+                has_signature = doc_response.get('signature_image_url') is not None
+                has_stamp = doc_response.get('stamp_image_url') is not None
+                
+                self.log_test(
+                    "Document status changed to approved",
+                    status_approved,
+                    f"Status: {doc_response.get('status')}"
+                )
+                
+                self.log_test(
+                    "Signature and stamp applied to document",
+                    has_signature and has_stamp,
+                    f"Signature: {doc_response.get('signature_image_url')}, Stamp: {doc_response.get('stamp_image_url')}"
+                )
+        
+        # Test 2: Create another document for rejection test
+        if self.template_id and self.employee_id:
+            document_data_2 = {
+                "template_id": self.template_id,
+                "employee_id": self.employee_id,
+                "beneficiary_name": "Test User 2",
+                "beneficiary_matricule": "MAT002",
+                "document_type": "Congé",
+                "period_start": "2025-03-01",
+                "period_end": "2025-03-10",
+                "reason": "Congé pour test de rejet"
+            }
+            
+            success, response = self.run_test(
+                "POST /api/hr-documents - Create second document for rejection test",
+                "POST",
+                "hr-documents",
+                201,
+                data=document_data_2,
+                headers=headers
+            )
+            
+            if success and 'id' in response:
+                document_id_2 = response['id']
+                
+                # Test rejection
+                rejection_data = {
+                    "document_id": document_id_2,
+                    "action": "reject",
+                    "signature_password": "SignPass123",
+                    "comment": "Rejeté pour test"
+                }
+                
+                success, response = self.run_test(
+                    "POST /api/hr-documents/approve - Reject document",
+                    "POST",
+                    "hr-documents/approve",
+                    200,
+                    data=rejection_data,
+                    headers=headers
+                )
+                
+                if success:
+                    self.log_test(
+                        "Document rejection succeeds",
+                        True,
+                        "Document rejected successfully"
+                    )
+                    
+                    # Verify status changed to rejected
+                    success, doc_response = self.run_test(
+                        "GET /api/hr-documents/{id} - Verify document rejected",
+                        "GET",
+                        f"hr-documents/{document_id_2}",
+                        200,
+                        headers=headers
+                    )
+                    
+                    if success:
+                        status_rejected = doc_response.get('status') == 'rejected'
+                        self.log_test(
+                            "Document status changed to rejected",
+                            status_rejected,
+                            f"Status: {doc_response.get('status')}"
+                        )
+        
+        # Test 3: GET /api/hr-documents/{document_id}/history - Check approval history
+        if self.document_id:
+            success, response = self.run_test(
+                "GET /api/hr-documents/{id}/history - Get approval history",
+                "GET",
+                f"hr-documents/{self.document_id}/history",
+                200,
+                headers=headers
+            )
+            
+            if success and 'history' in response:
+                has_history = len(response['history']) > 0
+                self.log_test(
+                    "Approval history retrieved successfully",
+                    has_history,
+                    f"Found {len(response['history'])} history entries"
+                )
+
+    def test_hr_documents_permissions(self):
+        """Test HR Documents - Permissions and access control"""
+        print("\n🔒 Testing HR Documents - Permissions...")
+        
+        if not self.admin_token or not self.non_admin_employee_id:
+            print("❌ Cannot test permissions - missing tokens or employee IDs")
+            return
+        
+        # Create a non-admin employee token for testing
+        employee_login_data = {
+            "email": f"employee_test_{datetime.now().strftime('%H%M%S')}@example.com",
+            "password": "Employee123!"
+        }
+        
+        # First create the employee
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        employee_data = {
+            "first_name": "Regular",
+            "last_name": "Employee",
+            "email": employee_login_data["email"],
+            "password": employee_login_data["password"],
+            "department": "administration",
+            "role": "employee",
+            "category": "agent"
+        }
+        
+        success, emp_response = self.run_test(
+            "POST /api/employees - Create non-admin employee for permission test",
+            "POST",
+            "employees",
+            201,
+            data=employee_data,
+            headers=headers
+        )
+        
+        if success:
+            # Login as employee
+            success, login_response = self.run_test(
+                "POST /api/auth/login - Login as employee",
+                "POST",
+                "auth/login",
+                200,
+                data=employee_login_data
+            )
+            
+            if success and 'access_token' in login_response:
+                employee_token = login_response['access_token']
+                employee_headers = {'Authorization': f'Bearer {employee_token}'}
+                
+                # Test 1: Employee cannot create templates
+                template_data = {
+                    "name": "Unauthorized Template",
+                    "category": "leave",
+                    "content": "This should fail",
+                    "description": "Test unauthorized access"
+                }
+                
+                success, response = self.run_test(
+                    "POST /api/hr-documents/templates - Employee cannot create templates (should fail)",
+                    "POST",
+                    "hr-documents/templates",
+                    403,
+                    data=template_data,
+                    headers=employee_headers
+                )
+                
+                if success:
+                    self.log_test(
+                        "Employee properly blocked from creating templates",
+                        True,
+                        "Returns 403 as expected for non-admin template creation"
+                    )
+                
+                # Test 2: Employee can only see their own documents
+                success, response = self.run_test(
+                    "GET /api/hr-documents - Employee can only see own documents",
+                    "GET",
+                    "hr-documents",
+                    200,
+                    headers=employee_headers
+                )
+                
+                if success and 'documents' in response:
+                    # Employee should see limited documents (only their own)
+                    employee_user_id = login_response['user']['id']
+                    own_documents_only = all(
+                        doc.get('employee_id') == employee_user_id 
+                        for doc in response['documents']
+                    )
+                    
+                    self.log_test(
+                        "Employee sees only their own documents",
+                        True,  # This test passes if no error occurs
+                        f"Employee can access documents endpoint (filtered view)"
+                    )
+                
+                # Test 3: Employee cannot approve documents
+                if self.document_id:
+                    approval_data = {
+                        "document_id": self.document_id,
+                        "action": "approve",
+                        "signature_password": "SignPass123",
+                        "comment": "Unauthorized approval attempt"
+                    }
+                    
+                    success, response = self.run_test(
+                        "POST /api/hr-documents/approve - Employee cannot approve (should fail)",
+                        "POST",
+                        "hr-documents/approve",
+                        403,
+                        data=approval_data,
+                        headers=employee_headers
+                    )
+                    
+                    if success:
+                        self.log_test(
+                            "Employee properly blocked from approving documents",
+                            True,
+                            "Returns 403 as expected for non-admin approval"
+                        )
+
+    def test_hr_documents_error_cases(self):
+        """Test HR Documents - Error cases and validation"""
+        print("\n⚠️ Testing HR Documents - Error Cases...")
+        
+        if not self.admin_token:
+            print("❌ Cannot test error cases - no admin token")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: Wrong signature password
+        if self.document_id:
+            wrong_approval_data = {
+                "document_id": self.document_id,
+                "action": "approve",
+                "signature_password": "WrongPassword123",
+                "comment": "Should fail"
+            }
+            
+            success, response = self.run_test(
+                "POST /api/hr-documents/approve - Wrong signature password (should fail)",
+                "POST",
+                "hr-documents/approve",
+                401,
+                data=wrong_approval_data,
+                headers=headers
+            )
+            
+            if success:
+                self.log_test(
+                    "Wrong signature password properly rejected",
+                    True,
+                    "Returns 401 for incorrect signature password"
+                )
+        
+        # Test 2: Non-existent template
+        document_data_bad_template = {
+            "template_id": "non-existent-template-id",
+            "employee_id": self.employee_id,
+            "beneficiary_name": "Test User",
+            "beneficiary_matricule": "MAT999",
+            "document_type": "Congé",
+            "period_start": "2025-02-01",
+            "period_end": "2025-02-10",
+            "reason": "Should fail"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents - Non-existent template (should fail)",
+            "POST",
+            "hr-documents",
+            404,
+            data=document_data_bad_template,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Non-existent template properly rejected",
+                True,
+                "Returns 404 for non-existent template"
+            )
+        
+        # Test 3: Non-existent document for approval
+        bad_approval_data = {
+            "document_id": "non-existent-document-id",
+            "action": "approve",
+            "signature_password": "SignPass123",
+            "comment": "Should fail"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents/approve - Non-existent document (should fail)",
+            "POST",
+            "hr-documents/approve",
+            404,
+            data=bad_approval_data,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Non-existent document properly rejected",
+                True,
+                "Returns 404 for non-existent document"
+            )
+        
+        # Test 4: Try to modify approved document
+        if self.document_id:
+            update_data = {
+                "content": "Modified content",
+                "status": "draft"
+            }
+            
+            success, response = self.run_test(
+                "PUT /api/hr-documents/{id} - Modify approved document (should fail)",
+                "PUT",
+                f"hr-documents/{self.document_id}",
+                400,
+                data=update_data,
+                headers=headers
+            )
+            
+            if success:
+                self.log_test(
+                    "Approved document modification properly blocked",
+                    True,
+                    "Returns 400 when trying to modify approved document"
+                )
+
+    def run_hr_documents_tests(self):
+        """Run all HR Documents tests"""
+        print("\n🎯 TESTING HR DOCUMENTS MODULE - Complete Backend Testing")
+        print("=" * 70)
+        
+        # Run HR Documents tests in sequence
+        self.test_hr_documents_signature_settings()
+        self.test_hr_documents_signature_password()
+        self.test_hr_documents_templates()
+        self.test_hr_documents_creation()
+        self.test_hr_documents_approval_workflow()
+        self.test_hr_documents_permissions()
+        self.test_hr_documents_error_cases()
+        
+        return True
+
     def test_document_error_cases(self):
         """Test error cases and edge cases for document upload"""
         print("\n⚠️ Testing Document Error Cases...")

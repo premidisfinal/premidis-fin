@@ -430,13 +430,13 @@ const TimeManagement = () => {
     return type?.color || 'bg-primary';
   };
 
-  const getLeaveTextColor = (leaveType) => {
+  const getLeaveBorderColor = (leaveType) => {
     const type = leaveTypes.find(t => t.value === leaveType);
     const bgColor = type?.color || 'bg-primary';
     
-    // Convertir la classe bg-* en text-*
-    // Ex: bg-blue-500 -> text-blue-500, bg-primary -> text-primary
-    return bgColor.replace('bg-', 'text-');
+    // Convertir bg-* en border-*
+    // Ex: bg-blue-500 -> border-blue-500
+    return bgColor.replace('bg-', 'border-');
   };
 
   return (

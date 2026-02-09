@@ -81,10 +81,33 @@ class HRPlatformTester:
             "POST",
             "auth/login",
             200,
-            data={"email": "superadmin@premierdis.com", "password": "SuperAdmin123!"}
+            data={"email": "test_admin@example.com", "password": "Test123456"}
         )
+        
+        if not success:
+            # Try to create the admin user first
+            print("🔧 Creating admin user for testing...")
+            admin_data = {
+                "email": "test_admin@example.com",
+                "password": "Test123456",
+                "first_name": "Test",
+                "last_name": "Admin",
+                "role": "admin",
+                "department": "administration",
+                "category": "cadre"
+            }
+            
+            success, response = self.run_test(
+                "Create Admin User",
+                "POST",
+                "auth/register",
+                200,
+                data=admin_data
+            )
+        
         if success and 'access_token' in response:
             self.admin_token = response['access_token']
+            self.admin_user_id = response['user']['id']
             print(f"✅ Admin token obtained successfully")
             
             # Get or create an employee for testing
@@ -103,12 +126,18 @@ class HRPlatformTester:
                 # Use the first employee found
                 self.employee_id = employees_response['employees'][0]['id']
                 print(f"✅ Using existing employee ID: {self.employee_id}")
+                
+                # Find a non-admin employee for permission testing
+                for emp in employees_response['employees']:
+                    if emp.get('role') == 'employee':
+                        self.non_admin_employee_id = emp['id']
+                        break
             else:
                 # Create a test employee
                 employee_data = {
                     "first_name": "Jean",
                     "last_name": "Dupont",
-                    "email": f"jean.dupont.test_{datetime.now().strftime('%H%M%S')}@premierdis.com",
+                    "email": f"jean.dupont.test_{datetime.now().strftime('%H%M%S')}@example.com",
                     "password": "Employee123!",
                     "department": "administration",
                     "role": "employee",
@@ -126,6 +155,7 @@ class HRPlatformTester:
                 
                 if success and 'id' in emp_response:
                     self.employee_id = emp_response['id']
+                    self.non_admin_employee_id = emp_response['id']
                     print(f"✅ Created test employee ID: {self.employee_id}")
                 else:
                     print(f"❌ Failed to create test employee")

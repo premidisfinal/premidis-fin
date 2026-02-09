@@ -671,9 +671,9 @@ const DocumentsRH = () => {
                         required
                       />
                       <p className="text-xs text-muted-foreground">
-                        Variables disponibles: {{'{{'}}beneficiary_name{{'}}'}}, {{'{{'}}beneficiary_matricule{{'}}'}}, 
-                        {{'{{'}}document_type{{'}}'}}, {{'{{'}}period_start{{'}}'}}, {{'{{'}}period_end{{'}}'}}, {{'{{'}}reason{{'}}'}}, 
-                        {{'{{'}}current_date{{'}}'}}, etc.
+                        Variables disponibles: {'{{beneficiary_name}}'}, {'{{beneficiary_matricule}}'}, 
+                        {'{{document_type}}'}, {'{{period_start}}'}, {'{{period_end}}'}, {'{{reason}}'}, 
+                        {'{{current_date}}'}, etc.
                       </p>
                     </div>
 

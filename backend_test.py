@@ -1738,9 +1738,9 @@ class HRPlatformTester:
                 )
 
     def run_all_tests(self):
-        """Run all tests - Focus on Document Upload Workflow Review Request"""
+        """Run all tests - Focus on HR Documents Module Testing"""
         print("🚀 Starting PREMIDIS HR Platform Backend Tests")
-        print("🎯 Focus: MODULE COMPORTEMENT UPLOAD DOCUMENTS - Complete Workflow Testing")
+        print("🎯 Focus: MODULE DOCUMENTS RH - Complete Backend Testing")
         print("=" * 70)
         
         # Authentication is required for all tests
@@ -1748,20 +1748,9 @@ class HRPlatformTester:
             print("❌ Authentication failed - cannot proceed with other tests")
             return False
         
-        # Run the priority tests from document upload review request
-        print("\n🎯 PRIORITY TESTS - DOCUMENT UPLOAD WORKFLOW VALIDATION:")
-        print("1. Complete Document Upload Workflow")
-        self.test_document_upload_workflow()
-        
-        print("\n2. Supported File Types Testing")
-        self.test_supported_file_types()
-        
-        print("\n3. Error Cases and Edge Cases")
-        self.test_document_error_cases()
-        
-        print("\n4. Previous Behavior Module Tests")
-        self.test_behavior_module_documents()
-        self.test_behavior_deletion()
+        # Run HR Documents tests (main focus)
+        print("\n🎯 PRIORITY TESTS - HR DOCUMENTS MODULE:")
+        self.run_hr_documents_tests()
         
         # Print summary
         print("\n" + "=" * 70)
@@ -1770,11 +1759,11 @@ class HRPlatformTester:
         print(f"📈 Success Rate: {success_rate:.1f}%")
         
         if success_rate >= 80:
-            print("✅ DOCUMENT UPLOAD WORKFLOW VALIDATION: PASSED")
-            print("✅ Document upload and association with behavior notes working correctly")
+            print("✅ HR DOCUMENTS MODULE VALIDATION: PASSED")
+            print("✅ HR Documents backend functionality working correctly")
         else:
-            print("❌ DOCUMENT UPLOAD WORKFLOW VALIDATION: FAILED")
-            print("❌ Issues found in document upload workflow")
+            print("❌ HR DOCUMENTS MODULE VALIDATION: FAILED")
+            print("❌ Issues found in HR Documents module")
         
         return success_rate >= 80
 

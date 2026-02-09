@@ -4,15 +4,14 @@
  */
 
 const getBackendURL = () => {
-  // If REACT_APP_BACKEND_URL is set and not the preview URL, use it (production)
+  // Always use REACT_APP_BACKEND_URL if it's set
   const envURL = process.env.REACT_APP_BACKEND_URL;
   
-  if (envURL && !envURL.includes('.preview.emergentagent.com')) {
+  if (envURL) {
     return envURL;
   }
   
-  // Otherwise, use current origin (same domain as frontend)
-  // This ensures preview and production both work correctly
+  // Fallback to current origin if no env variable is set
   return window.location.origin;
 };
 

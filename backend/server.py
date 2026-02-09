@@ -190,6 +190,26 @@ class AttendanceCreate(BaseModel):
     check_out: Optional[str] = None
     notes: Optional[str] = ""
 
+# ==================== DOCUMENTS RH MODELS ====================
+class DocumentTemplate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    category: str  # 'leave', 'behavior', 'training', 'other'
+    content: str  # Contenu HTML/Texte avec placeholders
+    fields: List[str] = []  # Liste des champs dynamiques: ['employee_name', 'start_date', etc.]
+
+class DocumentCreate(BaseModel):
+    template_id: str
+    employee_id: str
+    source_module: str  # 'leaves', 'behaviors', etc.
+    source_id: Optional[str] = None  # ID du congé, comportement, etc.
+    custom_data: Optional[dict] = {}  # Données personnalisées supplémentaires
+
+class DocumentUpdate(BaseModel):
+    content: Optional[str] = None
+    status: Optional[str] = None  # 'draft', 'pending_signature', 'approved'
+    signature_data: Optional[str] = None
+
 class DocumentUpload(BaseModel):
     name: str
     type: str  # 'certificate', 'pdf', 'image'

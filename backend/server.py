@@ -2427,6 +2427,85 @@ async def delete_department(
 # ==================== DOCUMENTS RH ROUTES ====================
 documents_router = APIRouter(prefix="/hr-documents", tags=["Documents RH"])
 
+# ========== SIGNATURE SETTINGS ==========
+@documents_router.post("/signature-settings")
+async def update_signature_settings(
+    settings: SignatureSettings,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Upload/Update signature and stamp images"""
+    await db.signature_settings.update_one(
+        {"user_id": current_user["id"]},
+        {"$set": {
+            "user_id": current_user["id"],
+            "signature_image_url": settings.signature_image_url,
+            "stamp_image_url": settings.stamp_image_url,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    return {"message": "Paramètres de signature mis à jour"}
+
+@documents_router.get("/signature-settings")
+async def get_signature_settings(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get signature settings for current user"""
+    settings = await db.signature_settings.find_one({"user_id": current_user["id"]}, {"_id": 0})
+    return settings or {}
+
+# ========== SIGNATURE PASSWORD ==========
+@documents_router.post("/signature-password")
+async def create_signature_password(
+    pwd_data: SignaturePasswordCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create or update signature password"""
+    if pwd_data.password != pwd_data.confirm_password:
+        raise HTTPException(status_code=400, detail="Les mots de passe ne correspondent pas")
+    
+    if len(pwd_data.password) < 6:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 6 caractères")
+    
+    hashed_password = get_password_hash(pwd_data.password)
+    
+    await db.signature_passwords.update_one(
+        {"user_id": current_user["id"]},
+        {"$set": {
+            "user_id": current_user["id"],
+            "hashed_password": hashed_password,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    return {"message": "Mot de passe de signature créé avec succès"}
+
+@documents_router.post("/signature-password/verify")
+async def verify_signature_password(
+    pwd_data: SignaturePasswordVerify,
+    current_user: dict = Depends(get_current_user)
+):
+    """Verify signature password"""
+    pwd_record = await db.signature_passwords.find_one({"user_id": current_user["id"]}, {"_id": 0})
+    
+    if not pwd_record:
+        raise HTTPException(status_code=404, detail="Mot de passe de signature non configuré")
+    
+    if not verify_password(pwd_data.password, pwd_record["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Mot de passe incorrect")
+    
+    return {"message": "Mot de passe vérifié"}
+
+@documents_router.get("/signature-password/exists")
+async def check_signature_password_exists(
+    current_user: dict = Depends(get_current_user)
+):
+    """Check if user has set up signature password"""
+    pwd_record = await db.signature_passwords.find_one({"user_id": current_user["id"]}, {"_id": 0})
+    return {"exists": pwd_record is not None}
+
+# ========== TEMPLATES ==========
 @documents_router.get("/templates")
 async def list_templates(current_user: dict = Depends(get_current_user)):
     """Get all document templates"""
@@ -2436,7 +2515,7 @@ async def list_templates(current_user: dict = Depends(get_current_user)):
 @documents_router.post("/templates", status_code=status.HTTP_201_CREATED)
 async def create_template(
     template: DocumentTemplate,
-    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+    current_user: dict = Depends(require_roles(["admin"]))
 ):
     """Create a document template"""
     template_doc = {
@@ -2454,7 +2533,7 @@ async def create_template(
 async def update_template(
     template_id: str,
     template: DocumentTemplate,
-    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+    current_user: dict = Depends(require_roles(["admin"]))
 ):
     """Update a document template"""
     existing = await db.document_templates.find_one({"id": template_id})
@@ -2476,12 +2555,13 @@ async def delete_template(
     await db.document_templates.delete_one({"id": template_id})
     return {"message": "Modèle supprimé"}
 
-@documents_router.post("/generate", status_code=status.HTTP_201_CREATED)
-async def generate_document(
+# ========== DOCUMENTS ==========
+@documents_router.post("", status_code=status.HTTP_201_CREATED)
+async def create_document(
     doc: DocumentCreate,
-    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+    current_user: dict = Depends(require_roles(["admin"]))
 ):
-    """Generate a document from template with employee data"""
+    """Create a document (Admin only - Zone 1)"""
     # Get template
     template = await db.document_templates.find_one({"id": doc.template_id}, {"_id": 0})
     if not template:
@@ -2494,7 +2574,7 @@ async def generate_document(
     
     # Get source data if provided
     source_data = {}
-    if doc.source_id:
+    if doc.source_id and doc.source_module:
         if doc.source_module == "leaves":
             source_data = await db.leaves.find_one({"id": doc.source_id}, {"_id": 0}) or {}
         elif doc.source_module == "behaviors":
@@ -2502,6 +2582,8 @@ async def generate_document(
     
     # Prepare replacement data
     replacements = {
+        "beneficiary_name": doc.beneficiary_name,
+        "beneficiary_matricule": doc.beneficiary_matricule,
         "employee_name": f"{employee['first_name']} {employee['last_name']}",
         "employee_first_name": employee['first_name'],
         "employee_last_name": employee['last_name'],
@@ -2510,29 +2592,39 @@ async def generate_document(
         "employee_department": employee.get('department', ''),
         "employee_position": employee.get('position', ''),
         "employee_hire_date": employee.get('hire_date', ''),
+        "document_type": doc.document_type,
+        "period_start": doc.period_start or '',
+        "period_end": doc.period_end or '',
+        "reason": doc.reason,
         "current_date": datetime.now().strftime('%d/%m/%Y'),
         **source_data,
         **doc.custom_data
     }
     
-    # Replace placeholders in content (WITHOUT modifying template structure)
+    # Replace placeholders in content
     content = template["content"]
     for key, value in replacements.items():
-        placeholder = f"{{{key}}}"  # Format: {employee_name}
+        placeholder = f"{{{{{key}}}}}"  # Format: {{employee_name}}
         content = content.replace(placeholder, str(value))
     
-    # Create document
+    # Create document without signature (Zone 1)
     document_doc = {
         "id": str(uuid.uuid4()),
         "template_id": doc.template_id,
         "template_name": template["name"],
         "employee_id": doc.employee_id,
         "employee_name": f"{employee['first_name']} {employee['last_name']}",
+        "beneficiary_name": doc.beneficiary_name,
+        "beneficiary_matricule": doc.beneficiary_matricule,
+        "document_type": doc.document_type,
+        "period_start": doc.period_start,
+        "period_end": doc.period_end,
+        "reason": doc.reason,
         "source_module": doc.source_module,
         "source_id": doc.source_id,
         "content": content,
-        "original_template": template["content"],  # Garder l'original
-        "status": "draft",
+        "original_template": template["content"],
+        "status": "pending_approval",  # En attente d'approbation
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": current_user["id"],
         "created_by_name": f"{current_user['first_name']} {current_user['last_name']}"
@@ -2548,17 +2640,26 @@ async def list_documents(
     status: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """List documents (filtered by employee if not admin)"""
+    """List documents with permission-based filtering"""
     query = {}
     
-    # Non-admin can only see their own documents
-    if current_user["role"] not in ["super_admin", "admin", "secretary"]:
+    # Admin and managers can see all documents or filter by employee
+    if current_user["role"] in ["super_admin", "admin"]:
+        if employee_id:
+            query["employee_id"] = employee_id
+        if status:
+            query["status"] = status
+    # Secretaries can only see their own created documents
+    elif current_user["role"] == "secretary":
+        query["$or"] = [
+            {"created_by": current_user["id"]},
+            {"employee_id": current_user["id"]}
+        ]
+        if status:
+            query["status"] = status
+    # Regular employees can only see their own documents
+    else:
         query["employee_id"] = current_user["id"]
-    elif employee_id:
-        query["employee_id"] = employee_id
-    
-    if status:
-        query["status"] = status
     
     documents = await db.hr_documents.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     return {"documents": documents}
@@ -2574,8 +2675,8 @@ async def get_document(
         raise HTTPException(status_code=404, detail="Document non trouvé")
     
     # Check permissions
-    if current_user["role"] not in ["super_admin", "admin", "secretary"]:
-        if document["employee_id"] != current_user["id"]:
+    if current_user["role"] not in ["super_admin", "admin"]:
+        if document["employee_id"] != current_user["id"] and document.get("created_by") != current_user["id"]:
             raise HTTPException(status_code=403, detail="Accès refusé")
     
     return document
@@ -2584,22 +2685,22 @@ async def get_document(
 async def update_document(
     document_id: str,
     update: DocumentUpdate,
-    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+    current_user: dict = Depends(require_roles(["admin"]))
 ):
-    """Update document content or status"""
+    """Update document content (Admin only - before approval)"""
     document = await db.hr_documents.find_one({"id": document_id})
     if not document:
         raise HTTPException(status_code=404, detail="Document non trouvé")
+    
+    # Can only update if not yet approved
+    if document.get("status") == "approved":
+        raise HTTPException(status_code=400, detail="Impossible de modifier un document approuvé")
     
     update_data = {}
     if update.content:
         update_data["content"] = update.content
     if update.status:
         update_data["status"] = update.status
-    if update.signature_data:
-        update_data["signature_data"] = update.signature_data
-        update_data["signed_at"] = datetime.now(timezone.utc).isoformat()
-        update_data["signed_by"] = current_user["id"]
     
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
@@ -2609,11 +2710,90 @@ async def update_document(
 @documents_router.delete("/{document_id}")
 async def delete_document(
     document_id: str,
-    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+    current_user: dict = Depends(require_roles(["admin"]))
 ):
-    """Delete a document"""
+    """Delete a document (Admin only)"""
+    document = await db.hr_documents.find_one({"id": document_id})
+    if not document:
+        raise HTTPException(status_code=404, detail="Document non trouvé")
+    
+    # Can only delete if not yet approved
+    if document.get("status") == "approved":
+        raise HTTPException(status_code=400, detail="Impossible de supprimer un document approuvé")
+    
     await db.hr_documents.delete_one({"id": document_id})
     return {"message": "Document supprimé"}
+
+# ========== APPROVAL WORKFLOW ==========
+@documents_router.post("/approve")
+async def approve_document(
+    approval: DocumentApproval,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Approve or reject document with signature (Boss/Responsable)"""
+    # Verify signature password
+    pwd_record = await db.signature_passwords.find_one({"user_id": current_user["id"]}, {"_id": 0})
+    if not pwd_record:
+        raise HTTPException(status_code=400, detail="Mot de passe de signature non configuré. Veuillez le créer d'abord.")
+    
+    if not verify_password(approval.signature_password, pwd_record["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Mot de passe de signature incorrect")
+    
+    # Get document
+    document = await db.hr_documents.find_one({"id": approval.document_id})
+    if not document:
+        raise HTTPException(status_code=404, detail="Document non trouvé")
+    
+    # Get signature settings
+    signature_settings = await db.signature_settings.find_one({"user_id": current_user["id"]}, {"_id": 0})
+    
+    update_data = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "approval_action": approval.action,
+        "approval_comment": approval.comment,
+        "approved_by": current_user["id"],
+        "approved_by_name": f"{current_user['first_name']} {current_user['last_name']}",
+        "approved_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if approval.action == "approve":
+        update_data["status"] = "approved"
+        # Add signature and stamp if available
+        if signature_settings:
+            update_data["signature_image_url"] = signature_settings.get("signature_image_url")
+            update_data["stamp_image_url"] = signature_settings.get("stamp_image_url")
+    else:
+        update_data["status"] = "rejected"
+    
+    await db.hr_documents.update_one({"id": approval.document_id}, {"$set": update_data})
+    
+    # Log approval history
+    history_record = {
+        "id": str(uuid.uuid4()),
+        "document_id": approval.document_id,
+        "action": approval.action,
+        "performed_by": current_user["id"],
+        "performed_by_name": f"{current_user['first_name']} {current_user['last_name']}",
+        "comment": approval.comment,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "ip_address": None  # Can be added if needed
+    }
+    await db.document_approval_history.insert_one(history_record)
+    
+    return {"message": f"Document {'approuvé' if approval.action == 'approve' else 'rejeté'} avec succès"}
+
+@documents_router.get("/{document_id}/history")
+async def get_document_history(
+    document_id: str,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Get approval history for a document"""
+    history = await db.document_approval_history.find(
+        {"document_id": document_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(100)
+    
+    return {"history": history}
 
 @api_router.get("/")
 async def root():

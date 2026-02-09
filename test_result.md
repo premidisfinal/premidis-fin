@@ -272,6 +272,18 @@ frontend:
         agent: "testing"
         comment: "Frontend testing not performed by testing agent - requires UI interaction testing"
 
+  - task: "HR DOCUMENTS MODULE - Complete Frontend Implementation"
+    implemented: true
+    working: false
+    file: "frontend/src/pages/DocumentsRH.jsx"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL FRONTEND AUTHENTICATION ISSUE: HR Documents module UI is properly implemented with all required components (4 tabs: Documents, Créer Document, Templates, Signature), but there's a persistent authentication/session management problem. ✅ BACKEND FULLY FUNCTIONAL: All APIs work perfectly (login returns valid JWT, HR documents API returns data, 2 existing documents found). ❌ FRONTEND ISSUE: Page keeps redirecting to login despite valid authentication, suggesting React AuthContext or session management problem. ✅ UI COMPONENTS VERIFIED: All tabs, forms, buttons, and visual elements are properly rendered when accessible. ❌ AUTHENTICATION CONTEXT: Frontend not maintaining authentication state properly, preventing access to protected routes. REQUIRES: Investigation of AuthContext, session storage, or token management in React frontend."
+
 metadata:
   created_by: "testing_agent"
   version: "1.3"

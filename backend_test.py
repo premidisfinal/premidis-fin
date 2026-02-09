@@ -11,9 +11,12 @@ class HRPlatformTester:
         self.base_url = base_url
         self.admin_token = None
         self.employee_token = None
+        self.admin_user_id = None
         self.employee_id = None
+        self.non_admin_employee_id = None
         self.site_id = None
         self.document_id = None
+        self.template_id = None
         self.leave_id = None
         self.behavior_id = None
         self.tests_run = 0

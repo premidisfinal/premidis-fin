@@ -29,7 +29,8 @@ import {
   Sun,
   Shield,
   Bell,
-  Building2
+  Building2,
+  FileText
 } from 'lucide-react';
 import NotificationCenter from '../NotificationCenter';
 import Logo from '../Logo';

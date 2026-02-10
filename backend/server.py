@@ -2518,6 +2518,136 @@ async def check_signature_password_exists(
     pwd_record = await db.signature_passwords.find_one({"user_id": current_user["id"]}, {"_id": 0})
     return {"exists": pwd_record is not None}
 
+@documents_router.put("/signature-password/update")
+async def update_signature_password(
+    pwd_data: SignaturePasswordUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update signature password"""
+    pwd_record = await db.signature_passwords.find_one({"user_id": current_user["id"]}, {"_id": 0})
+    
+    if not pwd_record:
+        raise HTTPException(status_code=404, detail="Mot de passe de signature non configuré")
+    
+    # Verify old password
+    if not verify_password(pwd_data.old_password, pwd_record["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Ancien mot de passe incorrect")
+    
+    # Validate new password
+    if pwd_data.new_password != pwd_data.confirm_password:
+        raise HTTPException(status_code=400, detail="Les nouveaux mots de passe ne correspondent pas")
+    
+    if len(pwd_data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 6 caractères")
+    
+    # Update password
+    hashed_password = get_password_hash(pwd_data.new_password)
+    await db.signature_passwords.update_one(
+        {"user_id": current_user["id"]},
+        {"$set": {
+            "hashed_password": hashed_password,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Mot de passe de signature modifié avec succès"}
+
+@documents_router.post("/signature-password/reset")
+async def reset_signature_password(
+    pwd_data: SignaturePasswordReset,
+    current_user: dict = Depends(require_roles(["super_admin", "admin"]))
+):
+    """Reset signature password for another user (Admin only)"""
+    # Validate passwords match
+    if pwd_data.new_password != pwd_data.confirm_password:
+        raise HTTPException(status_code=400, detail="Les mots de passe ne correspondent pas")
+    
+    if len(pwd_data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 6 caractères")
+    
+    # Check if target user exists
+    target_user = await db.users.find_one({"id": pwd_data.user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Reset password
+    hashed_password = get_password_hash(pwd_data.new_password)
+    await db.signature_passwords.update_one(
+        {"user_id": pwd_data.user_id},
+        {"$set": {
+            "user_id": pwd_data.user_id,
+            "hashed_password": hashed_password,
+            "reset_by": current_user["id"],
+            "reset_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    return {"message": f"Mot de passe de signature réinitialisé pour {target_user['first_name']} {target_user['last_name']}"}
+
+@documents_router.get("/employee-data/{employee_id}")
+async def get_employee_data(
+    employee_id: str,
+    source_module: str,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """Get employee data from specified source module for auto-filling"""
+    # Get employee basic info
+    employee = await db.users.find_one({"id": employee_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    result = {
+        "employee": {
+            "id": employee["id"],
+            "name": f"{employee['first_name']} {employee['last_name']}",
+            "first_name": employee["first_name"],
+            "last_name": employee["last_name"],
+            "email": employee["email"],
+            "phone": employee.get("phone", ""),
+            "department": employee.get("department", ""),
+            "position": employee.get("position", ""),
+            "hire_date": employee.get("hire_date", ""),
+            "category": employee.get("category", ""),
+            "matricule": employee.get("id", "")[:8].upper()  # Generate matricule from ID
+        },
+        "module_data": {}
+    }
+    
+    # Fetch data from source module
+    if source_module == "leaves":
+        leaves = await db.leaves.find({"employee_id": employee_id}, {"_id": 0}).sort("created_at", -1).to_list(10)
+        result["module_data"] = {
+            "recent_leaves": leaves,
+            "total_leaves": len(leaves),
+            "leave_balance": employee.get("leave_balance", {}),
+            "leave_taken": employee.get("leave_taken", {})
+        }
+    elif source_module == "behaviors":
+        behaviors = await db.behaviors.find({"employee_id": employee_id}, {"_id": 0}).sort("created_at", -1).to_list(10)
+        result["module_data"] = {
+            "recent_behaviors": behaviors,
+            "total_behaviors": len(behaviors)
+        }
+    elif source_module == "payroll":
+        # Get payroll data if exists
+        result["module_data"] = {
+            "salary": employee.get("salary", 0),
+            "salary_currency": employee.get("salary_currency", "USD")
+        }
+    elif source_module == "attendance":
+        # Get recent attendance
+        attendance = await db.attendance.find({"employee_id": employee_id}, {"_id": 0}).sort("date", -1).to_list(30)
+        result["module_data"] = {
+            "recent_attendance": attendance,
+            "total_days": len(attendance)
+        }
+    elif source_module == "employees":
+        # Just employee basic info (already included)
+        result["module_data"] = {"note": "Données employé de base uniquement"}
+    
+    return result
+
 # ========== TEMPLATES ==========
 @documents_router.get("/templates")
 async def list_templates(current_user: dict = Depends(get_current_user)):

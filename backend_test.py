@@ -88,10 +88,10 @@ class HRPlatformTester:
             # Try to create the admin user first
             print("🔧 Creating admin user for testing...")
             admin_data = {
-                "email": "test_admin@example.com",
-                "password": "Test123456",
-                "first_name": "Test",
-                "last_name": "Admin",
+                "email": "admin@example.com",
+                "password": "admin123",
+                "first_name": "Admin",
+                "last_name": "User",
                 "role": "admin",
                 "department": "administration",
                 "category": "cadre"

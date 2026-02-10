@@ -2,6 +2,7 @@
  * API Configuration
  * Automatically detects the correct backend URL based on current environment
  */
+import axios from 'axios';
 
 const getBackendURL = () => {
   // Always use REACT_APP_BACKEND_URL if it's set
@@ -19,4 +20,9 @@ export const API_URL = getBackendURL();
 
 console.log('[API Config] Using backend URL:', API_URL);
 
-export default API_URL;
+// Create axios instance with baseURL
+const axiosInstance = axios.create({
+  baseURL: API_URL
+});
+
+export default axiosInstance;

@@ -197,6 +197,9 @@ class DocumentTemplate(BaseModel):
     category: str  # 'leave', 'behavior', 'training', 'other'
     content: str  # Contenu HTML/Texte avec placeholders
     fields: List[str] = []  # Liste des champs dynamiques: ['employee_name', 'start_date', etc.]
+    source_module: Optional[str] = None  # Module lié: 'leaves', 'behaviors', 'payroll', 'employees', 'discipline', 'other'
+    file_url: Optional[str] = None  # URL du fichier template uploadé (.docx, .pdf)
+    manual_data_source: Optional[str] = None  # Description manuelle de la provenance des données
 
 class DocumentCreate(BaseModel):
     template_id: str
@@ -227,6 +230,16 @@ class SignaturePasswordCreate(BaseModel):
 
 class SignaturePasswordVerify(BaseModel):
     password: str
+
+class SignaturePasswordUpdate(BaseModel):
+    old_password: str
+    new_password: str
+    confirm_password: str
+
+class SignaturePasswordReset(BaseModel):
+    user_id: str
+    new_password: str
+    confirm_password: str
 
 class SignatureSettings(BaseModel):
     signature_image_url: Optional[str] = None

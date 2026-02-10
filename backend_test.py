@@ -1630,6 +1630,414 @@ class HRPlatformTester:
                     "Returns 400 when trying to modify approved document"
                 )
 
+    def test_hr_documents_new_features(self):
+        """Test new HR Documents features from review request"""
+        print("\n🆕 Testing HR Documents - New Features (Review Request)...")
+        
+        if not self.admin_token:
+            print("❌ Cannot test new features - no admin token")
+            return
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: Signature Password Update
+        print("\n🔐 Testing Signature Password Update...")
+        
+        # First ensure we have a signature password
+        password_data = {
+            "password": "TestSignature123",
+            "confirm_password": "TestSignature123"
+        }
+        
+        self.run_test(
+            "POST /api/hr-documents/signature-password - Create initial password",
+            "POST",
+            "hr-documents/signature-password",
+            200,
+            data=password_data,
+            headers=headers
+        )
+        
+        # Test password update
+        update_data = {
+            "old_password": "TestSignature123",
+            "new_password": "NewPass123",
+            "confirm_password": "NewPass123"
+        }
+        
+        success, response = self.run_test(
+            "PUT /api/hr-documents/signature-password/update - Update signature password",
+            "PUT",
+            "hr-documents/signature-password/update",
+            200,
+            data=update_data,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Signature password update succeeds",
+                True,
+                "Password updated successfully"
+            )
+            
+            # Test with wrong old password
+            wrong_update_data = {
+                "old_password": "WrongOldPassword",
+                "new_password": "AnotherPass123",
+                "confirm_password": "AnotherPass123"
+            }
+            
+            success, response = self.run_test(
+                "PUT /api/hr-documents/signature-password/update - Wrong old password (should fail)",
+                "PUT",
+                "hr-documents/signature-password/update",
+                400,
+                data=wrong_update_data,
+                headers=headers
+            )
+            
+            if success:
+                self.log_test(
+                    "Wrong old password properly rejected",
+                    True,
+                    "Returns 400 for incorrect old password"
+                )
+        
+        # Test 2: Admin Password Reset
+        print("\n🔧 Testing Admin Password Reset...")
+        
+        reset_data = {
+            "user_id": self.admin_user_id,
+            "new_password": "ResetPass123",
+            "confirm_password": "ResetPass123"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents/signature-password/reset - Admin reset password",
+            "POST",
+            "hr-documents/signature-password/reset",
+            200,
+            data=reset_data,
+            headers=headers
+        )
+        
+        if success:
+            self.log_test(
+                "Admin password reset succeeds",
+                True,
+                "Admin can reset signature password"
+            )
+        
+        # Test 3: Employee Data Retrieval with Source Modules
+        print("\n📊 Testing Employee Data Retrieval with Source Modules...")
+        
+        if self.employee_id:
+            # Test leaves module
+            success, response = self.run_test(
+                "GET /api/hr-documents/employee-data/{id}?source_module=leaves",
+                "GET",
+                f"hr-documents/employee-data/{self.employee_id}",
+                200,
+                data={"source_module": "leaves"},
+                headers=headers
+            )
+            
+            if success:
+                has_employee_data = 'employee' in response
+                has_module_data = 'module_data' in response
+                has_recent_leaves = response.get('module_data', {}).get('recent_leaves') is not None
+                
+                self.log_test(
+                    "Employee data with leaves module returns correct structure",
+                    has_employee_data and has_module_data,
+                    f"Employee data: {has_employee_data}, Module data: {has_module_data}"
+                )
+                
+                self.log_test(
+                    "Leaves module data contains recent_leaves",
+                    has_recent_leaves,
+                    f"recent_leaves present: {has_recent_leaves}"
+                )
+            
+            # Test behaviors module
+            success, response = self.run_test(
+                "GET /api/hr-documents/employee-data/{id}?source_module=behaviors",
+                "GET",
+                f"hr-documents/employee-data/{self.employee_id}",
+                200,
+                data={"source_module": "behaviors"},
+                headers=headers
+            )
+            
+            if success:
+                has_recent_behaviors = response.get('module_data', {}).get('recent_behaviors') is not None
+                
+                self.log_test(
+                    "Behaviors module data contains recent_behaviors",
+                    has_recent_behaviors,
+                    f"recent_behaviors present: {has_recent_behaviors}"
+                )
+            
+            # Test employees module
+            success, response = self.run_test(
+                "GET /api/hr-documents/employee-data/{id}?source_module=employees",
+                "GET",
+                f"hr-documents/employee-data/{self.employee_id}",
+                200,
+                data={"source_module": "employees"},
+                headers=headers
+            )
+            
+            if success:
+                has_basic_data = 'employee' in response
+                
+                self.log_test(
+                    "Employees module returns basic employee data",
+                    has_basic_data,
+                    f"Basic employee data present: {has_basic_data}"
+                )
+        
+        # Test 4: Templates with New Fields
+        print("\n📄 Testing Templates with New Fields...")
+        
+        template_with_new_fields = {
+            "name": "Template Test Complet",
+            "category": "leave",
+            "content": "<p>Test {{beneficiary_name}}</p>",
+            "source_module": "leaves",
+            "manual_data_source": "Données du module congés + saisie manuelle",
+            "file_url": "test.pdf"
+        }
+        
+        success, response = self.run_test(
+            "POST /api/hr-documents/templates - Create template with new fields",
+            "POST",
+            "hr-documents/templates",
+            201,
+            data=template_with_new_fields,
+            headers=headers
+        )
+        
+        if success:
+            has_source_module = response.get('source_module') == "leaves"
+            has_manual_data_source = response.get('manual_data_source') == "Données du module congés + saisie manuelle"
+            has_file_url = response.get('file_url') == "test.pdf"
+            
+            self.log_test(
+                "Template creation with source_module field",
+                has_source_module,
+                f"source_module: {response.get('source_module')}"
+            )
+            
+            self.log_test(
+                "Template creation with manual_data_source field",
+                has_manual_data_source,
+                f"manual_data_source: {response.get('manual_data_source')}"
+            )
+            
+            self.log_test(
+                "Template creation with file_url field",
+                has_file_url,
+                f"file_url: {response.get('file_url')}"
+            )
+            
+            if 'id' in response:
+                new_template_id = response['id']
+                
+                # Test 5: Get templates and verify new fields are present
+                success, response = self.run_test(
+                    "GET /api/hr-documents/templates - Verify new fields in template list",
+                    "GET",
+                    "hr-documents/templates",
+                    200,
+                    headers=headers
+                )
+                
+                if success and 'templates' in response:
+                    # Find our template
+                    created_template = None
+                    for template in response['templates']:
+                        if template.get('id') == new_template_id:
+                            created_template = template
+                            break
+                    
+                    if created_template:
+                        has_source_module_in_list = 'source_module' in created_template
+                        has_manual_data_source_in_list = 'manual_data_source' in created_template
+                        
+                        self.log_test(
+                            "Template list includes source_module field",
+                            has_source_module_in_list,
+                            f"source_module in template list: {has_source_module_in_list}"
+                        )
+                        
+                        self.log_test(
+                            "Template list includes manual_data_source field",
+                            has_manual_data_source_in_list,
+                            f"manual_data_source in template list: {has_manual_data_source_in_list}"
+                        )
+        
+        # Test 6: Document Creation Workflow with Module Data
+        print("\n🔄 Testing Document Creation Workflow with Module Data...")
+        
+        if self.employee_id and hasattr(self, 'template_id') and self.template_id:
+            # First get employee data with leaves module
+            success, emp_data_response = self.run_test(
+                "GET /api/hr-documents/employee-data/{id}?source_module=leaves - Get data for workflow",
+                "GET",
+                f"hr-documents/employee-data/{self.employee_id}",
+                200,
+                data={"source_module": "leaves"},
+                headers=headers
+            )
+            
+            if success:
+                # Create document with auto-filled data
+                document_with_module_data = {
+                    "template_id": self.template_id,
+                    "employee_id": self.employee_id,
+                    "beneficiary_name": emp_data_response.get('employee', {}).get('first_name', 'Test') + " " + emp_data_response.get('employee', {}).get('last_name', 'User'),
+                    "beneficiary_matricule": emp_data_response.get('employee', {}).get('id', 'MAT001'),
+                    "document_type": "Congé avec données module",
+                    "period_start": "2025-02-01",
+                    "period_end": "2025-02-10",
+                    "reason": "Congé avec données du module congés",
+                    "source_module": "leaves",
+                    "custom_data": emp_data_response.get('module_data', {})
+                }
+                
+                success, response = self.run_test(
+                    "POST /api/hr-documents - Create document with module data",
+                    "POST",
+                    "hr-documents",
+                    201,
+                    data=document_with_module_data,
+                    headers=headers
+                )
+                
+                if success:
+                    has_source_module = response.get('source_module') == "leaves"
+                    has_custom_data = 'custom_data' in response
+                    
+                    self.log_test(
+                        "Document creation with source_module",
+                        has_source_module,
+                        f"source_module: {response.get('source_module')}"
+                    )
+                    
+                    self.log_test(
+                        "Document creation with module data",
+                        has_custom_data,
+                        f"custom_data present: {has_custom_data}"
+                    )
+        
+        # Test 7: Permissions Testing
+        print("\n🔒 Testing New Permissions...")
+        
+        # Create a non-admin user for permission testing
+        employee_data = {
+            "first_name": "Test",
+            "last_name": "Employee",
+            "email": f"test_employee_perm_{datetime.now().strftime('%H%M%S')}@example.com",
+            "password": "Employee123!",
+            "department": "administration",
+            "role": "employee",
+            "category": "agent"
+        }
+        
+        success, emp_response = self.run_test(
+            "POST /api/employees - Create employee for permission test",
+            "POST",
+            "employees",
+            201,
+            data=employee_data,
+            headers=headers
+        )
+        
+        if success:
+            # Login as employee
+            login_data = {
+                "email": employee_data["email"],
+                "password": employee_data["password"]
+            }
+            
+            success, login_response = self.run_test(
+                "POST /api/auth/login - Login as employee for permission test",
+                "POST",
+                "auth/login",
+                200,
+                data=login_data
+            )
+            
+            if success and 'access_token' in login_response:
+                employee_token = login_response['access_token']
+                employee_headers = {'Authorization': f'Bearer {employee_token}'}
+                employee_user_id = login_response['user']['id']
+                
+                # Test: Employee cannot reset password (should fail)
+                reset_data = {
+                    "user_id": employee_user_id,
+                    "new_password": "ShouldFail123",
+                    "confirm_password": "ShouldFail123"
+                }
+                
+                success, response = self.run_test(
+                    "POST /api/hr-documents/signature-password/reset - Employee cannot reset (should fail)",
+                    "POST",
+                    "hr-documents/signature-password/reset",
+                    403,
+                    data=reset_data,
+                    headers=employee_headers
+                )
+                
+                if success:
+                    self.log_test(
+                        "Employee properly blocked from password reset",
+                        True,
+                        "Only Admin/Super Admin can reset passwords"
+                    )
+                
+                # Test: Employee can update their own password
+                # First create a signature password for the employee
+                emp_password_data = {
+                    "password": "EmpSignature123",
+                    "confirm_password": "EmpSignature123"
+                }
+                
+                success, response = self.run_test(
+                    "POST /api/hr-documents/signature-password - Employee create own password",
+                    "POST",
+                    "hr-documents/signature-password",
+                    200,
+                    data=emp_password_data,
+                    headers=employee_headers
+                )
+                
+                if success:
+                    # Now test update
+                    emp_update_data = {
+                        "old_password": "EmpSignature123",
+                        "new_password": "EmpNewPass123",
+                        "confirm_password": "EmpNewPass123"
+                    }
+                    
+                    success, response = self.run_test(
+                        "PUT /api/hr-documents/signature-password/update - Employee update own password",
+                        "PUT",
+                        "hr-documents/signature-password/update",
+                        200,
+                        data=emp_update_data,
+                        headers=employee_headers
+                    )
+                    
+                    if success:
+                        self.log_test(
+                            "Employee can update own signature password",
+                            True,
+                            "Employee successfully updated own password"
+                        )
+
     def run_hr_documents_tests(self):
         """Run all HR Documents tests"""
         print("\n🎯 TESTING HR DOCUMENTS MODULE - Complete Backend Testing")
@@ -1643,6 +2051,9 @@ class HRPlatformTester:
         self.test_hr_documents_approval_workflow()
         self.test_hr_documents_permissions()
         self.test_hr_documents_error_cases()
+        
+        # Run new features tests
+        self.test_hr_documents_new_features()
         
         return True
 

@@ -81,7 +81,7 @@ class HRPlatformTester:
             "POST",
             "auth/login",
             200,
-            data={"email": "test_admin@example.com", "password": "Test123456"}
+            data={"email": "admin@example.com", "password": "admin123"}
         )
         
         if not success:

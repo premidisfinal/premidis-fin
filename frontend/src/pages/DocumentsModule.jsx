@@ -14,6 +14,7 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
+import { Node } from '@tiptap/core';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -48,6 +49,56 @@ import {
   DialogTitle,
   DialogFooter
 } from '../components/ui/dialog';
+
+// Custom extension to preserve ALL HTML with inline styles
+const PreserveHTML = Node.create({
+  name: 'preserveHTML',
+  
+  group: 'block',
+  
+  content: 'inline*',
+  
+  parseHTML() {
+    return [
+      {
+        tag: 'div',
+        getAttrs: (node) => {
+          // Preserve all attributes
+          return {};
+        },
+      },
+    ];
+  },
+  
+  renderHTML({ HTMLAttributes }) {
+    return ['div', HTMLAttributes, 0];
+  },
+  
+  addAttributes() {
+    return {
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+        renderHTML: attributes => {
+          if (!attributes.style) {
+            return {};
+          }
+          return { style: attributes.style };
+        },
+      },
+      class: {
+        default: null,
+        parseHTML: element => element.getAttribute('class'),
+        renderHTML: attributes => {
+          if (!attributes.class) {
+            return {};
+          }
+          return { class: attributes.class };
+        },
+      },
+    };
+  },
+});
 
 const DocumentsModule = () => {
   const { user } = useAuth();

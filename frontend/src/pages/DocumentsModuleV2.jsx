@@ -196,7 +196,7 @@ const DocumentsModuleV2 = () => {
 
   // Initialize iframe with document content
   useEffect(() => {
-    if (view === 'editor' && iframeRef.current) {
+    if ((view === 'editor' || view === 'preview') && iframeRef.current && editorContent) {
       const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
       
       iframeDoc.open();
@@ -264,15 +264,15 @@ const DocumentsModuleV2 = () => {
               }
             </style>
           </head>
-          <body contenteditable="true">
+          <body ${view === 'editor' ? 'contenteditable="true"' : ''}>
             ${editorContent}
           </body>
         </html>
       `);
       iframeDoc.close();
       
-      // Add click handler for manual edit mode
-      if (editMode) {
+      // Add click handler for manual edit mode (only in editor view)
+      if (view === 'editor' && editMode) {
         iframeDoc.body.classList.add('edit-mode');
         
         iframeDoc.body.addEventListener('click', (e) => {
@@ -287,7 +287,7 @@ const DocumentsModuleV2 = () => {
             }
           }
         });
-      } else {
+      } else if (iframeDoc.body) {
         iframeDoc.body.classList.remove('edit-mode');
       }
     }

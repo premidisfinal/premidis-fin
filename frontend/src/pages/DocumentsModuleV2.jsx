@@ -96,11 +96,12 @@ const DocumentsModuleV2 = () => {
   };
 
   const handleEditDocument = async (doc) => {
+    console.log('Editing document:', doc.title, 'Content length:', doc.content?.length || 0);
     setCurrentDocument(doc);
     setEditorContent(doc.content);
     setDocumentTitle(doc.title);
     setSelectedForm(null);
-    setView('editor');
+    setTimeout(() => setView('editor'), 50);
   };
 
   const getIframeContent = () => {

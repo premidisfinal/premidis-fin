@@ -3211,6 +3211,294 @@ def auto_detect_editable_fields(html: str) -> str:
     
     return html
 
+@documents_module_router.post("/forms/init-premidis-templates")
+async def init_premidis_templates(current_user: dict = Depends(require_roles(["admin"]))):
+    """Initialize PREMIDIS official document templates"""
+    
+    # Delete existing templates to refresh
+    await db.document_forms.delete_many({"is_system": True})
+    
+    premidis_header = '''
+<div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 32px; font-weight: bold;">PREMIDIS SARL</h1>
+    <p style="color: #e0e7ff; margin: 5px 0 0 0; font-size: 14px;">COMMUNE DE KARISIMBI, GOMA, DR CONGO</p>
+    <p style="color: #cbd5e1; margin: 3px 0 0 0; font-size: 11px;">Route Aéroport N. 20, Q.BUJOVU, C/ de KARISIMBI, Ville de GOMA, Prov. du Nord-Kivu en R.D.Congo</p>
+    <p style="color: #cbd5e1; margin: 3px 0 0 0; font-size: 11px;">N R C C M du siège : CD/GOM/RCCM/14-B-0203</p>
+</div>
+'''
+    
+    premidis_footer = '''
+<div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #3b82f6; font-size: 11px; color: #64748b;">
+    <p><strong>Téléphones :</strong> Tel : +243 99 99 95 240, +243 99 76 01 556</p>
+    <p><strong>E-mail :</strong> secretary@premidis.com</p>
+    <p><strong>Siège Social :</strong> N° 20, Avenue Nyakagozi, Q. Bujovu/ Goma/RDC</p>
+    <p><strong>NIF :</strong> A 0700453B | <strong>Id. Nat. :</strong> 5-9-N42250C</p>
+</div>
+'''
+    
+    system_forms = [
+        # 1. Loan Application Form
+        {
+            "id": str(uuid.uuid4()),
+            "name": "📋 Loan Application Form",
+            "description": "Formulaire de demande de crédit employé",
+            "category": "loan",
+            "thumbnail_url": None,
+            "content": f'''{premidis_header}
+<div style="padding: 30px;">
+    <div style="text-align: right; margin-bottom: 20px;">
+        <p><strong>Date:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">_____________</span></p>
+    </div>
+    
+    <h2 style="text-align: center; color: #1e3a8a; padding: 15px; background: #f1f5f9; border-left: 4px solid #3b82f6;">Loan Application Form</h2>
+    
+    <div style="margin: 20px 0;">
+        <p><strong>Name of the Employee:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 400px; display: inline-block;">_____________________</span></p>
+        <p><strong>Department & Designation:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 400px; display: inline-block;">_____________________</span></p>
+        <p><strong>ID No:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;">_____________</span></p>
+        <p><strong>Date Of Joining:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;">_____________</span></p>
+        <p><strong>Salary Per Month:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;">_____________</span></p>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <p><strong>Loan/Advance Amount:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;">_____________</span></p>
+        <p><strong>Reason:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 500px; display: inline-block;">_____________________</span></p>
+        <p><strong>Deduction Per Month:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;">_____________</span></p>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <p><strong>Loan Start And Ending Period:</strong></p>
+        <p style="margin-left: 20px;"><strong>Start of the Month:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">___________</span> &nbsp;&nbsp; <strong>End of the Month Loan:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">___________</span></p>
+    </div>
+    
+    <div style="margin: 30px 0;">
+        <h3 style="color: #1e3a8a;">Remarks</h3>
+        <p><strong>Head of the Department/ HR Department:</strong></p>
+        <p><span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 100%; display: inline-block; min-height: 60px;">_____________________</span></p>
+        
+        <p><strong>Of Dues & Remarks by Accounts Department:</strong></p>
+        <p><span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 100%; display: inline-block; min-height: 60px;">_____________________</span></p>
+    </div>
+    
+    <div style="margin-top: 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+        <div style="border: 1px solid #cbd5e1; padding: 15px; text-align: center;">
+            <p style="font-weight: bold;">Recommended By</p>
+            <p style="margin-top: 50px; border-top: 1px solid #000;">Signature</p>
+        </div>
+        <div style="border: 1px solid #cbd5e1; padding: 15px; text-align: center;">
+            <p style="font-weight: bold;">Loan deduction incharge By</p>
+            <p style="margin-top: 50px; border-top: 1px solid #000;">Signature</p>
+        </div>
+        <div style="border: 1px solid #cbd5e1; padding: 15px; text-align: center;">
+            <p style="font-weight: bold;">Authorization By</p>
+            <p style="margin-top: 50px; border-top: 1px solid #000;">Signature</p>
+        </div>
+    </div>
+</div>
+{premidis_footer}
+''',
+            "is_system": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        },
+        
+        # 2. Bon de Soins Médicaux
+        {
+            "id": str(uuid.uuid4()),
+            "name": "🏥 Bon de Soins Médicaux",
+            "description": "Autorisation de soins médicaux",
+            "category": "medical",
+            "thumbnail_url": None,
+            "content": f'''{premidis_header}
+<div style="padding: 30px;">
+    <h2 style="text-align: center; color: #1e3a8a; padding: 15px; background: #f1f5f9; border-left: 4px solid #3b82f6; text-decoration: underline;">BON DE SOINS MEDICAUX N° <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">_____________</span></h2>
+    
+    <div style="margin: 30px 0;">
+        <p><strong>Nom de l'Employé(e) :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 400px; display: inline-block;">_____________________</span></p>
+        <p><strong>Fonction :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 400px; display: inline-block;">_____________________</span></p>
+        <p><strong>Nom du patient :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 400px; display: inline-block;">_____________________</span></p>
+        <p><strong>Age :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 100px; display: inline-block;">_____</span> ans &nbsp;&nbsp; <strong>Sexe :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 50px; display: inline-block;">___</span></p>
+    </div>
+    
+    <div style="margin: 30px 0;">
+        <p><strong>Relation avec l'employé(e) :</strong></p>
+        <div style="margin-left: 30px;">
+            <p>☐ Employé(e)</p>
+            <p>☐ Epoux (se)</p>
+            <p>☐ Enfant</p>
+        </div>
+    </div>
+    
+    <div style="margin: 40px 0;">
+        <p><strong>Date : Le</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;">_____________</span></p>
+    </div>
+    
+    <div style="margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+        <div>
+            <p style="font-weight: bold;">Pour la DIRECTION</p>
+            <div style="margin-top: 80px; border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+                <p>BAGISHE BUHENDWA Osee</p>
+                <p style="font-size: 11px;">Admin/DRH</p>
+            </div>
+        </div>
+        <div style="text-align: center;">
+            <p style="font-weight: bold;">Cachet de la Société</p>
+            <div style="margin-top: 60px; width: 150px; height: 150px; border: 2px dashed #3b82f6; border-radius: 50%; margin: 20px auto;"></div>
+        </div>
+    </div>
+</div>
+{premidis_footer}
+''',
+            "is_system": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        },
+        
+        # 3. Communication d'Absences
+        {
+            "id": str(uuid.uuid4()),
+            "name": "📅 Communication d'Absences",
+            "description": "Justification/Autorisation de congé",
+            "category": "leave",
+            "thumbnail_url": None,
+            "content": f'''{premidis_header}
+<div style="padding: 30px;">
+    <h2 style="text-align: center; color: #1e3a8a; padding: 15px; background: #f1f5f9; border-left: 4px solid #3b82f6;">COMMUNICATION D'ABSENCES ()</h2>
+    
+    <div style="margin: 20px 0;">
+        <p><strong>☐ Goma ☐ Kiwanja ☐ Lubumbashi ☐ Kin ☐ Kisangani ☐ Tshopo</strong></p>
+    </div>
+    
+    <div style="margin: 30px 0;">
+        <p><strong>NOM ET PRENOM :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 400px; display: inline-block;">_____________________</span> <strong>DEPARTEMENT :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 200px; display: inline-block;">_______________</span></p>
+        <p><strong>FONCTION :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 400px; display: inline-block;">_____________________</span> <strong>INTERIM :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 100px; display: inline-block;">_______</span></p>
+    </div>
+    
+    <div style="margin: 30px 0; background: #f8fafc; padding: 20px; border-left: 4px solid #3b82f6;">
+        <p><strong>PREMIER JOUR D'ABSENCE :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">_______________</span></p>
+        <p><strong>DERNIER JOUR D'ABSENCE :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">_______________</span></p>
+        <p><strong>JOUR DE RETOUR AU TRAVAIL :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">_______________</span></p>
+        <p><strong>Nombre des jours total :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 100px; display: inline-block;">_______</span> Jours &nbsp;&nbsp; <strong>contrôle :</strong> ......Reste : OK</p>
+    </div>
+    
+    <div style="margin: 30px 0;">
+        <p style="font-weight: bold; font-size: 16px; color: #1e3a8a;">Raison d'absence :</p>
+        <div style="margin-left: 20px;">
+            <p>☐ <strong>Vacances</strong></p>
+            <p>☐ <strong>Maladie/accident</strong></p>
+            <p style="margin-top: 15px;"><strong>Raison familiale :</strong></p>
+            <div style="margin-left: 20px;">
+                <p>☐ Mariage de l'employé (2jours)</p>
+                <p>☐ Décès de l'épouse, du mari, de la mère, du père, d'un enfant (4 jours)</p>
+                <p>☐ Décès des beaux-parents, d'un frère, d'une sœur, des grands parents (2jours)</p>
+                <p>☐ Naissance d'un enfant (2jours)</p>
+                <p>☐ Mariage d'un enfant (1jour)</p>
+                <p>☐ Événement involontaire grave (convocation, incendie) (max 2jours)</p>
+            </div>
+            <p style="margin-top: 10px; font-size: 11px; font-style: italic; color: #64748b;">Ces jours de congé doivent être pris consécutivement, au moment de l'événement familial.<br>
+            L'employeur n'est tenu d'accorder que jusqu'à concurrence d'un maximum de 15 jours de congé par an pour événement familial.</p>
+            <p style="margin-top: 15px;">☐ <strong>AUTRES RAISONS - EXPLICATION NECESSAIRE.</strong></p>
+        </div>
+    </div>
+    
+    <div style="margin-top: 50px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+        <div>
+            <p><strong>DATE :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">_______________</span></p>
+            <p style="margin-top: 40px;"><strong>SIGNATURE DE L'EMPLOYE :</strong></p>
+            <div style="margin-top: 60px; border-top: 1px solid #000;"></div>
+        </div>
+        <div>
+            <p style="font-weight: bold;">POUR L'ADMINISTRATION</p>
+            <div style="margin-top: 80px; border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+                <p>OSEE BAGISHE BUHENDWA</p>
+                <p style="font-size: 11px;">Admin. Sec. And Human Resource Manager</p>
+            </div>
+        </div>
+    </div>
+</div>
+{premidis_footer}
+''',
+            "is_system": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        },
+        
+        # 4. Lettre de Demande d'Explication (TEXTE FIXE)
+        {
+            "id": str(uuid.uuid4()),
+            "name": "⚠️ Lettre de Demande d'Explication",
+            "description": "Lettre disciplinaire (seuls Nom et Date éditables)",
+            "category": "disciplinary",
+            "thumbnail_url": None,
+            "content": f'''{premidis_header}
+<div style="padding: 30px;">
+    <div style="text-align: right; margin-bottom: 20px;">
+        <p>Goma, le <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">06 Juin 2024</span></p>
+    </div>
+    
+    <p style="margin: 20px 0;"><strong>Réf : N° 063/PMD/DRG/2024</strong></p>
+    
+    <p style="margin: 20px 0;"><strong>Objet : Demande d'explication</strong></p>
+    
+    <div style="margin: 30px 0; padding: 20px; background: #fef2f2; border-left: 4px solid #ef4444;">
+        <p><strong>A Monsieur <span class="editable-field" contenteditable="true" style="border-bottom: 2px solid #ef4444; min-width: 200px; display: inline-block; background: #fff;">JOHN MIHIGO</span></strong></p>
+        <p><strong>Agent de la société PREMIDIS</strong></p>
+        <p><strong>à Goma.</strong></p>
+    </div>
+    
+    <p style="margin: 30px 0;"><strong>Monsieur,</strong></p>
+    
+    <p style="margin: 20px 0; line-height: 1.8; text-align: justify;">
+    Voudriez-vous nous fournir des explications dans les 24 heures qui suivent la signature de celle-ci ; concernant l'érection d'une clôture dans la parcelle de la Société précisément au bloc que la Société préconise vous octroyer et encore que, en procédure de cession n'est pas encore achevée ?
+    </p>
+    
+    <p style="margin: 20px 0; line-height: 1.8; text-align: justify;">
+    Etant donné que vous n'avez aucun soubassement vous liant à cette parcelle mais aussi que ce dossier vient de causer la révocation sans préavis de notre gérant de la concession, nous vous octroyons le délai ci-haut évoqué pour nous apporter éclaircissements mais aussi l'initiateur de ces actions car les noms à notre possession du potentiel auteur ne renseignent personne.
+    </p>
+    
+    <p style="margin: 40px 0;">Recevez nos salutations considérées.</p>
+    
+    <div style="margin-top: 60px;">
+        <p style="font-weight: bold;">Pour la société PREMIDIS</p>
+        <div style="margin-top: 80px; width: 200px;">
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+                <p>BAGISHE BUHENDWA Osee</p>
+                <p style="font-size: 11px;">DRH</p>
+            </div>
+        </div>
+    </div>
+</div>
+{premidis_footer}
+''',
+            "is_system": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        },
+        
+        # 5. Page Vierge Officielle PREMIDIS
+        {
+            "id": str(uuid.uuid4()),
+            "name": "📄 Page Vierge Officielle PREMIDIS",
+            "description": "Page pré-formatée avec design PREMIDIS pour rédaction libre",
+            "category": "blank",
+            "thumbnail_url": None,
+            "content": f'''{premidis_header}
+<div style="padding: 30px; min-height: 500px;">
+    <div contenteditable="true" style="min-height: 400px; padding: 20px; border: 1px dashed #cbd5e1; border-radius: 8px; background: #fafafa;">
+        <p style="color: #94a3b8; font-style: italic;">Cliquez ici pour commencer à rédiger votre document...</p>
+    </div>
+</div>
+{premidis_footer}
+''',
+            "is_system": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        }
+    ]
+    
+    await db.document_forms.insert_many(system_forms)
+    return {"message": "Templates PREMIDIS créés avec succès", "count": len(system_forms)}
+
 @documents_module_router.post("/forms/init-system-forms")
 async def init_system_forms(current_user: dict = Depends(require_roles(["admin"]))):
     """Initialize system forms (run once)"""

@@ -445,14 +445,15 @@ const DocumentsModule = () => {
                 ref={contentEditableRef}
                 contentEditable
                 suppressContentEditableWarning
-                dangerouslySetInnerHTML={{ __html: editorContent }}
                 className="focus:outline-none p-8 min-h-[800px]"
                 style={{
                   whiteSpace: 'normal',
                   wordWrap: 'break-word',
                 }}
-                onBlur={(e) => setEditorContent(e.currentTarget.innerHTML)}
-              />
+                onInput={(e) => setEditorContent(e.currentTarget.innerHTML)}
+              >
+                {/* React will render the HTML here on mount */}
+              </div>
             </div>
           </div>
         </div>

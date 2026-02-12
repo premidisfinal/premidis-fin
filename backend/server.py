@@ -3121,6 +3121,151 @@ async def delete_existing_document(
     await db.documents.delete_one({"id": document_id})
     return {"message": "Document supprimé"}
 
+@documents_module_router.post("/forms/init-system-forms")
+async def init_system_forms(current_user: dict = Depends(require_roles(["admin"]))):
+    """Initialize system forms (run once)"""
+    existing = await db.document_forms.count_documents({"is_system": True})
+    if existing > 0:
+        return {"message": "Formes système déjà initialisées", "count": existing}
+    
+    system_forms = [
+        {
+            "id": str(uuid.uuid4()),
+            "name": "📄 Papier Vierge",
+            "description": "Document vierge pour commencer",
+            "category": "blank",
+            "thumbnail_url": None,
+            "content": "<p><br></p>",
+            "is_system": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name": "📄 Demande de Congé",
+            "description": "Modèle pour demandes de congé",
+            "category": "leave",
+            "thumbnail_url": None,
+            "content": """
+<h1>Demande de Congé</h1>
+<p><br></p>
+<p><strong>Nom:</strong> _____________</p>
+<p><strong>Département:</strong> _____________</p>
+<p><strong>Date de début:</strong> _____________</p>
+<p><strong>Date de fin:</strong> _____________</p>
+<p><strong>Type de congé:</strong> _____________</p>
+<p><strong>Motif:</strong></p>
+<p>_____________________________________________</p>
+<p><br></p>
+<p>Date: _____________ &nbsp;&nbsp;&nbsp; Signature: _____________</p>
+            """,
+            "is_system": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name": "📄 Lettre Officielle",
+            "description": "Modèle de lettre formelle",
+            "category": "letter",
+            "thumbnail_url": None,
+            "content": """
+<p style="text-align: right;">Le _____________ </p>
+<p><br></p>
+<p><strong>Destinataire</strong></p>
+<p>_____________</p>
+<p>_____________</p>
+<p><br></p>
+<p><strong>Objet:</strong> _____________</p>
+<p><br></p>
+<p>Madame, Monsieur,</p>
+<p><br></p>
+<p>_____________________________________________</p>
+<p>_____________________________________________</p>
+<p><br></p>
+<p>Cordialement,</p>
+<p><br></p>
+<p>_____________</p>
+            """,
+            "is_system": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name": "📄 Rapport Mensuel",
+            "description": "Template pour rapports mensuels",
+            "category": "report",
+            "thumbnail_url": None,
+            "content": """
+<h1 style="text-align: center;">RAPPORT MENSUEL</h1>
+<p style="text-align: center;">Mois: _____________ Année: _____________</p>
+<p><br></p>
+<h2>1. Résumé Exécutif</h2>
+<p>_____________________________________________</p>
+<p><br></p>
+<h2>2. Activités Réalisées</h2>
+<p>_____________________________________________</p>
+<p><br></p>
+<h2>3. Résultats</h2>
+<p>_____________________________________________</p>
+<p><br></p>
+<h2>4. Défis Rencontrés</h2>
+<p>_____________________________________________</p>
+<p><br></p>
+<h2>5. Plan d'Action</h2>
+<p>_____________________________________________</p>
+            """,
+            "is_system": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name": "📄 Facture",
+            "description": "Modèle de facture",
+            "category": "invoice",
+            "thumbnail_url": None,
+            "content": """
+<h1>FACTURE</h1>
+<p><br></p>
+<table style="width: 100%;">
+  <tr>
+    <td><strong>De:</strong><br>Entreprise<br>Adresse<br>Contact</td>
+    <td style="text-align: right;"><strong>Facture N°:</strong> _______<br><strong>Date:</strong> _______</td>
+  </tr>
+</table>
+<p><br></p>
+<p><strong>À:</strong></p>
+<p>Client</p>
+<p>Adresse</p>
+<p><br></p>
+<table style="width: 100%; border-collapse: collapse;">
+  <tr style="background-color: #f0f0f0;">
+    <th style="border: 1px solid #ddd; padding: 8px;">Description</th>
+    <th style="border: 1px solid #ddd; padding: 8px;">Quantité</th>
+    <th style="border: 1px solid #ddd; padding: 8px;">Prix Unitaire</th>
+    <th style="border: 1px solid #ddd; padding: 8px;">Total</th>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ddd; padding: 8px;">_______</td>
+    <td style="border: 1px solid #ddd; padding: 8px;">_______</td>
+    <td style="border: 1px solid #ddd; padding: 8px;">_______</td>
+    <td style="border: 1px solid #ddd; padding: 8px;">_______</td>
+  </tr>
+</table>
+<p><br></p>
+<p style="text-align: right;"><strong>TOTAL: _______</strong></p>
+            """,
+            "is_system": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        }
+    ]
+    
+    await db.document_forms.insert_many(system_forms)
+    return {"message": "Formes système créées avec succès", "count": len(system_forms)}
+
 api_router.include_router(documents_module_router)
 
 app.include_router(api_router)

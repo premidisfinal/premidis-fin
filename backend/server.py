@@ -2976,6 +2976,153 @@ api_router.include_router(sites_router)
 api_router.include_router(departments_router)
 api_router.include_router(documents_router)
 
+# ==================== DOCUMENTS MODULE (WORD-LIKE) ROUTES ====================
+documents_module_router = APIRouter(prefix="/documents", tags=["Documents Module"])
+
+# ========== FORMS (Templates) ==========
+@documents_module_router.get("/forms")
+async def list_forms(current_user: dict = Depends(get_current_user)):
+    """Get all document forms/templates"""
+    forms = await db.document_forms.find({}, {"_id": 0}).to_list(100)
+    return {"forms": forms}
+
+@documents_module_router.post("/forms", status_code=status.HTTP_201_CREATED)
+async def create_form(
+    form: DocumentForm,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Create a new document form/template"""
+    form_doc = {
+        "id": str(uuid.uuid4()),
+        **form.model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    
+    await db.document_forms.insert_one(form_doc)
+    form_doc.pop("_id", None)
+    return form_doc
+
+@documents_module_router.get("/forms/{form_id}")
+async def get_form(
+    form_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific form"""
+    form = await db.document_forms.find_one({"id": form_id}, {"_id": 0})
+    if not form:
+        raise HTTPException(status_code=404, detail="Forme non trouvée")
+    return form
+
+@documents_module_router.delete("/forms/{form_id}")
+async def delete_form(
+    form_id: str,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """Delete a form"""
+    await db.document_forms.delete_one({"id": form_id})
+    return {"message": "Forme supprimée"}
+
+# ========== DOCUMENTS ==========
+@documents_module_router.get("")
+async def list_all_documents(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all documents (historique)"""
+    query = {}
+    
+    # Non-admin users see only their own documents
+    if current_user["role"] not in ["super_admin", "admin"]:
+        query["author_id"] = current_user["id"]
+    
+    documents = await db.documents.find(query, {"_id": 0}).sort("updated_at", -1).to_list(100)
+    return {"documents": documents}
+
+@documents_module_router.post("", status_code=status.HTTP_201_CREATED)
+async def create_new_document(
+    doc: DocumentCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new document"""
+    document_doc = {
+        "id": str(uuid.uuid4()),
+        "form_id": doc.form_id,
+        "title": doc.title,
+        "content": doc.content,
+        "author_id": current_user["id"],
+        "author_name": f"{current_user['first_name']} {current_user['last_name']}",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.documents.insert_one(document_doc)
+    document_doc.pop("_id", None)
+    return document_doc
+
+@documents_module_router.get("/{document_id}")
+async def get_single_document(
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific document"""
+    document = await db.documents.find_one({"id": document_id}, {"_id": 0})
+    if not document:
+        raise HTTPException(status_code=404, detail="Document non trouvé")
+    
+    # Check permissions
+    if current_user["role"] not in ["super_admin", "admin"]:
+        if document["author_id"] != current_user["id"]:
+            raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    return document
+
+@documents_module_router.put("/{document_id}")
+async def update_existing_document(
+    document_id: str,
+    update: DocumentUpdateContent,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update document content"""
+    document = await db.documents.find_one({"id": document_id})
+    if not document:
+        raise HTTPException(status_code=404, detail="Document non trouvé")
+    
+    # Check permissions
+    if current_user["role"] not in ["super_admin", "admin"]:
+        if document["author_id"] != current_user["id"]:
+            raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    update_data = {}
+    if update.title:
+        update_data["title"] = update.title
+    if update.content is not None:
+        update_data["content"] = update.content
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.documents.update_one({"id": document_id}, {"$set": update_data})
+    return {"message": "Document mis à jour"}
+
+@documents_module_router.delete("/{document_id}")
+async def delete_existing_document(
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a document"""
+    document = await db.documents.find_one({"id": document_id})
+    if not document:
+        raise HTTPException(status_code=404, detail="Document non trouvé")
+    
+    # Check permissions
+    if current_user["role"] not in ["super_admin", "admin"]:
+        if document["author_id"] != current_user["id"]:
+            raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    await db.documents.delete_one({"id": document_id})
+    return {"message": "Document supprimé"}
+
+api_router.include_router(documents_module_router)
+
 app.include_router(api_router)
 
 # Mount uploads folder - use /api/uploads for Kubernetes ingress routing

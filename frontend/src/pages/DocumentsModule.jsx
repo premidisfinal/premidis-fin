@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from '../config/api';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -18,7 +28,17 @@ import {
   Trash2,
   Upload,
   Plus,
-  Home
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  List,
+  ListOrdered,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Table as TableIcon
 } from 'lucide-react';
 import {
   Dialog,
@@ -37,10 +57,38 @@ const DocumentsModule = () => {
   const [documents, setDocuments] = useState([]);
   const [selectedForm, setSelectedForm] = useState(null);
   const [currentDocument, setCurrentDocument] = useState(null);
-  const [editorContent, setEditorContent] = useState('');
   const [documentTitle, setDocumentTitle] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+
+  // TipTap Editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      TextStyle,
+      Color,
+      Image,
+      Link.configure({
+        openOnClick: false,
+      }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ],
+    content: '',
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[500px] p-4',
+      },
+    },
+  });
 
   useEffect(() => {
     fetchForms();
@@ -77,7 +125,9 @@ const DocumentsModule = () => {
 
   const handleUseForm = (form) => {
     setSelectedForm(form);
-    setEditorContent(form.content);
+    if (editor) {
+      editor.commands.setContent(form.content);
+    }
     setDocumentTitle(`Nouveau ${form.name}`);
     setCurrentDocument(null);
     setView('editor');
@@ -85,7 +135,9 @@ const DocumentsModule = () => {
 
   const handleEditDocument = async (doc) => {
     setCurrentDocument(doc);
-    setEditorContent(doc.content);
+    if (editor) {
+      editor.commands.setContent(doc.content);
+    }
     setDocumentTitle(doc.title);
     setSelectedForm(null);
     setView('editor');
@@ -97,12 +149,19 @@ const DocumentsModule = () => {
       return;
     }
 
+    if (!editor) {
+      toast.error('Éditeur non initialisé');
+      return;
+    }
+
+    const content = editor.getHTML();
+
     try {
       if (currentDocument) {
         // Update existing
         await axios.put(`/api/documents/${currentDocument.id}`, {
           title: documentTitle,
-          content: editorContent
+          content: content
         });
         toast.success('Document mis à jour');
       } else {
@@ -110,7 +169,7 @@ const DocumentsModule = () => {
         await axios.post('/api/documents', {
           form_id: selectedForm?.id,
           title: documentTitle,
-          content: editorContent
+          content: content
         });
         toast.success('Document enregistré');
       }
@@ -123,22 +182,32 @@ const DocumentsModule = () => {
   };
 
   const handlePrint = () => {
+    if (!editor) return;
+    
     const printWindow = window.open('', '', 'width=800,height=600');
     printWindow.document.write(`
       <html>
         <head>
           <title>${documentTitle}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 40px; }
+            body { 
+              font-family: Arial, sans-serif; 
+              padding: 40px;
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            h1, h2, h3 { margin-top: 1em; margin-bottom: 0.5em; }
+            p { margin: 0.5em 0; }
+            table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
             @media print {
               body { padding: 20px; }
             }
           </style>
         </head>
         <body>
-          <h1>${documentTitle}</h1>
-          <hr>
-          ${editorContent}
+          ${editor.getHTML()}
         </body>
       </html>
     `);
@@ -194,39 +263,139 @@ const DocumentsModule = () => {
 
   const handlePreview = (doc) => {
     setCurrentDocument(doc);
-    setEditorContent(doc.content);
+    if (editor) {
+      editor.commands.setContent(doc.content);
+    }
     setDocumentTitle(doc.title);
     setView('preview');
   };
 
-  // Quill toolbar configuration
-  const quillModules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      [{ 'font': [] }],
-      [{ 'size': ['small', false, 'large', 'huge'] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'script': 'sub'}, { 'script': 'super' }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      [{ 'align': [] }],
-      ['blockquote', 'code-block'],
-      ['link', 'image'],
-      ['clean']
-    ]
-  };
+  // Toolbar Component
+  const MenuBar = () => {
+    if (!editor) {
+      return null;
+    }
 
-  const quillFormats = [
-    'header', 'font', 'size',
-    'bold', 'italic', 'underline', 'strike',
-    'color', 'background',
-    'script',
-    'list', 'bullet', 'indent',
-    'align',
-    'blockquote', 'code-block',
-    'link', 'image'
-  ];
+    return (
+      <div className="border-b bg-white sticky top-16 z-40 p-2 flex flex-wrap gap-1">
+        {/* Text Formatting */}
+        <Button
+          variant={editor.isActive('bold') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+        >
+          <Bold className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={editor.isActive('italic') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+        >
+          <Italic className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={editor.isActive('underline') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+        >
+          <UnderlineIcon className="h-4 w-4" />
+        </Button>
+
+        <div className="w-px h-8 bg-gray-300 mx-2" />
+
+        {/* Headings */}
+        <Button
+          variant={editor.isActive('heading', { level: 1 }) ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        >
+          H1
+        </Button>
+        <Button
+          variant={editor.isActive('heading', { level: 2 }) ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        >
+          H2
+        </Button>
+        <Button
+          variant={editor.isActive('heading', { level: 3 }) ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        >
+          H3
+        </Button>
+
+        <div className="w-px h-8 bg-gray-300 mx-2" />
+
+        {/* Alignment */}
+        <Button
+          variant={editor.isActive({ textAlign: 'left' }) ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+        >
+          <AlignLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={editor.isActive({ textAlign: 'center' }) ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+        >
+          <AlignCenter className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={editor.isActive({ textAlign: 'right' }) ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+        >
+          <AlignRight className="h-4 w-4" />
+        </Button>
+
+        <div className="w-px h-8 bg-gray-300 mx-2" />
+
+        {/* Lists */}
+        <Button
+          variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+        >
+          <List className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        >
+          <ListOrdered className="h-4 w-4" />
+        </Button>
+
+        <div className="w-px h-8 bg-gray-300 mx-2" />
+
+        {/* Table */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        >
+          <TableIcon className="h-4 w-4" />
+        </Button>
+
+        {/* Image */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            const url = window.prompt('URL de l\'image:');
+            if (url) {
+              editor.chain().focus().setImage({ src: url }).run();
+            }
+          }}
+        >
+          <ImageIcon className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -460,18 +629,13 @@ const DocumentsModule = () => {
             </div>
           </div>
 
-          {/* Quill Editor */}
+          {/* TipTap Menu Bar */}
+          <MenuBar />
+
+          {/* TipTap Editor */}
           <div className="max-w-5xl mx-auto py-8 px-4">
-            <div className="bg-white shadow-2xl min-h-[800px] p-12 rounded-lg">
-              <ReactQuill
-                theme="snow"
-                value={editorContent}
-                onChange={setEditorContent}
-                modules={quillModules}
-                formats={quillFormats}
-                className="min-h-[700px]"
-                placeholder="Commencez à écrire votre document..."
-              />
+            <div className="bg-white shadow-2xl min-h-[800px] p-12 rounded-lg border">
+              <EditorContent editor={editor} />
             </div>
           </div>
         </div>
@@ -506,10 +670,7 @@ const DocumentsModule = () => {
           {/* Preview Content */}
           <div className="max-w-5xl mx-auto py-8 px-4">
             <div className="bg-white shadow-2xl min-h-[800px] p-12 rounded-lg">
-              <div
-                className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: editorContent }}
-              />
+              <EditorContent editor={editor} className="pointer-events-none" />
             </div>
           </div>
         </div>

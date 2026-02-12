@@ -3328,6 +3328,7 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
     </div>
 </div>
 {premidis_footer}
+</div>
 ''',
             "is_system": True,
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -3391,6 +3392,7 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
     </div>
 </div>
 {premidis_footer}
+</div>
 ''',
             "is_system": True,
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -3516,6 +3518,7 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
     </div>
 </div>
 {premidis_footer}
+</div>
 ''',
             "is_system": True,
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -3570,6 +3573,7 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
     </div>
 </div>
 {premidis_footer}
+</div>
 ''',
             "is_system": True,
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -3592,6 +3596,7 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
     </div>
 </div>
 {premidis_footer}
+</div>
 ''',
             "is_system": True,
             "created_at": datetime.now(timezone.utc).isoformat(),

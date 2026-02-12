@@ -3124,6 +3124,93 @@ async def delete_existing_document(
     await db.documents.delete_one({"id": document_id})
     return {"message": "Document supprimé"}
 
+@documents_module_router.post("/forms/upload")
+async def upload_form_document(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a .docx document and convert it to editable HTML form"""
+    
+    # Check file extension
+    if not file.filename.endswith('.docx'):
+        raise HTTPException(
+            status_code=400,
+            detail="Seuls les fichiers .docx sont supportés pour le moment"
+        )
+    
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Convert .docx to HTML using mammoth
+        result = mammoth.convert_to_html(io.BytesIO(content))
+        html_content = result.value
+        
+        # Post-process: Mark editable fields automatically
+        html_with_fields = auto_detect_editable_fields(html_content)
+        
+        # Create form in database
+        form_doc = {
+            "id": str(uuid.uuid4()),
+            "name": file.filename.replace('.docx', ''),
+            "description": f"Importé depuis {file.filename}",
+            "category": "other",
+            "thumbnail_url": None,
+            "content": html_with_fields,
+            "is_system": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user["id"]
+        }
+        
+        await db.document_forms.insert_one(form_doc)
+        form_doc.pop("_id", None)
+        
+        return {
+            "message": "Document converti avec succès",
+            "form": form_doc,
+            "warnings": result.messages  # Any conversion warnings
+        }
+    
+    except Exception as e:
+        logging.error(f"Error converting document: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de la conversion: {str(e)}"
+        )
+
+def auto_detect_editable_fields(html: str) -> str:
+    """
+    Automatically detect and mark editable fields in HTML
+    Detects:
+    - Underscores (_____)
+    - Empty table cells
+    - Text that looks like placeholders [____] or {____}
+    """
+    
+    # Pattern 1: Replace multiple underscores with editable spans
+    # Example: _____ -> <span contenteditable class="editable-field">_____</span>
+    html = re.sub(
+        r'_{3,}',
+        r'<span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 100px; display: inline-block;">\g<0></span>',
+        html
+    )
+    
+    # Pattern 2: Detect placeholder patterns like [____] or {____}
+    html = re.sub(
+        r'\[([_\s]{3,})\]',
+        r'<span class="editable-field" contenteditable="true" style="border: 1px solid #999; padding: 2px 8px; min-width: 80px; display: inline-block;">[\1]</span>',
+        html
+    )
+    
+    # Pattern 3: Make empty table cells editable
+    html = re.sub(
+        r'<td([^>]*)>\s*</td>',
+        r'<td\1 contenteditable="true" class="editable-cell" style="min-height: 30px;"></td>',
+        html
+    )
+    
+    return html
+
 @documents_module_router.post("/forms/init-system-forms")
 async def init_system_forms(current_user: dict = Depends(require_roles(["admin"]))):
     """Initialize system forms (run once)"""

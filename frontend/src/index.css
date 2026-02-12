@@ -4,33 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* TipTap Editor - Preserve ALL styles */
-.ProseMirror {
-  outline: none;
-  min-height: 500px;
-  padding: 1rem;
+/* Document Editor - Preserve 100% of original HTML styles */
+.document-editor {
+  all: initial;
+  display: block;
 }
 
-/* Don't override any styles from templates */
-.ProseMirror * {
+.document-editor * {
   all: revert;
 }
 
-.ProseMirror div,
-.ProseMirror p,
-.ProseMirror h1,
-.ProseMirror h2,
-.ProseMirror h3,
-.ProseMirror table,
-.ProseMirror td,
-.ProseMirror th,
-.ProseMirror input {
-  all: revert;
-}
-
-/* Preserve inline styles */
-.ProseMirror [style] {
-  all: revert;
+/* Pure white page like Word */
+.document-page {
+  background: white;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 @layer base {

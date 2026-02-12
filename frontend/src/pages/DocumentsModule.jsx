@@ -112,18 +112,16 @@ const DocumentsModule = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  // TipTap Editor with HTML preservation
+  // TipTap Editor with FULL HTML preservation
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        // Disable default HTML cleaning
-        heading: {
-          levels: [1, 2, 3, 4, 5, 6],
-        },
+        document: false, // Disable to use custom
       }),
+      PreserveHTML,
       Underline,
       TextAlign.configure({
-        types: ['heading', 'paragraph'],
+        types: ['heading', 'paragraph', 'div'],
       }),
       TextStyle,
       Color.configure({
@@ -132,15 +130,9 @@ const DocumentsModule = () => {
       Image,
       Link.configure({
         openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-blue-600 underline',
-        },
       }),
       Table.configure({
         resizable: true,
-        HTMLAttributes: {
-          class: 'border-collapse',
-        },
       }),
       TableRow,
       TableHeader,
@@ -149,18 +141,13 @@ const DocumentsModule = () => {
     content: '',
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[500px] p-4',
-        style: 'white-space: normal;',
-      },
-      // Preserve ALL HTML attributes and styles
-      transformPastedHTML(html) {
-        return html; // Don't clean HTML
+        class: 'focus:outline-none min-h-[500px] p-4',
+        style: 'white-space: normal; overflow: visible;',
       },
     },
-    // Don't sanitize content
-    parseOptions: {
-      preserveWhitespace: 'full',
-    },
+    // Essential: Don't clean pasted HTML
+    editable: true,
+    injectCSS: false, // Don't inject TipTap's CSS that might override styles
   });
 
   useEffect(() => {

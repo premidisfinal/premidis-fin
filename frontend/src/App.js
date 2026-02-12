@@ -20,7 +20,7 @@ import EmployeeProfile from './pages/EmployeeProfile';
 import PermissionsManagement from './pages/PermissionsManagement';
 import SitesManagement from './pages/SitesManagement';
 import DepartmentsManagement from './pages/DepartmentsManagement';
-import DocumentsModule from './pages/DocumentsModule';
+import DocumentsModule from './pages/DocumentsModuleV2';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {

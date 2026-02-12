@@ -483,7 +483,7 @@ async def forgot_password(request: ForgotPasswordRequest):
     # Re-read env vars to ensure they're loaded after restart
     resend_api_key = os.environ.get('RESEND_API_KEY', '')
     sender_email = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://smartdoc-35.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://word-like-docs.preview.emergentagent.com')
     
     user = await db.users.find_one({"email": request.email}, {"_id": 0})
     

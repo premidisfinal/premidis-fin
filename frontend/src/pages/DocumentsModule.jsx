@@ -1,20 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from '../config/api';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { Underline } from '@tiptap/extension-underline';
-import { TextAlign } from '@tiptap/extension-text-align';
-import { TextStyle } from '@tiptap/extension-text-style';
-import { Color } from '@tiptap/extension-color';
-import { Image } from '@tiptap/extension-image';
-import { Link } from '@tiptap/extension-link';
-import { Table } from '@tiptap/extension-table';
-import { TableRow } from '@tiptap/extension-table-row';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TableHeader } from '@tiptap/extension-table-header';
-import { Node } from '@tiptap/core';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -29,17 +16,7 @@ import {
   Trash2,
   Upload,
   Plus,
-  Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  List,
-  ListOrdered,
-  Image as ImageIcon,
-  Link as LinkIcon,
-  Table as TableIcon
+  Code
 } from 'lucide-react';
 import {
   Dialog,
@@ -50,56 +27,6 @@ import {
   DialogFooter
 } from '../components/ui/dialog';
 
-// Custom extension to preserve ALL HTML with inline styles
-const PreserveHTML = Node.create({
-  name: 'preserveHTML',
-  
-  group: 'block',
-  
-  content: 'inline*',
-  
-  parseHTML() {
-    return [
-      {
-        tag: 'div',
-        getAttrs: (node) => {
-          // Preserve all attributes
-          return {};
-        },
-      },
-    ];
-  },
-  
-  renderHTML({ HTMLAttributes }) {
-    return ['div', HTMLAttributes, 0];
-  },
-  
-  addAttributes() {
-    return {
-      style: {
-        default: null,
-        parseHTML: element => element.getAttribute('style'),
-        renderHTML: attributes => {
-          if (!attributes.style) {
-            return {};
-          }
-          return { style: attributes.style };
-        },
-      },
-      class: {
-        default: null,
-        parseHTML: element => element.getAttribute('class'),
-        renderHTML: attributes => {
-          if (!attributes.class) {
-            return {};
-          }
-          return { class: attributes.class };
-        },
-      },
-    };
-  },
-});
-
 const DocumentsModule = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -109,46 +36,10 @@ const DocumentsModule = () => {
   const [selectedForm, setSelectedForm] = useState(null);
   const [currentDocument, setCurrentDocument] = useState(null);
   const [documentTitle, setDocumentTitle] = useState('');
+  const [editorContent, setEditorContent] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
-
-  // TipTap Editor with FULL HTML preservation
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        document: false, // Disable to use custom
-      }),
-      PreserveHTML,
-      Underline,
-      TextAlign.configure({
-        types: ['heading', 'paragraph', 'div'],
-      }),
-      TextStyle,
-      Color.configure({
-        types: ['textStyle'],
-      }),
-      Image,
-      Link.configure({
-        openOnClick: false,
-      }),
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-    ],
-    content: '',
-    editorProps: {
-      attributes: {
-        class: 'focus:outline-none min-h-[500px] p-4',
-        style: 'white-space: normal; overflow: visible;',
-      },
-    },
-    // Essential: Don't clean pasted HTML
-    editable: true,
-    injectCSS: false, // Don't inject TipTap's CSS that might override styles
-  });
+  const contentEditableRef = useRef(null);
 
   useEffect(() => {
     fetchForms();
@@ -185,9 +76,7 @@ const DocumentsModule = () => {
 
   const handleUseForm = (form) => {
     setSelectedForm(form);
-    if (editor) {
-      editor.commands.setContent(form.content);
-    }
+    setEditorContent(form.content);
     setDocumentTitle(`Nouveau ${form.name}`);
     setCurrentDocument(null);
     setView('editor');
@@ -195,9 +84,7 @@ const DocumentsModule = () => {
 
   const handleEditDocument = async (doc) => {
     setCurrentDocument(doc);
-    if (editor) {
-      editor.commands.setContent(doc.content);
-    }
+    setEditorContent(doc.content);
     setDocumentTitle(doc.title);
     setSelectedForm(null);
     setView('editor');
@@ -209,12 +96,8 @@ const DocumentsModule = () => {
       return;
     }
 
-    if (!editor) {
-      toast.error('Éditeur non initialisé');
-      return;
-    }
-
-    const content = editor.getHTML();
+    // Get content from contentEditable div
+    const content = contentEditableRef.current ? contentEditableRef.current.innerHTML : editorContent;
 
     try {
       if (currentDocument) {
@@ -242,7 +125,7 @@ const DocumentsModule = () => {
   };
 
   const handlePrint = () => {
-    if (!editor) return;
+    const content = contentEditableRef.current ? contentEditableRef.current.innerHTML : editorContent;
     
     const printWindow = window.open('', '', 'width=800,height=600');
     printWindow.document.write(`
@@ -252,22 +135,17 @@ const DocumentsModule = () => {
           <style>
             body { 
               font-family: Arial, sans-serif; 
-              padding: 40px;
-              max-width: 800px;
-              margin: 0 auto;
+              margin: 0;
+              padding: 0;
             }
-            h1, h2, h3 { margin-top: 1em; margin-bottom: 0.5em; }
-            p { margin: 0.5em 0; }
-            table { width: 100%; border-collapse: collapse; margin: 1em 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
             @media print {
-              body { padding: 20px; }
+              body { margin: 0; }
+              @page { margin: 0; }
             }
           </style>
         </head>
         <body>
-          ${editor.getHTML()}
+          ${content}
         </body>
       </html>
     `);
@@ -323,138 +201,9 @@ const DocumentsModule = () => {
 
   const handlePreview = (doc) => {
     setCurrentDocument(doc);
-    if (editor) {
-      editor.commands.setContent(doc.content);
-    }
+    setEditorContent(doc.content);
     setDocumentTitle(doc.title);
     setView('preview');
-  };
-
-  // Toolbar Component
-  const MenuBar = () => {
-    if (!editor) {
-      return null;
-    }
-
-    return (
-      <div className="border-b bg-white sticky top-16 z-40 p-2 flex flex-wrap gap-1">
-        {/* Text Formatting */}
-        <Button
-          variant={editor.isActive('bold') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        >
-          <Bold className="h-4 w-4" />
-        </Button>
-        <Button
-          variant={editor.isActive('italic') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        >
-          <Italic className="h-4 w-4" />
-        </Button>
-        <Button
-          variant={editor.isActive('underline') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-        >
-          <UnderlineIcon className="h-4 w-4" />
-        </Button>
-
-        <div className="w-px h-8 bg-gray-300 mx-2" />
-
-        {/* Headings */}
-        <Button
-          variant={editor.isActive('heading', { level: 1 }) ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        >
-          H1
-        </Button>
-        <Button
-          variant={editor.isActive('heading', { level: 2 }) ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        >
-          H2
-        </Button>
-        <Button
-          variant={editor.isActive('heading', { level: 3 }) ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        >
-          H3
-        </Button>
-
-        <div className="w-px h-8 bg-gray-300 mx-2" />
-
-        {/* Alignment */}
-        <Button
-          variant={editor.isActive({ textAlign: 'left' }) ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        >
-          <AlignLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant={editor.isActive({ textAlign: 'center' }) ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        >
-          <AlignCenter className="h-4 w-4" />
-        </Button>
-        <Button
-          variant={editor.isActive({ textAlign: 'right' }) ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        >
-          <AlignRight className="h-4 w-4" />
-        </Button>
-
-        <div className="w-px h-8 bg-gray-300 mx-2" />
-
-        {/* Lists */}
-        <Button
-          variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-        >
-          <List className="h-4 w-4" />
-        </Button>
-        <Button
-          variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
-
-        <div className="w-px h-8 bg-gray-300 mx-2" />
-
-        {/* Table */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-        >
-          <TableIcon className="h-4 w-4" />
-        </Button>
-
-        {/* Image */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            const url = window.prompt('URL de l\'image:');
-            if (url) {
-              editor.chain().focus().setImage({ src: url }).run();
-            }
-          }}
-        >
-          <ImageIcon className="h-4 w-4" />
-        </Button>
-      </div>
-    );
   };
 
   return (
@@ -652,7 +401,7 @@ const DocumentsModule = () => {
         </div>
       )}
 
-      {/* EDITOR VIEW */}
+      {/* EDITOR VIEW - ContentEditable with FULL HTML preservation */}
       {view === 'editor' && (
         <div className="min-h-screen bg-white">
           {/* Top Bar */}
@@ -689,13 +438,21 @@ const DocumentsModule = () => {
             </div>
           </div>
 
-          {/* TipTap Menu Bar */}
-          <MenuBar />
-
-          {/* TipTap Editor */}
+          {/* ContentEditable Editor - Preserves ALL HTML */}
           <div className="max-w-5xl mx-auto py-8 px-4">
-            <div className="bg-white shadow-2xl min-h-[800px] p-12 rounded-lg border">
-              <EditorContent editor={editor} />
+            <div className="bg-white shadow-2xl min-h-[800px] rounded-lg border">
+              <div
+                ref={contentEditableRef}
+                contentEditable
+                suppressContentEditableWarning
+                dangerouslySetInnerHTML={{ __html: editorContent }}
+                className="focus:outline-none p-8 min-h-[800px]"
+                style={{
+                  whiteSpace: 'normal',
+                  wordWrap: 'break-word',
+                }}
+                onBlur={(e) => setEditorContent(e.currentTarget.innerHTML)}
+              />
             </div>
           </div>
         </div>
@@ -730,7 +487,13 @@ const DocumentsModule = () => {
           {/* Preview Content */}
           <div className="max-w-5xl mx-auto py-8 px-4">
             <div className="bg-white shadow-2xl min-h-[800px] p-12 rounded-lg">
-              <EditorContent editor={editor} className="pointer-events-none" />
+              <div
+                dangerouslySetInnerHTML={{ __html: editorContent }}
+                style={{
+                  whiteSpace: 'normal',
+                  wordWrap: 'break-word',
+                }}
+              />
             </div>
           </div>
         </div>

@@ -250,6 +250,24 @@ class DocumentUpload(BaseModel):
     type: str  # 'certificate', 'pdf', 'image'
     url: str
 
+# ==================== DOCUMENTS MODULE (WORD-LIKE) MODELS ====================
+class DocumentForm(BaseModel):
+    name: str
+    description: Optional[str] = None
+    category: str  # 'blank', 'leave', 'letter', 'report', 'invoice', 'contract', 'other'
+    thumbnail_url: Optional[str] = None
+    content: str  # HTML content
+    is_system: bool = False  # System form or user-uploaded
+
+class DocumentCreate(BaseModel):
+    form_id: Optional[str] = None  # Reference to form template
+    title: str
+    content: str  # HTML content from editor
+
+class DocumentUpdateContent(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+
 # ==================== AUTH HELPERS ====================
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)

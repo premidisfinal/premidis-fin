@@ -20,7 +20,7 @@ import EmployeeProfile from './pages/EmployeeProfile';
 import PermissionsManagement from './pages/PermissionsManagement';
 import SitesManagement from './pages/SitesManagement';
 import DepartmentsManagement from './pages/DepartmentsManagement';
-import DocumentsRH from './pages/DocumentsRHImproved';
+import DocumentsModule from './pages/DocumentsModule';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -85,7 +85,7 @@ function AppRoutes() {
       <Route path="/time-management" element={<ProtectedRoute><TimeManagement /></ProtectedRoute>} />
       <Route path="/behavior" element={<ProtectedRoute><Behavior /></ProtectedRoute>} />
       <Route path="/permissions" element={<ProtectedRoute><PermissionsManagement /></ProtectedRoute>} />
-      <Route path="/documents-rh" element={<ProtectedRoute><DocumentsRH /></ProtectedRoute>} />
+      <Route path="/documents" element={<ProtectedRoute><DocumentsModule /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       
       {/* Admin Only Routes */}

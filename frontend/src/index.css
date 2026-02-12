@@ -4,71 +4,33 @@
 @tailwind components;
 @tailwind utilities;
 
-/* TipTap Editor Styles */
+/* TipTap Editor - Preserve ALL styles */
 .ProseMirror {
   outline: none;
   min-height: 500px;
   padding: 1rem;
 }
 
-.ProseMirror p {
-  margin: 0.5em 0;
+/* Don't override any styles from templates */
+.ProseMirror * {
+  all: revert;
 }
 
-.ProseMirror h1 {
-  font-size: 2em;
-  font-weight: bold;
-  margin: 0.67em 0;
-}
-
-.ProseMirror h2 {
-  font-size: 1.5em;
-  font-weight: bold;
-  margin: 0.75em 0;
-}
-
-.ProseMirror h3 {
-  font-size: 1.17em;
-  font-weight: bold;
-  margin: 0.83em 0;
-}
-
-.ProseMirror table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1em 0;
-}
-
+.ProseMirror div,
+.ProseMirror p,
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror table,
+.ProseMirror td,
 .ProseMirror th,
-.ProseMirror td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
+.ProseMirror input {
+  all: revert;
 }
 
-.ProseMirror th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-}
-
-.ProseMirror ul,
-.ProseMirror ol {
-  padding-left: 2em;
-  margin: 0.5em 0;
-}
-
-.ProseMirror li {
-  margin: 0.25em 0;
-}
-
-.ProseMirror img {
-  max-width: 100%;
-  height: auto;
-}
-
-.ProseMirror a {
-  color: #3b82f6;
-  text-decoration: underline;
+/* Preserve inline styles */
+.ProseMirror [style] {
+  all: revert;
 }
 
 @layer base {

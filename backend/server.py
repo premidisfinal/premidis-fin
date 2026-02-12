@@ -3274,7 +3274,9 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
             "description": "Formulaire de demande de crédit employé",
             "category": "loan",
             "thumbnail_url": None,
-            "content": f'''{premidis_header}
+            "content": f'''{checkbox_style}
+<div class="page-border">
+{premidis_header}
 <div style="padding: 30px;">
     <div style="text-align: right; margin-bottom: 20px;">
         <p><strong>Date:</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">_____________</span></p>
@@ -3527,7 +3529,9 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
             "description": "Lettre disciplinaire (seuls Nom et Date éditables)",
             "category": "disciplinary",
             "thumbnail_url": None,
-            "content": f'''{premidis_header}
+            "content": f'''{checkbox_style}
+<div class="page-border">
+{premidis_header}
 <div style="padding: 30px;">
     <div style="text-align: right; margin-bottom: 20px;">
         <p>Goma, le <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">06 Juin 2024</span></p>
@@ -3579,7 +3583,9 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
             "description": "Page pré-formatée avec design PREMIDIS pour rédaction libre",
             "category": "blank",
             "thumbnail_url": None,
-            "content": f'''{premidis_header}
+            "content": f'''{checkbox_style}
+<div class="page-border">
+{premidis_header}
 <div style="padding: 30px; min-height: 500px;">
     <div contenteditable="true" style="min-height: 400px; padding: 20px; border: 1px dashed #cbd5e1; border-radius: 8px; background: #fafafa;">
         <p style="color: #94a3b8; font-style: italic;">Cliquez ici pour commencer à rédiger votre document...</p>

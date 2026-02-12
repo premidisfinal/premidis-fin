@@ -86,11 +86,13 @@ const DocumentsModuleV2 = () => {
   };
 
   const handleUseForm = (form) => {
+    console.log('Using form:', form.name, 'Content length:', form.content?.length || 0);
     setSelectedForm(form);
     setEditorContent(form.content);
     setDocumentTitle(`Nouveau ${form.name}`);
     setCurrentDocument(null);
-    setView('editor');
+    // Use setTimeout to ensure state is updated before changing view
+    setTimeout(() => setView('editor'), 50);
   };
 
   const handleEditDocument = async (doc) => {

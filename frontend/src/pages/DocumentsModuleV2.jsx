@@ -196,100 +196,116 @@ const DocumentsModuleV2 = () => {
 
   // Initialize iframe with document content
   useEffect(() => {
-    if ((view === 'editor' || view === 'preview') && iframeRef.current && editorContent) {
-      const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
-      
-      iframeDoc.open();
-      iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              body {
-                margin: 20mm;
-                padding: 0;
-                font-family: 'Calibri', 'Arial', sans-serif;
-                font-size: 11pt;
-                line-height: 1.5;
-                color: #000;
-                background: white;
-              }
-              
-              /* Preserve all inline styles */
-              * {
-                box-sizing: border-box;
-              }
-              
-              /* Editable fields styling */
-              .editable-field {
-                border-bottom: 1px solid #000;
-                min-width: 100px;
-                display: inline-block;
-                padding: 2px 4px;
-              }
-              
-              .editable-field:focus {
-                outline: 2px solid #2563eb;
-                background-color: #eff6ff;
-              }
-              
-              .editable-cell {
-                min-height: 30px;
-                padding: 4px 8px;
-              }
-              
-              .editable-cell:focus {
-                outline: 2px solid #2563eb;
-                background-color: #eff6ff;
-              }
-              
-              /* Manual edit mode highlighting */
-              body.edit-mode *:hover {
-                outline: 2px dashed #10b981 !important;
-                cursor: pointer;
-              }
-              
-              /* Print styles */
-              @media print {
+    if ((view === 'editor' || view === 'preview') && iframeRef.current) {
+      // Small delay to ensure editorContent is available
+      const timer = setTimeout(() => {
+        if (!editorContent || editorContent.trim() === '') {
+          console.warn('Editor content is empty');
+          return;
+        }
+        
+        const iframeDoc = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
+        if (!iframeDoc) {
+          console.error('Could not access iframe document');
+          return;
+        }
+        
+        iframeDoc.open();
+        iframeDoc.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <style>
                 body {
-                  margin: 0;
+                  margin: 20mm;
+                  padding: 0;
+                  font-family: 'Calibri', 'Arial', sans-serif;
+                  font-size: 11pt;
+                  line-height: 1.5;
+                  color: #000;
                   background: white;
                 }
-                .editable-field:focus,
-                .editable-cell:focus {
-                  outline: none;
-                  background: transparent;
+                
+                /* Preserve all inline styles */
+                * {
+                  box-sizing: border-box;
                 }
-              }
-            </style>
-          </head>
-          <body ${view === 'editor' ? 'contenteditable="true"' : ''}>
-            ${editorContent}
-          </body>
-        </html>
-      `);
-      iframeDoc.close();
-      
-      // Add click handler for manual edit mode (only in editor view)
-      if (view === 'editor' && editMode) {
-        iframeDoc.body.classList.add('edit-mode');
+                
+                /* Editable fields styling */
+                .editable-field {
+                  border-bottom: 1px solid #000;
+                  min-width: 100px;
+                  display: inline-block;
+                  padding: 2px 4px;
+                }
+                
+                .editable-field:focus {
+                  outline: 2px solid #2563eb;
+                  background-color: #eff6ff;
+                }
+                
+                .editable-cell {
+                  min-height: 30px;
+                  padding: 4px 8px;
+                }
+                
+                .editable-cell:focus {
+                  outline: 2px solid #2563eb;
+                  background-color: #eff6ff;
+                }
+                
+                /* Manual edit mode highlighting */
+                body.edit-mode *:hover {
+                  outline: 2px dashed #10b981 !important;
+                  cursor: pointer;
+                }
+                
+                /* Print styles */
+                @media print {
+                  body {
+                    margin: 0;
+                    background: white;
+                  }
+                  .editable-field:focus,
+                  .editable-cell:focus {
+                    outline: none;
+                    background: transparent;
+                  }
+                }
+              </style>
+            </head>
+            <body ${view === 'editor' ? 'contenteditable="true"' : ''}>
+              ${editorContent}
+            </body>
+          </html>
+        `);
+        iframeDoc.close();
         
-        iframeDoc.body.addEventListener('click', (e) => {
-          if (editMode && e.target !== iframeDoc.body) {
-            const el = e.target;
-            if (!el.hasAttribute('contenteditable') || el.getAttribute('contenteditable') === 'false') {
-              el.setAttribute('contenteditable', 'true');
-              el.classList.add('editable-field');
-              el.style.outline = '2px solid #2563eb';
-              el.focus();
-              toast.success('Zone rendue éditable');
+        console.log('Iframe loaded successfully with content length:', editorContent.length);
+        
+        // Add click handler for manual edit mode (only in editor view)
+        if (view === 'editor' && editMode) {
+          iframeDoc.body.classList.add('edit-mode');
+          
+          iframeDoc.body.addEventListener('click', (e) => {
+            if (editMode && e.target !== iframeDoc.body) {
+              const el = e.target;
+              if (!el.hasAttribute('contenteditable') || el.getAttribute('contenteditable') === 'false') {
+                el.setAttribute('contenteditable', 'true');
+                el.classList.add('editable-field');
+                el.style.outline = '2px solid #2563eb';
+                el.focus();
+                toast.success('Zone rendue éditable');
+              }
             }
-          }
-        });
-      } else if (iframeDoc.body) {
-        iframeDoc.body.classList.remove('edit-mode');
-      }
+          });
+        } else if (iframeDoc.body) {
+          iframeDoc.body.classList.remove('edit-mode');
+        }
+      }, 100); // Small delay to ensure state is updated
+      
+      return () => clearTimeout(timer);
     }
   }, [view, editorContent, editMode]);
 

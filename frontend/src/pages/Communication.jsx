@@ -14,13 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { 
   Megaphone, Plus, Loader2, AlertTriangle, Info, Bell, Trash2, MessageCircle
 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../config/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import LiveChat from '../components/LiveChat';
-
-import API_URL from "../config/api";
 
 const Communication = () => {
   const { user, isAdmin, canEdit } = useAuth();
@@ -46,7 +44,7 @@ const Communication = () => {
   const fetchAnnouncements = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/api/communication/announcements`);
+      const response = await axios.get('/api/communication/announcements');
       setAnnouncements(response.data.announcements || []);
     } catch (error) {
       console.error('Error fetching announcements:', error);
@@ -64,7 +62,7 @@ const Communication = () => {
 
     setSubmitting(true);
     try {
-      await axios.post(`${API_URL}/api/communication/announcements`, formData);
+      await axios.post('/api/communication/announcements', formData);
       toast.success('Annonce publiée avec succès');
       setDialogOpen(false);
       setFormData({ title: '', content: '', priority: 'normal' });
@@ -85,7 +83,7 @@ const Communication = () => {
     setDeleteDialog({ open: false, id: null });
     
     try {
-      await axios.delete(`${API_URL}/api/communication/announcements/${id}`);
+      await axios.delete(`/api/communication/announcements/${id}`);
       toast.success('Annonce supprimée');
       fetchAnnouncements();
     } catch (error) {

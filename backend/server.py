@@ -3218,8 +3218,38 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
     # Delete existing templates to refresh
     await db.document_forms.delete_many({"is_system": True})
     
+    # Style pour les checkboxes cliquables
+    checkbox_style = '''
+<style>
+    .checkbox-container {
+        display: inline-flex;
+        align-items: center;
+        margin: 5px 15px 5px 0;
+        cursor: pointer;
+        user-select: none;
+    }
+    .checkbox-container input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+        cursor: pointer;
+        accent-color: #3b82f6;
+    }
+    .checkbox-container label {
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .page-border {
+        border: 3px solid #3b82f6;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+</style>
+'''
+    
     premidis_header = '''
-<div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+<div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 20px; text-align: center;">
     <h1 style="color: white; margin: 0; font-size: 32px; font-weight: bold;">PREMIDIS SARL</h1>
     <p style="color: #e0e7ff; margin: 5px 0 0 0; font-size: 14px;">COMMUNE DE KARISIMBI, GOMA, DR CONGO</p>
     <p style="color: #cbd5e1; margin: 3px 0 0 0; font-size: 11px;">Route Aéroport N. 20, Q.BUJOVU, C/ de KARISIMBI, Ville de GOMA, Prov. du Nord-Kivu en R.D.Congo</p>
@@ -3309,7 +3339,9 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
             "description": "Autorisation de soins médicaux",
             "category": "medical",
             "thumbnail_url": None,
-            "content": f'''{premidis_header}
+            "content": f'''{checkbox_style}
+<div class="page-border">
+{premidis_header}
 <div style="padding: 30px;">
     <h2 style="text-align: center; color: #1e3a8a; padding: 15px; background: #f1f5f9; border-left: 4px solid #3b82f6; text-decoration: underline;">BON DE SOINS MEDICAUX N° <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block;">_____________</span></h2>
     
@@ -3321,11 +3353,20 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
     </div>
     
     <div style="margin: 30px 0;">
-        <p><strong>Relation avec l'employé(e) :</strong></p>
+        <p style="font-weight: bold; margin-bottom: 15px;">Relation avec l'employé(e) :</p>
         <div style="margin-left: 30px;">
-            <p>☐ Employé(e)</p>
-            <p>☐ Epoux (se)</p>
-            <p>☐ Enfant</p>
+            <label class="checkbox-container">
+                <input type="checkbox" name="relation" value="employe">
+                <span>Employé(e)</span>
+            </label><br>
+            <label class="checkbox-container">
+                <input type="checkbox" name="relation" value="epoux">
+                <span>Epoux (se)</span>
+            </label><br>
+            <label class="checkbox-container">
+                <input type="checkbox" name="relation" value="enfant">
+                <span>Enfant</span>
+            </label>
         </div>
     </div>
     
@@ -3361,12 +3402,38 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
             "description": "Justification/Autorisation de congé",
             "category": "leave",
             "thumbnail_url": None,
-            "content": f'''{premidis_header}
+            "content": f'''{checkbox_style}
+<div class="page-border">
+{premidis_header}
 <div style="padding: 30px;">
     <h2 style="text-align: center; color: #1e3a8a; padding: 15px; background: #f1f5f9; border-left: 4px solid #3b82f6;">COMMUNICATION D'ABSENCES ()</h2>
     
-    <div style="margin: 20px 0;">
-        <p><strong>☐ Goma ☐ Kiwanja ☐ Lubumbashi ☐ Kin ☐ Kisangani ☐ Tshopo</strong></p>
+    <div style="margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 8px;">
+        <p style="font-weight: bold; margin-bottom: 10px;">Localisation :</p>
+        <label class="checkbox-container">
+            <input type="checkbox" name="location" value="goma">
+            <span>Goma</span>
+        </label>
+        <label class="checkbox-container">
+            <input type="checkbox" name="location" value="kiwanja">
+            <span>Kiwanja</span>
+        </label>
+        <label class="checkbox-container">
+            <input type="checkbox" name="location" value="lubumbashi">
+            <span>Lubumbashi</span>
+        </label>
+        <label class="checkbox-container">
+            <input type="checkbox" name="location" value="kin">
+            <span>Kin</span>
+        </label>
+        <label class="checkbox-container">
+            <input type="checkbox" name="location" value="kisangani">
+            <span>Kisangani</span>
+        </label>
+        <label class="checkbox-container">
+            <input type="checkbox" name="location" value="tshopo">
+            <span>Tshopo</span>
+        </label>
     </div>
     
     <div style="margin: 30px 0;">
@@ -3381,23 +3448,53 @@ async def init_premidis_templates(current_user: dict = Depends(require_roles(["a
         <p><strong>Nombre des jours total :</strong> <span class="editable-field" contenteditable="true" style="border-bottom: 1px solid #000; min-width: 100px; display: inline-block;">_______</span> Jours &nbsp;&nbsp; <strong>contrôle :</strong> ......Reste : OK</p>
     </div>
     
-    <div style="margin: 30px 0;">
-        <p style="font-weight: bold; font-size: 16px; color: #1e3a8a;">Raison d'absence :</p>
+    <div style="margin: 30px 0; padding: 20px; background: #fef9f5; border-left: 4px solid #f59e0b; border-radius: 8px;">
+        <p style="font-weight: bold; font-size: 16px; color: #1e3a8a; margin-bottom: 15px;">Raison d'absence :</p>
         <div style="margin-left: 20px;">
-            <p>☐ <strong>Vacances</strong></p>
-            <p>☐ <strong>Maladie/accident</strong></p>
-            <p style="margin-top: 15px;"><strong>Raison familiale :</strong></p>
+            <label class="checkbox-container">
+                <input type="checkbox" name="raison" value="vacances">
+                <span><strong>Vacances</strong></span>
+            </label><br>
+            <label class="checkbox-container">
+                <input type="checkbox" name="raison" value="maladie">
+                <span><strong>Maladie/accident</strong></span>
+            </label><br>
+            
+            <p style="margin-top: 20px; margin-bottom: 10px; font-weight: bold;">Raison familiale :</p>
             <div style="margin-left: 20px;">
-                <p>☐ Mariage de l'employé (2jours)</p>
-                <p>☐ Décès de l'épouse, du mari, de la mère, du père, d'un enfant (4 jours)</p>
-                <p>☐ Décès des beaux-parents, d'un frère, d'une sœur, des grands parents (2jours)</p>
-                <p>☐ Naissance d'un enfant (2jours)</p>
-                <p>☐ Mariage d'un enfant (1jour)</p>
-                <p>☐ Événement involontaire grave (convocation, incendie) (max 2jours)</p>
+                <label class="checkbox-container">
+                    <input type="checkbox" name="raison_familiale" value="mariage_employe">
+                    <span>Mariage de l'employé (2 jours)</span>
+                </label><br>
+                <label class="checkbox-container">
+                    <input type="checkbox" name="raison_familiale" value="deces_proche">
+                    <span>Décès de l'épouse, du mari, de la mère, du père, d'un enfant (4 jours)</span>
+                </label><br>
+                <label class="checkbox-container">
+                    <input type="checkbox" name="raison_familiale" value="deces_famille">
+                    <span>Décès des beaux-parents, d'un frère, d'une sœur, des grands parents (2 jours)</span>
+                </label><br>
+                <label class="checkbox-container">
+                    <input type="checkbox" name="raison_familiale" value="naissance">
+                    <span>Naissance d'un enfant (2 jours)</span>
+                </label><br>
+                <label class="checkbox-container">
+                    <input type="checkbox" name="raison_familiale" value="mariage_enfant">
+                    <span>Mariage d'un enfant (1 jour)</span>
+                </label><br>
+                <label class="checkbox-container">
+                    <input type="checkbox" name="raison_familiale" value="evenement_grave">
+                    <span>Événement involontaire grave (convocation, incendie) (max 2 jours)</span>
+                </label><br>
             </div>
-            <p style="margin-top: 10px; font-size: 11px; font-style: italic; color: #64748b;">Ces jours de congé doivent être pris consécutivement, au moment de l'événement familial.<br>
+            <p style="margin-top: 15px; padding: 10px; background: white; border-left: 3px solid #64748b; font-size: 11px; font-style: italic; color: #64748b;">
+            ℹ️ Ces jours de congé doivent être pris consécutivement, au moment de l'événement familial.<br>
             L'employeur n'est tenu d'accorder que jusqu'à concurrence d'un maximum de 15 jours de congé par an pour événement familial.</p>
-            <p style="margin-top: 15px;">☐ <strong>AUTRES RAISONS - EXPLICATION NECESSAIRE.</strong></p>
+            
+            <label class="checkbox-container" style="margin-top: 15px;">
+                <input type="checkbox" name="raison" value="autres">
+                <span><strong>AUTRES RAISONS - EXPLICATION NECESSAIRE</strong></span>
+            </label>
         </div>
     </div>
     

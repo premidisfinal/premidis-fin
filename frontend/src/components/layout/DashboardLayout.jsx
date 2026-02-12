@@ -49,7 +49,7 @@ const DashboardLayout = ({ children }) => {
     { path: '/administration', icon: Users, label: 'Gestion Personnel', canManage: true },
     { path: '/time-management', icon: Clock, label: 'Congés' },
     { path: '/behavior', icon: UserCheck, label: 'Comportement' },
-    { path: '/documents-rh', icon: FileText, label: '📄 Documents RH' },
+    { path: '/documents', icon: FileText, label: 'Documents' },
     { path: '/sites', icon: Building2, label: 'Sites de travail', adminOnly: true },
     { path: '/permissions', icon: Shield, label: 'Permissions', adminOnly: true },
     { path: '/my-profile', icon: User, label: 'Mon Dossier', employeeOnly: true },

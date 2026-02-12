@@ -16,10 +16,8 @@ import {
   Upload, FileText, AlertTriangle, Award, MessageCircle, File, X, Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
-import axios from 'axios';
+import axios from '../config/api';
 import { toast } from 'sonner';
-
-import API_URL from "../config/api";
 
 // Types de comportement étendus
 const BEHAVIOR_TYPES = [
@@ -58,7 +56,7 @@ const Behavior = () => {
   const getDocUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `${API_URL}/api/preview${url.startsWith('/') ? '' : '/'}${url}`;
+    return `${axios.defaults.baseURL}/api/preview${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
   useEffect(() => {
@@ -68,11 +66,11 @@ const Behavior = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const behaviorRes = await axios.get(`${API_URL}/api/behavior`);
+      const behaviorRes = await axios.get('/api/behavior');
       setBehaviors(behaviorRes.data.behaviors || []);
 
       if (isAdmin()) {
-        const empRes = await axios.get(`${API_URL}/api/employees`);
+        const empRes = await axios.get('/api/employees');
         setEmployees(empRes.data.employees || []);
       }
     } catch (error) {
@@ -92,7 +90,7 @@ const Behavior = () => {
     setSubmitting(true);
     try {
       console.log('Submitting behavior note with data:', formData);
-      await axios.post(`${API_URL}/api/behavior`, formData);
+      await axios.post('/api/behavior', formData);
       toast.success('Note de comportement ajoutée avec succès');
       setDialogOpen(false);
       setFormData({ 
@@ -189,7 +187,7 @@ const Behavior = () => {
     if (!behaviorToDelete) return;
     
     try {
-      await axios.delete(`${API_URL}/api/behavior/${behaviorToDelete.id}`);
+      await axios.delete(`/api/behavior/${behaviorToDelete.id}`);
       toast.success('Note de comportement supprimée');
       setDeleteDialogOpen(false);
       setBehaviorToDelete(null);

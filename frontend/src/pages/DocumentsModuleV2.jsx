@@ -77,8 +77,8 @@ const DocumentsModuleV2 = () => {
 
   const initSystemForms = async () => {
     try {
-      await axios.post('/api/documents/forms/init-system-forms');
-      toast.success('Formes système initialisées');
+      await axios.post('/api/documents/forms/init-premidis-templates');
+      toast.success('Templates PREMIDIS initialisés avec succès !');
       fetchForms();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erreur');
@@ -242,7 +242,7 @@ const DocumentsModuleV2 = () => {
                     onClick={initSystemForms}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Initialiser Formes Système
+                    Initialiser Templates PREMIDIS
                   </Button>
                   <Button
                     variant="default"
@@ -269,7 +269,7 @@ const DocumentsModuleV2 = () => {
                   <p className="text-muted-foreground mb-4">Aucune forme disponible</p>
                   <Button onClick={initSystemForms}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Initialiser Formes Système
+                    Initialiser Templates PREMIDIS
                   </Button>
                 </div>
               ) : (

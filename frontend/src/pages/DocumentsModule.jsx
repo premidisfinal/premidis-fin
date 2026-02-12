@@ -61,22 +61,35 @@ const DocumentsModule = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  // TipTap Editor
+  // TipTap Editor with HTML preservation
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        // Disable default HTML cleaning
+        heading: {
+          levels: [1, 2, 3, 4, 5, 6],
+        },
+      }),
       Underline,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
       TextStyle,
-      Color,
+      Color.configure({
+        types: ['textStyle'],
+      }),
       Image,
       Link.configure({
         openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-blue-600 underline',
+        },
       }),
       Table.configure({
         resizable: true,
+        HTMLAttributes: {
+          class: 'border-collapse',
+        },
       }),
       TableRow,
       TableHeader,
@@ -86,7 +99,16 @@ const DocumentsModule = () => {
     editorProps: {
       attributes: {
         class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[500px] p-4',
+        style: 'white-space: normal;',
       },
+      // Preserve ALL HTML attributes and styles
+      transformPastedHTML(html) {
+        return html; // Don't clean HTML
+      },
+    },
+    // Don't sanitize content
+    parseOptions: {
+      preserveWhitespace: 'full',
     },
   });
 

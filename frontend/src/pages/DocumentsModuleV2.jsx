@@ -667,6 +667,43 @@ const DocumentsModuleV2 = () => {
               <iframe
                 ref={iframeRef}
                 title="Document Editor"
+                srcDoc={`
+                  <!DOCTYPE html>
+                  <html>
+                    <head>
+                      <meta charset="UTF-8">
+                      <style>
+                        body {
+                          margin: 20mm;
+                          padding: 0;
+                          font-family: 'Calibri', 'Arial', sans-serif;
+                          font-size: 11pt;
+                          line-height: 1.5;
+                          color: #000;
+                          background: white;
+                        }
+                        * { box-sizing: border-box; }
+                        .editable-field {
+                          border-bottom: 1px solid #000;
+                          min-width: 100px;
+                          display: inline-block;
+                          padding: 2px 4px;
+                        }
+                        .editable-field:focus {
+                          outline: 2px solid #2563eb;
+                          background-color: #eff6ff;
+                        }
+                        @media print {
+                          body { margin: 0; background: white; }
+                          .editable-field:focus { outline: none; background: transparent; }
+                        }
+                      </style>
+                    </head>
+                    <body contenteditable="true">
+                      ${editorContent || '<p><br></p>'}
+                    </body>
+                  </html>
+                `}
                 style={{
                   width: '100%',
                   minHeight: '297mm',
@@ -720,6 +757,35 @@ const DocumentsModuleV2 = () => {
               <iframe
                 ref={iframeRef}
                 title="Document Preview"
+                srcDoc={`
+                  <!DOCTYPE html>
+                  <html>
+                    <head>
+                      <meta charset="UTF-8">
+                      <style>
+                        body {
+                          margin: 20mm;
+                          padding: 0;
+                          font-family: 'Calibri', 'Arial', sans-serif;
+                          font-size: 11pt;
+                          line-height: 1.5;
+                          color: #000;
+                          background: white;
+                        }
+                        * { box-sizing: border-box; }
+                        .editable-field {
+                          border-bottom: 1px solid #000;
+                          min-width: 100px;
+                          display: inline-block;
+                          padding: 2px 4px;
+                        }
+                      </style>
+                    </head>
+                    <body>
+                      ${editorContent || '<p><br></p>'}
+                    </body>
+                  </html>
+                `}
                 style={{
                   width: '100%',
                   minHeight: '297mm',

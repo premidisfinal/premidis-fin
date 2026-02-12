@@ -445,21 +445,40 @@ const DocumentsModule = () => {
             </div>
           </div>
 
-          {/* ContentEditable Editor - Preserves ALL HTML */}
-          <div className="max-w-5xl mx-auto py-8 px-4">
-            <div className="bg-white shadow-2xl min-h-[800px] rounded-lg border">
+          {/* Pure White Page like Word - NO style interference */}
+          <div className="py-8 px-4" style={{ backgroundColor: '#e5e5e5' }}>
+            <div 
+              className="document-page mx-auto"
+              style={{
+                backgroundColor: 'white',
+                boxShadow: '0 0 20px rgba(0,0,0,0.15)',
+                minHeight: '297mm',
+                width: '210mm',
+                padding: '0',
+                margin: '0 auto',
+              }}
+            >
               <div
                 ref={contentEditableRef}
                 contentEditable
                 suppressContentEditableWarning
-                className="focus:outline-none p-8 min-h-[800px]"
+                className="document-editor"
                 style={{
-                  whiteSpace: 'normal',
-                  wordWrap: 'break-word',
+                  minHeight: '297mm',
+                  width: '100%',
+                  padding: '0',
+                  margin: '0',
+                  border: 'none',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  fontSize: 'inherit',
+                  lineHeight: 'inherit',
+                  color: 'inherit',
+                  background: 'transparent',
                 }}
                 onInput={(e) => setEditorContent(e.currentTarget.innerHTML)}
               >
-                {/* React will render the HTML here on mount */}
+                {/* HTML content will be inserted here by useEffect */}
               </div>
             </div>
           </div>
@@ -492,15 +511,32 @@ const DocumentsModule = () => {
             </div>
           </div>
 
-          {/* Preview Content */}
-          <div className="max-w-5xl mx-auto py-8 px-4">
-            <div className="bg-white shadow-2xl min-h-[800px] p-12 rounded-lg">
+          {/* Pure White Preview Page like Word */}
+          <div className="py-8 px-4" style={{ backgroundColor: '#e5e5e5' }}>
+            <div 
+              className="document-page mx-auto"
+              style={{
+                backgroundColor: 'white',
+                boxShadow: '0 0 20px rgba(0,0,0,0.15)',
+                minHeight: '297mm',
+                width: '210mm',
+                padding: '0',
+                margin: '0 auto',
+              }}
+            >
               <div
-                dangerouslySetInnerHTML={{ __html: editorContent }}
+                className="document-editor"
                 style={{
-                  whiteSpace: 'normal',
-                  wordWrap: 'break-word',
+                  minHeight: '297mm',
+                  width: '100%',
+                  padding: '0',
+                  margin: '0',
+                  fontFamily: 'inherit',
+                  fontSize: 'inherit',
+                  lineHeight: 'inherit',
+                  color: 'inherit',
                 }}
+                dangerouslySetInnerHTML={{ __html: editorContent }}
               />
             </div>
           </div>

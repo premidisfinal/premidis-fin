@@ -46,6 +46,13 @@ const DocumentsModule = () => {
     fetchDocuments();
   }, []);
 
+  // Update contentEditable when editorContent changes
+  useEffect(() => {
+    if (contentEditableRef.current && view === 'editor') {
+      contentEditableRef.current.innerHTML = editorContent;
+    }
+  }, [editorContent, view]);
+
   const fetchForms = async () => {
     try {
       const response = await axios.get('/api/documents/forms');

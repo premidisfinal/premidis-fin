@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Loader2, Mail, Lock, User, Eye, EyeOff, Shield } from 'lucide-react';
-
-import API_URL from "../config/api";
+import axios from '../config/api';
 
 const Register = () => {
   const { login } = useAuth();
@@ -70,24 +69,16 @@ const Register = () => {
 
     try {
       // Register and get token - ALL ROLES ACTIVATE IMMEDIATELY
-      const response = await fetch(`${API_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          department: formData.department,
-          role: formData.role
-        })
+      const response = await axios.post('/api/auth/register', {
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        department: formData.department,
+        role: formData.role
       });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.detail || 'Erreur lors de l\'inscription');
-      }
+      const data = response.data;
 
       // Store token and user data
       if (data.access_token) {
@@ -97,7 +88,7 @@ const Register = () => {
         window.location.href = '/dashboard';
       }
     } catch (err) {
-      setError(err.message || 'Une erreur est survenue');
+      setError(err.response?.data?.detail || err.message || 'Une erreur est survenue');
     } finally {
       setLoading(false);
     }

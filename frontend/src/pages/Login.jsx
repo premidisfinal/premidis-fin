@@ -29,7 +29,9 @@ const Login = () => {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'An error occurred');
+      // Ensure we only set a string error message, never an object
+      const errorMessage = err.response?.data?.detail || err.message || 'An error occurred';
+      setError(String(errorMessage));
     } finally {
       setLoading(false);
     }

@@ -24,12 +24,10 @@ import {
   CalendarDays, CalendarCheck, CalendarX, CalendarClock, History,
   Trash2, Pencil, X, Check
 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../config/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-import API_URL from "../config/api";
 
 const EmployeeProfile = () => {
   const { id } = useParams();
@@ -79,7 +77,7 @@ const EmployeeProfile = () => {
       const employeeId = id || user?.id;
       
       // Fetch employee details
-      const empResponse = await axios.get(`${API_URL}/api/employees/${employeeId}`).catch(() => null);
+      const empResponse = await axios.get(`/api/employees/${employeeId}`).catch(() => null);
       if (empResponse) {
         setEmployee(empResponse.data);
         setEditData(empResponse.data);
@@ -101,7 +99,7 @@ const EmployeeProfile = () => {
 
       // Fetch payslips
       try {
-        const payslipsResponse = await axios.get(`${API_URL}/api/payroll`, {
+        const payslipsResponse = await axios.get(`/api/payroll`, {
           params: { employee_id: employeeId }
         });
         setPayslips(payslipsResponse.data.payslips || []);
@@ -111,7 +109,7 @@ const EmployeeProfile = () => {
 
       // Fetch documents
       try {
-        const docsResponse = await axios.get(`${API_URL}/api/employees/${employeeId}/documents`);
+        const docsResponse = await axios.get(`/api/employees/${employeeId}/documents`);
         setDocuments(docsResponse.data.documents || []);
       } catch {
         setDocuments([]);
@@ -119,7 +117,7 @@ const EmployeeProfile = () => {
 
       // Fetch behavior notes
       try {
-        const behaviorResponse = await axios.get(`${API_URL}/api/behavior/${employeeId}`);
+        const behaviorResponse = await axios.get(`/api/behavior/${employeeId}`);
         setBehaviors(behaviorResponse.data.behaviors || []);
       } catch {
         setBehaviors([]);
@@ -127,7 +125,7 @@ const EmployeeProfile = () => {
 
       // Fetch employee leaves
       try {
-        const leavesResponse = await axios.get(`${API_URL}/api/leaves`, {
+        const leavesResponse = await axios.get(`/api/leaves`, {
           params: { employee_id: employeeId }
         });
         setLeaves(leavesResponse.data.leaves || []);
@@ -137,7 +135,7 @@ const EmployeeProfile = () => {
 
       // Fetch leave balance (from employee data)
       try {
-        const balanceResponse = await axios.get(`${API_URL}/api/leaves/balance`);
+        const balanceResponse = await axios.get(`/api/leaves/balance`);
         setLeaveBalance(balanceResponse.data);
       } catch {
         setLeaveBalance(null);
@@ -161,7 +159,7 @@ const EmployeeProfile = () => {
     
     try {
       const employeeId = id || user?.id;
-      const response = await axios.post(`${API_URL}/api/upload/avatar/${employeeId}`, formData, {
+      const response = await axios.post(`/api/upload/avatar/${employeeId}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success('Photo de profil mise à jour');
@@ -184,13 +182,13 @@ const EmployeeProfile = () => {
     
     try {
       // First upload the file
-      const uploadResponse = await axios.post(`${API_URL}/api/upload/file`, formData, {
+      const uploadResponse = await axios.post(`/api/upload/file`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
       // Then save the document reference
       const employeeId = id || user?.id;
-      await axios.post(`${API_URL}/api/employees/${employeeId}/documents`, {
+      await axios.post(`/api/employees/${employeeId}/documents`, {
         name: file.name,
         type: file.type.includes('pdf') ? 'pdf' : 'image',
         url: uploadResponse.data.url
@@ -214,7 +212,7 @@ const EmployeeProfile = () => {
     
     try {
       const employeeId = id || user?.id;
-      await axios.put(`${API_URL}/api/employees/${employeeId}/documents/${docId}?name=${encodeURIComponent(newDocName)}`);
+      await axios.put(`/api/employees/${employeeId}/documents/${docId}?name=${encodeURIComponent(newDocName)}`);
       toast.success('Document renommé');
       setEditingDocName(null);
       setNewDocName('');
@@ -236,7 +234,7 @@ const EmployeeProfile = () => {
     
     try {
       const employeeId = id || user?.id;
-      await axios.delete(`${API_URL}/api/employees/${employeeId}/documents/${docId}`);
+      await axios.delete(`/api/employees/${employeeId}/documents/${docId}`);
       toast.success('Document supprimé');
       fetchEmployeeData();
     } catch (error) {
@@ -254,7 +252,7 @@ const EmployeeProfile = () => {
     const validCurrency = ['USD', 'FC'].includes(currency?.toUpperCase()) ? currency.toUpperCase() : 'USD';
     
     try {
-      await axios.put(`${API_URL}/api/employees/${employee.id}/salary?salary=${salary}&currency=${validCurrency}`);
+      await axios.put(`/api/employees/${employee.id}/salary?salary=${salary}&currency=${validCurrency}`);
       toast.success('Salaire mis à jour');
       setSalaryDialog({ open: false, salary: '', currency: 'USD' });
       fetchEmployeeData();
@@ -265,7 +263,7 @@ const EmployeeProfile = () => {
 
   const handleSaveEdit = async () => {
     try {
-      await axios.put(`${API_URL}/api/employees/${employee.id}`, editData);
+      await axios.put(`/api/employees/${employee.id}`, editData);
       setEmployee(editData);
       setIsEditing(false);
       toast.success('Profil mis à jour');
@@ -277,7 +275,7 @@ const EmployeeProfile = () => {
   const handleCreateObjective = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_URL}/api/performance`, {
+      await axios.post(`/api/performance`, {
         employee_id: employee.id,
         period: objectiveForm.title,
         objectives: [{

@@ -9,7 +9,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-import API_URL from "../config/api";
+import axios from "../config/api";
 
 // Types de comportement avec leurs styles
 const BEHAVIOR_TYPES = {
@@ -85,15 +85,15 @@ const BehaviorCard = ({
   const getDocUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    // Pour le preview dans le navigateur, on utilise l'endpoint de preview
-    return `${API_URL}/api/preview${url.startsWith('/') ? '' : '/'}${url}`;
+    // Construire l'URL correcte pour les fichiers uploadés
+    return `${axios.defaults.baseURL}${url.startsWith('/') ? url : '/' + url}`;
   };
 
   const getDownloadUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    // Pour le téléchargement, on utilise l'URL directe
-    return `${API_URL}${url.startsWith('/api/') ? '' : '/api'}${url}`;
+    // Pour le téléchargement, on utilise l'URL correcte
+    return `${axios.defaults.baseURL}${url.startsWith('/') ? url : '/' + url}`;
   };
 
   return (

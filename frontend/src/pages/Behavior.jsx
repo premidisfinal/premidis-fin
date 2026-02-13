@@ -56,7 +56,8 @@ const Behavior = () => {
   const getDocUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `${axios.defaults.baseURL}/api/preview${url.startsWith('/') ? '' : '/'}${url}`;
+    // Construire l'URL correcte pour les fichiers uploadés
+    return `${axios.defaults.baseURL}${url.startsWith('/') ? url : '/' + url}`;
   };
 
   useEffect(() => {
@@ -151,7 +152,7 @@ const Behavior = () => {
       console.log('Starting file upload:', file.name, 'Size:', file.size, 'Type:', file.type);
       
       // Ne pas spécifier Content-Type, axios le fait automatiquement avec boundary
-      const response = await axios.post(`${API_URL}/api/upload/file`, formDataUpload);
+      const response = await axios.post('/api/upload/file', formDataUpload);
       
       console.log('Upload successful:', response.data);
       

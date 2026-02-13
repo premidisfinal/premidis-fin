@@ -594,7 +594,7 @@ const Administration = () => {
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">
                     <Avatar className="h-14 w-14">
-                      <AvatarImage src={employee.avatar_url ? (employee.avatar_url.startsWith('http') ? employee.avatar_url : `${API_URL}${employee.avatar_url.startsWith('/api/') ? '' : '/api'}${employee.avatar_url}`) : null} />
+                      <AvatarImage src={employee.avatar_url ? (employee.avatar_url.startsWith('http') ? employee.avatar_url : `${axios.defaults.baseURL}${employee.avatar_url.startsWith('/api/') ? '' : '/api'}${employee.avatar_url}`) : null} />
                       <AvatarFallback className="bg-primary/10 text-primary text-lg">
                         {employee.first_name?.[0]}{employee.last_name?.[0]}
                       </AvatarFallback>

@@ -26,8 +26,6 @@ import { fr } from 'date-fns/locale';
 import axios from '../config/api';
 import { toast } from 'sonner';
 
-import API_URL from "../config/api";
-
 const TimeManagement = () => {
   const { user, isAdmin, canEdit } = useAuth();
   const { t } = useLanguage();

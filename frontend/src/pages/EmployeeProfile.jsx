@@ -362,7 +362,7 @@ const EmployeeProfile = () => {
               {/* Avatar with upload option */}
               <div className="relative">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src={employee.avatar_url ? (employee.avatar_url.startsWith('http') ? employee.avatar_url : `${API_URL}${employee.avatar_url.startsWith('/api/') ? '' : '/api'}${employee.avatar_url}`) : null} />
+                  <AvatarImage src={employee.avatar_url ? (employee.avatar_url.startsWith('http') ? employee.avatar_url : `${axios.defaults.baseURL}${employee.avatar_url.startsWith('/api/') ? '' : '/api'}${employee.avatar_url}`) : null} />
                   <AvatarFallback className="bg-primary/10 text-primary text-2xl">
                     {employee.first_name?.[0]}{employee.last_name?.[0]}
                   </AvatarFallback>
@@ -680,7 +680,7 @@ const EmployeeProfile = () => {
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {documents.map((doc) => {
                       // Construct the full URL for the document - handle both /uploads and /api/uploads
-                      const docUrl = doc.url ? (doc.url.startsWith('http') ? doc.url : `${API_URL}${doc.url.startsWith('/api/') ? '' : '/api'}${doc.url}`) : null;
+                      const docUrl = doc.url ? (doc.url.startsWith('http') ? doc.url : `${axios.defaults.baseURL}${doc.url.startsWith('/api/') ? '' : '/api'}${doc.url}`) : null;
                       const fileType = doc.type?.toLowerCase() || '';
                       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'image'].includes(fileType);
                       const isPdf = fileType === 'pdf';

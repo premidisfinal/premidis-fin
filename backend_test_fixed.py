@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
 class PremidisHRTester:
-    def __init__(self, base_url="https://word-like-docs.preview.emergentagent.com"):
+    def __init__(self, base_url="https://react-error-fix-10.preview.emergentagent.com"):
         self.base_url = base_url
         self.tokens = {}
         self.users = {}

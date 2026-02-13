@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from '../config/api';
-import { API_URL } from '../config/api';
 
 const AuthContext = createContext(null);
 
@@ -20,7 +19,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/auth/me`);
+      const response = await axios.get('/api/auth/me');
       setUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user:', error);
@@ -31,7 +30,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
+    const response = await axios.post('/api/auth/login', { email, password });
     const { access_token, user: userData } = response.data;
     
     localStorage.setItem('token', access_token);
@@ -43,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
-    const response = await axios.post(`${API_URL}/api/auth/register`, userData);
+    const response = await axios.post('/api/auth/register', userData);
     const { access_token, user: newUser } = response.data;
     
     localStorage.setItem('token', access_token);
@@ -62,7 +61,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = async (updates) => {
-    const response = await axios.put(`${API_URL}/api/auth/me`, updates);
+    const response = await axios.put('/api/auth/me', updates);
     setUser(response.data);
     return response.data;
   };

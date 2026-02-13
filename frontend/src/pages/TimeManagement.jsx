@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addMonths, subMonths, addDays, addWeeks } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import axios from 'axios';
+import axios from '../config/api';
 import { toast } from 'sonner';
 
 import API_URL from "../config/api";
@@ -105,7 +105,7 @@ const TimeManagement = () => {
 
   const fetchLeaveTypesConfig = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/config/leave-types`);
+      const response = await axios.get(`/api/config/leave-types`);
       setLeaveTypesConfig(response.data.leave_types || []);
     } catch (error) {
       console.error('Error fetching leave types:', error);
@@ -116,11 +116,11 @@ const TimeManagement = () => {
     setLoading(true);
     try {
       // Fetch leaves
-      const leavesRes = await axios.get(`${API_URL}/api/leaves`);
+      const leavesRes = await axios.get(`/api/leaves`);
       setLeaves(leavesRes.data.leaves || []);
 
       // Fetch calendar leaves
-      const calendarRes = await axios.get(`${API_URL}/api/leaves/calendar`, {
+      const calendarRes = await axios.get(`/api/leaves/calendar`, {
         params: { 
           month: currentMonth.getMonth() + 1, 
           year: currentMonth.getFullYear() 
@@ -129,12 +129,12 @@ const TimeManagement = () => {
       setCalendarLeaves(calendarRes.data.leaves || []);
 
       // Fetch stats
-      const statsRes = await axios.get(`${API_URL}/api/leaves/stats`);
+      const statsRes = await axios.get(`/api/leaves/stats`);
       setStats(statsRes.data);
 
       // Fetch leave rules
       try {
-        const rulesRes = await axios.get(`${API_URL}/api/leaves/rules`);
+        const rulesRes = await axios.get(`/api/leaves/rules`);
         setLeaveRules(rulesRes.data);
       } catch (error) {
         console.error('Error fetching leave rules:', error);
@@ -142,7 +142,7 @@ const TimeManagement = () => {
 
       // Fetch leave balance
       try {
-        const balanceRes = await axios.get(`${API_URL}/api/leaves/balance`);
+        const balanceRes = await axios.get(`/api/leaves/balance`);
         setLeaveBalance(balanceRes.data);
       } catch (error) {
         console.error('Error fetching leave balance:', error);
@@ -151,7 +151,7 @@ const TimeManagement = () => {
       // Fetch employees for admin/secretary
       if (isAdmin() || canEdit()) {
         try {
-          const empRes = await axios.get(`${API_URL}/api/employees`);
+          const empRes = await axios.get(`/api/employees`);
           setEmployees(empRes.data.employees || []);
         } catch (error) {
           console.error('Error fetching employees:', error);
@@ -159,7 +159,7 @@ const TimeManagement = () => {
       }
 
       // Fetch attendance
-      const attRes = await axios.get(`${API_URL}/api/attendance`);
+      const attRes = await axios.get(`/api/attendance`);
       setAttendance(attRes.data.attendance || []);
       setTodayAttendance(attRes.data.today || null);
 
@@ -178,7 +178,7 @@ const TimeManagement = () => {
     if (!config) return;
     
     try {
-      const response = await axios.post(`${API_URL}/api/config/calculate-leave-end-date`, null, {
+      const response = await axios.post(`/api/config/calculate-leave-end-date`, null, {
         params: {
           leave_type_code: leaveType,
           start_date: format(startDate, 'yyyy-MM-dd')
@@ -220,10 +220,10 @@ const TimeManagement = () => {
     setSavingConfig(true);
     try {
       if (leaveType.id) {
-        await axios.put(`${API_URL}/api/config/leave-types/${leaveType.id}`, leaveType);
+        await axios.put(`/api/config/leave-types/${leaveType.id}`, leaveType);
         toast.success('Type de congé mis à jour');
       } else {
-        await axios.post(`${API_URL}/api/config/leave-types`, leaveType);
+        await axios.post(`/api/config/leave-types`, leaveType);
         toast.success('Type de congé créé');
       }
       await fetchLeaveTypesConfig();
@@ -253,7 +253,7 @@ const TimeManagement = () => {
         for_all_employees: formData.for_all_employees
       };
       
-      const response = await axios.post(`${API_URL}/api/leaves`, payload);
+      const response = await axios.post(`/api/leaves`, payload);
       
       if (response.data.count) {
         toast.success(`Jour férié créé pour ${response.data.count} employés`);
@@ -280,7 +280,7 @@ const TimeManagement = () => {
 
   const handleStatusUpdate = async (leaveId, status) => {
     try {
-      await axios.put(`${API_URL}/api/leaves/${leaveId}`, { status });
+      await axios.put(`/api/leaves/${leaveId}`, { status });
       toast.success(`Demande ${status === 'approved' ? 'approuvée' : 'rejetée'}`);
       fetchData();
     } catch (error) {
@@ -299,7 +299,7 @@ const TimeManagement = () => {
     setDeleteLeaveDialog({ open: false, leaveId: null });
     
     try {
-      await axios.delete(`${API_URL}/api/leaves/${leaveId}`);
+      await axios.delete(`/api/leaves/${leaveId}`);
       toast.success('Congé supprimé');
       fetchData();
     } catch (error) {
@@ -336,7 +336,7 @@ const TimeManagement = () => {
 
   const handleCheckIn = async () => {
     try {
-      await axios.post(`${API_URL}/api/attendance/check-in`);
+      await axios.post(`/api/attendance/check-in`);
       toast.success('Pointage d\'entrée enregistré');
       fetchData();
     } catch (error) {
@@ -346,7 +346,7 @@ const TimeManagement = () => {
 
   const handleCheckOut = async () => {
     try {
-      await axios.post(`${API_URL}/api/attendance/check-out`);
+      await axios.post(`/api/attendance/check-out`);
       toast.success('Pointage de sortie enregistré');
       fetchData();
     } catch (error) {
@@ -358,7 +358,7 @@ const TimeManagement = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await axios.post(`${API_URL}/api/attendance`, attendanceForm);
+      await axios.post(`/api/attendance`, attendanceForm);
       toast.success('Pointage enregistré');
       setAttendanceDialogOpen(false);
       setAttendanceForm({ employee_id: '', date: format(new Date(), 'yyyy-MM-dd'), check_in: '', check_out: '', notes: '' });

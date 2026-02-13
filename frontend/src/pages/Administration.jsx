@@ -21,11 +21,9 @@ import {
   Users, Plus, Search, Filter, Loader2, Mail, Phone, 
   Building2, Calendar, Briefcase, Edit, Trash2, Eye, Download, Upload
 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../config/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-
-import API_URL from "../config/api";
 
 const Administration = () => {
   const navigate = useNavigate();
@@ -95,8 +93,8 @@ const Administration = () => {
   const fetchData = async () => {
     try {
       const [empRes, sitesRes] = await Promise.all([
-        axios.get(`${API_URL}/api/employees`),
-        axios.get(`${API_URL}/api/sites`)
+        axios.get(`/api/employees`),
+        axios.get(`/api/sites`)
       ]);
       setEmployees(empRes.data.employees || []);
       setSites(sitesRes.data.sites || []);
@@ -119,10 +117,10 @@ const Administration = () => {
       };
       
       if (editEmployee) {
-        await axios.put(`${API_URL}/api/employees/${editEmployee.id}`, payload);
+        await axios.put(`/api/employees/${editEmployee.id}`, payload);
         toast.success('Employé mis à jour');
       } else {
-        await axios.post(`${API_URL}/api/employees`, payload);
+        await axios.post(`/api/employees`, payload);
         toast.success('Employé ajouté');
       }
       setDialogOpen(false);
@@ -165,7 +163,7 @@ const Administration = () => {
     setDeleteDialog({ open: false, id: null, permanent: false });
     
     try {
-      await axios.delete(`${API_URL}/api/employees/${id}`, {
+      await axios.delete(`/api/employees/${id}`, {
         params: { permanent }
       });
       toast.success(permanent ? 'Employé supprimé définitivement' : 'Employé désactivé');
@@ -270,7 +268,7 @@ const Administration = () => {
         
         if (firstName && lastName && email) {
           try {
-            await axios.post(`${API_URL}/api/employees`, {
+            await axios.post(`/api/employees`, {
               first_name: firstName,
               last_name: lastName,
               email: email,

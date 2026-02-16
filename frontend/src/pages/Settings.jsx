@@ -83,7 +83,7 @@ const Settings = () => {
     
     setPasswordLoading(true);
     try {
-      await axios.put(`${API_URL}/api/auth/change-password`, {
+      await axios.put('/api/auth/change-password', {
         current_password: passwordData.current_password,
         new_password: passwordData.new_password
       });

@@ -13,9 +13,7 @@ import {
   Bell,
   UserCheck
 } from 'lucide-react';
-import axios from 'axios';
-
-import API_URL from "../config/api";
+import axios from '../config/api';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -30,7 +28,7 @@ const Dashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/dashboard/stats`);
+      const response = await axios.get('/api/dashboard/stats');
       setStats(response.data);
     } catch (error) {
       console.error('Failed to fetch stats:', error);

@@ -14,10 +14,8 @@ import {
   Building2, MapPin, Plus, Edit, Trash2, Users, UserCog, 
   Loader2, ArrowLeft, ChevronRight, Crown, User
 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../config/api';
 import { toast } from 'sonner';
-
-import API_URL from "../config/api";
 
 const SitesManagement = () => {
   const { isAdmin } = useAuth();
@@ -70,13 +68,14 @@ const SitesManagement = () => {
   const fetchData = async () => {
     try {
       const [sitesRes, employeesRes] = await Promise.all([
-        axios.get(`${API_URL}/api/sites`),
-        axios.get(`${API_URL}/api/employees`)
+        axios.get('/api/sites'),
+        axios.get('/api/employees')
       ]);
       setSites(sitesRes.data.sites || []);
       setEmployees(employeesRes.data.employees || []);
     } catch (error) {
       console.error('Error fetching data:', error);
+      toast.error('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
     }
@@ -88,10 +87,10 @@ const SitesManagement = () => {
     setSubmitting(true);
     try {
       if (editSite) {
-        await axios.put(`${API_URL}/api/sites/${editSite.id}`, siteForm);
+        await axios.put(`/api/sites/${editSite.id}`, siteForm);
         toast.success('Site mis à jour');
       } else {
-        await axios.post(`${API_URL}/api/sites`, siteForm);
+        await axios.post('/api/sites', siteForm);
         toast.success('Site créé');
       }
       setSiteDialogOpen(false);
@@ -99,7 +98,7 @@ const SitesManagement = () => {
       setSiteForm({ name: '', city: '', country: 'RDC', address: '' });
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur');
+      toast.error(error.response?.data?.detail || 'Erreur lors de la création/modification du site');
     } finally {
       setSubmitting(false);
     }
@@ -114,7 +113,7 @@ const SitesManagement = () => {
     setDeleteSiteDialog({ open: false, siteId: null });
     
     try {
-      await axios.delete(`${API_URL}/api/sites/${siteId}`);
+      await axios.delete(`/api/sites/${siteId}`);
       toast.success('Site supprimé');
       fetchData();
     } catch (error) {

@@ -7,12 +7,10 @@ import { ScrollArea } from './ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Send, MessageCircle, Loader2, Users, X } from 'lucide-react';
-import axios from 'axios';
+import axios from '../config/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-import API_URL from "../config/api";
 
 const LiveChat = () => {
   const { user } = useAuth();
@@ -222,7 +220,7 @@ const LiveChat = () => {
                   onClick={() => handleUserSelect(u)}
                 >
                   <Avatar className="h-5 w-5 mr-2">
-                    <AvatarImage src={u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `${API_URL}${u.avatar_url.startsWith('/api/') ? '' : '/api'}${u.avatar_url}`) : null} />
+                    <AvatarImage src={u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `${axios.defaults.baseURL}${u.avatar_url}`) : null} />
                     <AvatarFallback className="text-xs">
                       {u.first_name?.[0]}{u.last_name?.[0]}
                     </AvatarFallback>

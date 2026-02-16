@@ -55,7 +55,7 @@ const Settings = () => {
     formDataUpload.append('file', file);
     
     try {
-      const response = await axios.post(`${API_URL}/api/upload/avatar/${user.id}`, formDataUpload, {
+      const response = await axios.post(`/api/upload/avatar/${user.id}`, formDataUpload, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success('Photo de profil mise à jour');

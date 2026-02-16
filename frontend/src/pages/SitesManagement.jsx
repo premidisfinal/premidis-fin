@@ -136,7 +136,7 @@ const SitesManagement = () => {
   const getAvatarUrl = (avatarUrl) => {
     if (!avatarUrl) return null;
     if (avatarUrl.startsWith('http')) return avatarUrl;
-    return `${API_URL}${avatarUrl.startsWith('/api/') ? '' : '/api'}${avatarUrl}`;
+    return `${axios.defaults.baseURL}${avatarUrl}`;
   };
 
   // Get employees for a specific site grouped by department

@@ -13,9 +13,7 @@ import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { User, Globe, Bell, Shield, Palette, Loader2, Moon, Sun, Lock, Camera } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
-
-import API_URL from "../config/api";
+import axios from '../config/api';
 
 const Settings = () => {
   const { user, updateUser } = useAuth();
@@ -120,7 +118,7 @@ const Settings = () => {
             <div className="flex items-center gap-6">
               <div className="relative">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${API_URL}${user.avatar_url.startsWith('/api/') ? '' : '/api'}${user.avatar_url}`) : null} />
+                  <AvatarImage src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${axios.defaults.baseURL}${user.avatar_url}`) : null} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                     {user?.first_name?.[0]}{user?.last_name?.[0]}
                   </AvatarFallback>

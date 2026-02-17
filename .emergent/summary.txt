@@ -1,202 +1,165 @@
 <analysis>**original_problem_statement:**
-L'utilisateur souhaite refondre en profondeur une application RH existante pour en simplifier l'utilisation, centraliser les informations et corriger de multiples bugs et problèmes de logique métier. Les exigences principales ont été fournies dans une série d'instructions détaillées et sont les suivantes :
+The user's primary request is to completely overhaul the permissions system. They want a dynamic module that automatically scans the entire application (backend API routes, frontend modules) to generate a comprehensive map of all features, pages, and actions (view, create, edit, delete, etc.). The current system is static and outdated, preventing the user from managing access to newly added features.
 
-**LATEST PRODUCT REQUIREMENTS (Basé sur les derniers messages de l'utilisateur):**
+Additionally, the user reported several other issues which have since been resolved:
+- Critical production bugs related to inconsistent resource URLs (images/documents not loading).
+- A non-functional dashboard that was not displaying real-time data.
+- Errors within the Sites module that prevented site creation.
+- A request to build a new, backend-driven notification system with custom alerts (e.g., user login notifications), automatic leave reminders, and a UI indicator for unread notifications.
 
-1.  **Module Site de travail (Refonte Majeure) :**
-    *   Les sites doivent être cliquables.
-    *   En entrant dans un site, afficher la liste des départements, et pour chaque département, le chef et la liste des employés.
-    *   La hiérarchie (employés par site/département) doit être générée **automatiquement** à partir des données des dossiers employés.
-    *   Supprimer complètement le sous-module Groupe hiérarchique.
-
-2.  **Module Congés (Refonte Majeure) :**
-    *   Simplifier radicalement la logique de demande de congé.
-    *   La date de fin doit être calculée **automatiquement** si une durée est pré-configurée pour un type de congé. L'utilisateur ne sélectionne que la date de début.
-    *   Supprimer **toutes** les notifications et alertes bloquantes.
-    *   Seules 2 alertes informatives (non-bloquantes) sont autorisées : si plus de la moitié de l'entreprise est en congé, ou si le jour est un dimanche.
-    *   Ajouter un type de congé Congé permanent / récurrent.
-    *   Permettre la suppression des congés depuis le calendrier principal dans l'onglet Mes congés.
-
-3.  **Module Gestion du Personnel :**
-    *   Simplifier le formulaire de création d'employé avec des champs obligatoires spécifiques (Prénom, Nom, Email, Téléphone, Département, Site, Niveau hiérarchique, Date d’embauche, Salaire, Pays).
-    *   Supprimer complètement le champ Type de contrat de toute l'application.
-    *   Ajouter des filtres de recherche par Site, Département, et Niveau hiérarchique.
-
-4.  **Dossier Employé (Centralisation) :**
-    *   Le sous-module Congés doit être simplifié pour afficher **uniquement** le calendrier personnel et l'historique des congés. Supprimer le solde, les statistiques et autres calculs.
-    *   Le sous-module Informations doit être nettoyé, notamment en supprimant Type de contrat.
-    *   La photo de profil doit s'afficher correctement partout.
-    *   La modification du salaire doit être fonctionnelle pour un admin (y compris sur son propre profil).
-    *   Les documents doivent être visualisables, renommables et supprimables.
-
-**User's preferred language**: French (fr). Le prochain agent DOIT répondre en français.
+**User's preferred language**:
+French. The next agent MUST respond and communicate in French.
 
 **what currently exists?**
-L'application est une plateforme RH full-stack (React/FastAPI/MongoDB). L'agent a récemment terminé une série intensive de modifications basées sur les demandes de l'utilisateur. Les fonctionnalités clés suivantes ont été implémentées ou corrigées :
-- **Correction d'affichage de la photo de profil** : Le problème de routage (Ingress Kubernetes) a été résolu en servant les fichiers via .
-- **Refonte partielle des modules** : Des versions initiales des refontes pour Sites de travail, Congés, et Gestion du Personnel ont été implémentées.
-- **Fonctionnalités du Dossier Employé** : Le sous-module Congés a été simplifié, les documents sont désormais gérables (voir, renommer, supprimer), et des champs ont été ajoutés à l'onglet Identité.
-- **Correction de bugs** : Le bug empêchant la modification du salaire et celui masquant le bouton de suppression des congés ont été résolus et testés. L'application est compilée et fonctionnelle.
+The application is a full-stack project using React, FastAPI, and MongoDB. It is currently in a stable state after a series of major bug fixes.
+- **Bug Fixes:** Critical issues with the dashboard, Sites module, and inconsistent API URL construction have been resolved. The application is fully accessible and core features are working as expected.
+- **Notification System:** A new, comprehensive notification system has been implemented.
+    - **Backend:**  now includes a system for creating and managing notifications in a dedicated MongoDB collection. It automatically generates notifications on user login and uses  to run a daily job for sending leave reminders.
+    - **Frontend:** The  component has been updated to fetch notifications from the new API and displays a flashing red dot on the bell icon when there are unread notifications.
+- **Permissions Module:** Work has begun on the dynamic permissions module. The agent has analyzed the old static system and added the initial backend code to  for scanning FastAPI routes to generate a list of permissions.
 
 **Last working item**:
-- Last item agent was working: Correction de deux bugs signalés par l'utilisateur : 1) Impossibilité pour un admin de modifier son propre salaire. 2) Absence du bouton de suppression dans l'onglet Mes congés du module Congés.
-- Status: USER VERIFICATION PENDING
-- Agent Testing Done: Y
-- Which testing method agent to use? NA
-- User Testing Done: N
+- **Last item agent was working on:** Implementing the backend for the new dynamic permissions module. The agent had just finished the initial analysis and planning, and received user confirmation to proceed immediately with building the necessary API endpoints.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** Both. First, the backend testing agent to validate the new permission scanning and management endpoints. Then, the frontend testing agent to test the new UI for assigning permissions to roles.
+- **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- Issue 1: Le module Congés génère une erreur  dans les logs backend (non bloquant). (Priorité: P2)
+- **Issue 1 (P0): Implement Dynamic Permissions Module**
 
-  Issues Detail:
-  - Issue 1: 
-     - Attempted fixes: Aucune tentative, l'erreur a été vue dans les logs mais n'a pas empêché le fonctionnement.
-     - Next debug checklist: 
-       - Vérifier les versions des paquets  et  dans .
-       - Exécuter Looking in indexes: https://pypi.org/simple, https://d33sy5i8bnduwe.cloudfront.net/simple/
-Requirement already satisfied: passlib[bcrypt] in /root/.venv/lib/python3.11/site-packages (1.7.4)
-Requirement already satisfied: bcrypt>=3.1.0 in /root/.venv/lib/python3.11/site-packages (from passlib[bcrypt]) (4.1.3) pour s'assurer que les dépendances sont correctes.
-       - Consulter les logs backend (==> /var/log/supervisor/backend.err.log <==
-WARNING:  WatchFiles detected changes in 'server.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [86]
-INFO:     Started server process [189]
-INFO:     Waiting for application startup.
-INFO:server:PREMIDIS SARL HR Platform started
-INFO:     Application startup complete.
-
-==> /var/log/supervisor/backend.out.log <==) lors d'une opération de hashing de mot de passe (login/register) pour plus de détails.
-     - Why fix this issue and what will be achieved with the fix? Résoudre ce problème assurera la stabilité et la sécurité du processus d'authentification et nettoiera les logs d'erreurs.
-     - Status: NOT STARTED
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix? Backend (tester le login et l'enregistrement).
-     - Blocked on other issue: Non
+**Issues Detail:**
+- **Issue 1: Implement Dynamic Permissions Module**
+    - **Description:** The user wants to replace the current static, outdated permissions page with a fully dynamic system. This system must automatically scan all backend routes and frontend modules to generate a complete list of available actions. The final UI should present a matrix of permissions vs. roles (Administrator, Secretary, Employee), allowing an admin to easily grant or revoke access to any part of the application.
+    - **Attempted fixes:** The agent has started the backend implementation in . This includes adding new Pydantic models for permissions and a scanner function () that introspects the FastAPI application's routes. The next step is to build the API endpoints to expose this functionality.
+    - **Next debug checklist:**
+        1.  **Backend:** Complete the implementation of the API endpoints in  for managing permissions. This includes:
+            *   : To trigger the scan and populate the  collection in the database.
+            *   : To fetch the complete list of generated permissions.
+            *   : To retrieve the current permissions for a specific role.
+            *   : To update the permissions assigned to a role.
+        2.  **Frontend:** Completely refactor the  page.
+        3.  The new page must fetch the list of roles and the full permission map from the new backend endpoints.
+        4.  It should render a user-friendly interface, likely a table or grid, with permissions grouped by module and checkboxes for each role.
+        5.  Implement the save functionality to send the updated role-permission mapping back to the server via the  endpoint.
+    - **Why fix this issue and what will be achieved with the fix?** This is a critical, high-priority user request. Completing it will provide the user with full administrative control over application access, ensuring the security model keeps pace with development.
+    - **Status:** IN PROGRESS
+    - **Is recurring issue?** N
+    - **Should Test frontend/backend/both after fix?** Both
 
 **In progress Task List**:
-- None
+- **Task 1: Complete Backend for Dynamic Permissions (P0)**
+    - **Where to resume:** Continue editing  to add the full set of API endpoints for scanning, seeding, fetching, and updating permissions and roles.
+    - **What will be achieved with this?** A robust, complete backend API for managing dynamic, auto-generated permissions.
+    - **Status:** IN PROGRESS
+    - **Should Test frontend/backend/both after fix?** Backend
+    - **Blocked on something:** None.
+
+- **Task 2: Refactor Frontend for Dynamic Permissions (P1)**
+    - **Where to resume:** After the backend API is complete and tested, begin the rewrite of .
+    - **What will be achieved with this?** A functional UI that allows administrators to manage user permissions for the entire application dynamically.
+    - **Status:** NOT STARTED
+    - **Should Test frontend/backend/both after fix?** Frontend
+    - **Blocked on something:** Task 1.
 
 **Upcoming and Future Tasks**
-- **Upcoming Tasks:** (Basé sur la demande de refonte détaillée de l'utilisateur - Chat Message 268)
-
-    1.  **Refonte Majeure - Module Sites de travail (P0):**
-        *   **Objectif:** Rendre le module visuel et automatique.
-        *   **Action:** Modifier  pour que chaque site cliquable révèle une vue détaillée avec les départements, le chef de chaque département, et la liste des employés. Les données doivent provenir automatiquement des dossiers employés.
-        *   **Backend:** S'assurer que l'endpoint  renvoie les données structurées (employés groupés par département).
-        *   **Supprimer:** Retirer toute la logique et l'UI liées au Groupe hiérarchique.
-
-    2.  **Refonte Majeure - Logique du Module Congés (P1):**
-        *   **Objectif:** Simplifier radicalement la création de congés.
-        *   **Action:** Modifier  et le backend ().
-        *   Implémenter le calcul automatique de la date de fin lorsque l'utilisateur sélectionne un type de congé à durée définie.
-        *   Supprimer toutes les validations et alertes **bloquantes**.
-        *   Ajouter les deux alertes **informatives** (non-bloquantes) spécifiées par l'utilisateur.
-        *   **Backend:** Ajouter le support pour le type Congé permanent / récurrent dans la base de données et les endpoints.
-
-    3.  **Finalisation - Module Gestion du Personnel (P2):**
-        *   **Objectif:** Aligner le module avec les exigences finales.
-        *   **Action:** Vérifier que le formulaire de création d'employé dans  correspond exactement aux nouveaux champs et que Type de contrat est bien supprimé de la logique de création ().
-        *   Vérifier que le champ Type de contrat est aussi supprimé de la vue du dossier employé (), l'agent l'a retiré de l'UI mais il faut confirmer qu'aucune logique résiduelle ne subsiste.
-
-- **Future Tasks:**
-    1.  **Test de régression complet (P3):** Une fois toutes les refontes terminées et validées par l'utilisateur, lancer les agents de test backend et frontend pour une validation complète.
+- **Future Task (P1): Implement OCR Document Conversion.** The user wants to upload an image or PDF and convert it into a fully editable document, preserving the original layout with 100% fidelity. The agreed-upon technology is **Google Cloud Vision API**. This task was paused to fix critical bugs.
+- **Future Task (P2): Remove Obsolete Code.** Delete the old, unused component files (, ) and their associated backend routes to clean up the codebase.
 
 **Completed work in this session**
-- **Refonte Fonctionnelle :**
-  - **Photos de Profil (Corrigé):** Résolution du problème d'affichage en routant les fichiers via  et en mettant à jour tous les composants frontend concernés.
-  - **Module Sites de travail (v1):** Création de la page  et des endpoints backend, affichant une liste de sites cliquables.
-  - **Module Gestion du Personnel (v1):** Mise à jour du formulaire de création et des filtres de recherche dans . Suppression du champ Type de contrat.
-  - **Module Congés (v1):** Ajout de la suppression de congés dans l'onglet Mes congés et simplification de la logique.
-  - **Dossier Employé (Amélioré):**
-    - Sous-module Congés simplifié pour n'afficher que le calendrier et l'historique.
-    - Gestion complète des documents (visualisation, renommage, suppression) ajoutée.
-    - Onglet Informations mis à jour pour refléter les nouveaux champs de données.
-- **Corrections de Bugs Récents:**
-  - **Modification du Salaire (Corrigé):** Les administrateurs peuvent maintenant modifier leur propre salaire.
-  - **Suppression des Congés (Corrigé):** Le bouton de suppression est maintenant visible et fonctionnel.
+- **Critical Bug Fixes:**
+  - Resolved the Objects are not valid as a React child login error, making the application accessible.
+  - Standardized all frontend API calls to use a central  instance, fixing widespread issues with data loading on the dashboard, Sites module, and for static assets (images/documents).
+- **Dashboard Synchronization:** The main dashboard is now fully functional and displays correct, real-time statistics (e.g., total employees).
+- **Custom Notification System:**
+  - **Backend:** Implemented a full-featured notification system in  with database storage, custom notification endpoints for admins, and automatic alerts for user logins.
+  - **Scheduler:** Integrated  to send daily reminders for upcoming employee leaves.
+  - **Frontend:** Updated the UI to include a flashing red dot on the notification icon for unread items and a panel to display all notifications.
+- **Initial Work on Permissions:** Analyzed the legacy system and began the backend implementation for the new dynamic permissions module.
 
 **Earlier issues found/mentioned but not fixed**
-   - Issue 1: 
-     - Debug checklist:
-       - Vérifier les versions de  et  dans .
-       - Mettre à jour les paquets si nécessaire.
-       - Vérifier les logs backend lors du login/register.
-     - Why to solve this issue and what will be achieved with this? Assurer la stabilité du système d'authentification et avoir des logs propres.
-     - Should Test frontend/backend/both after fix: Backend
-     - Is recurring issue? Y
+None.
 
 **Known issue recurrence from previous fork**
-  - None.
+None.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend:** React, Tailwind CSS, Shadcn/UI, Axios, date-fns
-- **Backend:** FastAPI, Python
-- **Database:** MongoDB
-- **Authentication:** JWT (JSON Web Tokens)
-- **Email:** Resend API
+- **Dynamic Permission Generation:** The core concept for the current task, which involves programmatically inspecting FastAPI routes () to build a permission map.
+- **Scheduled Background Jobs:** Using  within FastAPI to run recurring tasks, such as sending daily notification reminders.
+- **Centralized API Configuration:** A key bug-fixing pattern was to enforce the use of a single, pre-configured  instance from  to ensure URL and header consistency.
 
 **key DB schema**
-- **users:** 
-- **documents:** 
-- **leaves:** 
-- **sites:** 
-- **behavior_notes:** 
+- **notifications (New):** 
+- **permissions (To be populated):** 
+- **roles:** 
 
 **changes in tech stack**
-- None in this session.
+- ****: Added to backend dependencies for handling scheduled notification tasks.
 
 **All files of reference**
-1.  **/app/frontend/src/pages/SitesManagement.jsx**: Fichier principal pour la prochaine tâche de refonte majeure.
-2.  **/app/frontend/src/pages/TimeManagement.jsx**: Fichier à refondre pour la logique de création de congés.
-3.  **/app/frontend/src/pages/Administration.jsx**: Fichier à vérifier pour la finalisation de la refonte de la gestion du personnel.
-4.  **/app/frontend/src/pages/EmployeeProfile.jsx**: Fichier contenant les sous-modules simplifiés (Congés, Informations).
-5.  **/app/backend/server.py**: Contient toute la logique backend qui devra être ajustée pour supporter les refontes frontend.
+- : The main backend file where the new permissions logic and API will reside.
+- : The frontend page that needs a complete rewrite.
+- : A recently completed component that serves as a good example of frontend-backend interaction.
+- : The file containing the standardized  instance.
 
 **Areas that need refactoring**:
-- Les modules  et  nécessitent une refonte majeure comme demandé explicitement par l'utilisateur (voir section Upcoming Tasks).
+-  requires a complete overhaul.
+- Obsolete files (, ) and their corresponding backend routes should be deleted.
 
 **key api endpoints**
-- **/api/uploads/{filename}**: Sert les fichiers statiques (avatars, documents).
-- **/api/sites**: CRUD pour la gestion des sites.
-- **/api/leaves/{leave_id}**: Endpoint  pour supprimer un congé.
-- **/api/documents/{doc_id}**: Endpoints  (renommer) et  (supprimer) pour les documents.
-- **/api/employees/{employee_id}/salary**: Endpoint  pour mettre à jour le salaire.
+- **New Notification Endpoints (Implemented):**
+    - 
+    - 
+    - 
+- **Upcoming Permission Endpoints (To be built):**
+    - 
+    - 
+    - 
 
 **Critical Info for New Agent**
-- **SUIVRE LA MÉTHODOLOGIE UTILISATEUR :** L'utilisateur insiste sur un cycle : **VÉRIFIER → EXPLIQUER → RÉPONDRE → CORRIGER**. Vous devez d'abord analyser et expliquer le problème avant de proposer et d'implémenter une solution.
-- **NOUVELLES EXIGENCES PRIORITAIRES :** L'utilisateur a fourni un ensemble de requisitos très détaillés (Chat Message 268) qui redéfinissent le fonctionnement de plusieurs modules clés. Ce message est votre nouvelle feuille de route et a la priorité sur tout le reste.
-- **Priorité n°1 :** La refonte du module Sites de travail pour le rendre automatique et visuel.
+- **Top Priority:** Your sole focus is to complete the **Dynamic Permissions Module**. The user has given explicit instructions to continue the implementation immediately.
+- **Execution Plan:**
+    1.  Finish building all the backend API endpoints in  as planned.
+    2.  Once the backend is complete and tested, rewrite the  frontend page to consume the new API and provide the required management interface.
+- **User Expectation:** The user expects a flawless system that automatically discovers every single feature in the application and makes it available for permission assignment. The solution must be comprehensive.
 
 **documents and test reports created in this job**
--  (mis à jour après les tests backend et frontend)
+None.
 
-**Last 10 User Messages and any pending HUMAN messages** 
-1.  **[LATEST]** User reported 2 bugs: salary modification doesn't work, and leave deletion is missing. (Status: Fix implemented, pending user verification)
-2.  User provided a very long and detailed list of new requirements for a major refactor of several modules (Sites, Leave, Personnel Management). (Status: Acknowledged, tasks created)
-3.  User confirmed that the agent can proceed with the fixes. (Status: Completed)
-4.  Agent asked for confirmation to proceed with the major refactor plan. (Status: Confirmed by user)
-5.  User is asking to terminate what the agent was doing. (Status: Completed)
-6.  User asks to start with leave management, then sites, then documents, then behavior, then identity tab without stopping. (Status: Completed)
-7.  User confirmed the fix for the profile picture. (Status: Completed)
+**Last 10 User Messages and any pending HUMAN messages**
+- **User (222):** continue with part 2 right away so that everything is functional - Confirmed the plan to proceed with the permissions module. (PENDING - This is the current task)
+- **User (211):** Provided a detailed request for the dynamic permissions module overhaul. (IN PROGRESS)
+- **User (178):** Requested UI/UX improvements for the notification system (flashing dot, reminders on login). (RESOLVED)
+- **User (172):** Asked for a full test with screenshots of all recent bug fixes. (RESOLVED)
+- **User (133):** Initial request to create the new backend-driven, customizable notification system. (RESOLVED)
+- **User (110):** Reported bugs with the Sites module and the non-syncing dashboard. (RESOLVED)
+- **User (85):** Reported that images and documents were not loading correctly in production. (RESOLVED)
+- **User (82):** Confirmed using Google Cloud Vision for a future OCR feature. (FUTURE TASK)
+- **User (79):** Provided detailed requirements for the OCR feature's quality. (FUTURE TASK)
+- **User (76):** Initial request for a new feature to convert images/documents to editable text (OCR). (FUTURE TASK)
 
 **Project Health Check:**
-- **Healthy:** L'application est stable, fonctionnelle, et les derniers bugs signalés ont été corrigés. Elle est prête pour la prochaine vague de refonte majeure demandée par l'utilisateur.
+- **Broken:** None. The application is stable.
+- **Mocked:** The  module is the only non-functional part, displaying outdated static data. It is the subject of the current implementation task.
 
 **3rd Party Integrations**
-- **Resend:** Utilisé pour les notifications par email. Clé API requise :  dans .
+- ****: Used for  to HTML conversion.
+- ****: Used for scheduled notification jobs.
+- **Google Cloud Vision API**: Planned for a future OCR feature. The user needs to provide an API key for this.
 
 **Testing status**
-- Testing agent used after significant changes: YES (backend and frontend agents were used).
-- Troubleshoot agent used after agent stuck in loop: NO
-- Test files created: None.
-- Known regressions: None.
+- **Testing agent used after significant changes:** YES, used to verify recent widespread bug fixes.
+- **Troubleshoot agent used after agent stuck in loop:** YES, successfully diagnosed a login issue.
+- **Test files created:** None.
+- **Known regressions:** None.
 
 **Credentials to test flow:**
-- Créez un nouvel utilisateur administrateur via la page . Le système est configuré pour une inscription ouverte sans approbation.
+- **User:** 
+- **Password:** 
 
 **What agent forgot to execute**
-- L'agent a vu une erreur  dans les logs backend mais ne l'a pas investiguée car elle n'était pas bloquante. Cela devrait être examiné pour assurer la propreté des logs et la robustesse de l'authentification.</analysis>
+- The task to delete obsolete files (, etc.) from a previous session has not yet been completed.
+- The OCR feature implementation, though discussed and planned, was deferred to handle more critical bugs and remains in the future task list.</analysis>

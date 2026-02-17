@@ -17,6 +17,7 @@ from enum import Enum
 import mammoth
 import io
 import re
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -37,6 +38,40 @@ security = HTTPBearer()
 
 # Create the main app
 app = FastAPI(title="PREMIDIS SARL - HR Platform", version="2.0.0")
+
+# Background task scheduler
+from contextlib import asynccontextmanager
+
+async def daily_leave_reminder_task():
+    """Background task that runs daily to send leave reminders"""
+    while True:
+        try:
+            # Wait until 8 AM tomorrow
+            now = datetime.now(timezone.utc)
+            tomorrow_8am = (now + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
+            wait_seconds = (tomorrow_8am - now).total_seconds()
+            
+            await asyncio.sleep(wait_seconds)
+            
+            # Send reminders
+            await send_leave_reminders()
+            logging.info("Daily leave reminders sent successfully")
+        except Exception as e:
+            logging.error(f"Error in daily leave reminder task: {e}")
+            await asyncio.sleep(3600)  # Wait 1 hour before retry
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start background tasks
+    task = asyncio.create_task(daily_leave_reminder_task())
+    logging.info("Leave reminder scheduler started")
+    yield
+    # Shutdown: Cancel background tasks
+    task.cancel()
+    logging.info("Leave reminder scheduler stopped")
+
+# Recreate app with lifespan
+app = FastAPI(title="PREMIDIS SARL - HR Platform", version="2.0.0", lifespan=lifespan)
 
 # ==================== ENUMS ====================
 class UserRole(str, Enum):

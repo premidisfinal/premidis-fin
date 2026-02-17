@@ -2210,6 +2210,111 @@ async def get_notifications(
     
     return {"notifications": notifications, "unread_count": unread_count}
 
+@notifications_router.post("/create")
+async def create_custom_notification(
+    notification_data: NotificationCreate,
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Admin: Create custom notification for specific users"""
+    # Resolve target users
+    user_ids = []
+    
+    if "all_admins" in notification_data.target_users:
+        admins = await db.users.find(
+            {"role": {"$in": ["admin", "super_admin"]}, "is_active": True},
+            {"_id": 0, "id": 1}
+        ).to_list(100)
+        user_ids.extend([admin["id"] for admin in admins])
+    
+    if "all_users" in notification_data.target_users:
+        all_users = await db.users.find(
+            {"is_active": True},
+            {"_id": 0, "id": 1}
+        ).to_list(1000)
+        user_ids.extend([user["id"] for user in all_users])
+    
+    # Add specific user IDs
+    for target in notification_data.target_users:
+        if target not in ["all_admins", "all_users"]:
+            user_ids.append(target)
+    
+    # Remove duplicates
+    user_ids = list(set(user_ids))
+    
+    if not user_ids:
+        raise HTTPException(status_code=400, detail="Aucun utilisateur cible spécifié")
+    
+    # Create notifications
+    count = await create_notification(
+        user_ids=user_ids,
+        title=notification_data.title,
+        message=notification_data.message,
+        notification_type=notification_data.type,
+        link=notification_data.link
+    )
+    
+    return {"message": f"Notification envoyée à {count} utilisateur(s)", "count": count}
+
+@notifications_router.get("/templates")
+async def get_notification_templates(
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Admin: Get all notification templates"""
+    templates = await db.notification_templates.find({}, {"_id": 0}).to_list(100)
+    return {"templates": templates}
+
+@notifications_router.post("/templates")
+async def create_notification_template(
+    template_data: NotificationTemplate,
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Admin: Create notification template"""
+    template = {
+        "id": str(uuid.uuid4()),
+        **template_data.model_dump(),
+        "created_by": current_user["id"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.notification_templates.insert_one(template)
+    template.pop("_id", None)
+    
+    return {"message": "Template créé", "template": template}
+
+@notifications_router.put("/templates/{template_id}")
+async def update_notification_template(
+    template_id: str,
+    template_data: NotificationTemplate,
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Admin: Update notification template"""
+    update_data = template_data.model_dump()
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_by"] = current_user["id"]
+    
+    result = await db.notification_templates.update_one(
+        {"id": template_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Template non trouvé")
+    
+    return {"message": "Template mis à jour"}
+
+@notifications_router.delete("/templates/{template_id}")
+async def delete_notification_template(
+    template_id: str,
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Admin: Delete notification template"""
+    result = await db.notification_templates.delete_one({"id": template_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Template non trouvé")
+    
+    return {"message": "Template supprimé"}
+
 @notifications_router.put("/{notification_id}/read")
 async def mark_notification_read(
     notification_id: str,
@@ -2239,6 +2344,67 @@ async def delete_notification(
     """Delete a notification"""
     await db.notifications.delete_one({"id": notification_id, "user_id": current_user["id"]})
     return {"message": "Notification supprimée"}
+
+@notifications_router.delete("/clear-all")
+async def clear_all_notifications(
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Admin: Clear all error notifications"""
+    result = await db.notifications.delete_many({"type": {"$in": ["error", "warning"]}})
+    return {"message": f"{result.deleted_count} notification(s) d'erreur supprimée(s)"}
+
+# ==================== LEAVE REMINDER SCHEDULER ====================
+async def send_leave_reminders():
+    """Send reminders for leaves starting tomorrow"""
+    tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).date()
+    tomorrow_str = tomorrow.isoformat()
+    
+    # Find leaves starting tomorrow
+    leaves = await db.leaves.find(
+        {
+            "status": "approved",
+            "start_date": tomorrow_str
+        },
+        {"_id": 0}
+    ).to_list(100)
+    
+    for leave in leaves:
+        employee = await db.users.find_one({"id": leave["employee_id"]}, {"_id": 0})
+        if not employee:
+            continue
+        
+        employee_name = f"{employee.get('first_name', '')} {employee.get('last_name', '')}".strip()
+        leave_type = leave.get("type", "Congé")
+        start_date = leave.get("start_date", "")
+        end_date = leave.get("end_date", "")
+        
+        # Notification pour l'admin
+        await create_admin_notification(
+            title=f"📅 Rappel: Congé de {employee_name} demain",
+            message=f"{employee_name} commence son {leave_type} demain ({start_date} au {end_date})",
+            notification_type="info",
+            link="/time-management"
+        )
+        
+        # Notification pour l'employé
+        await create_notification(
+            user_ids=[leave["employee_id"]],
+            title=f"📅 Rappel: Votre congé commence demain",
+            message=f"Votre {leave_type} commence demain ({start_date} au {end_date})",
+            notification_type="info",
+            link="/time-management"
+        )
+    
+    return len(leaves)
+
+@notifications_router.post("/test-leave-reminders")
+async def test_leave_reminders(
+    current_user: dict = Depends(require_roles(["admin", "super_admin"]))
+):
+    """Admin: Test leave reminder system"""
+    count = await send_leave_reminders()
+    return {"message": f"Rappels envoyés pour {count} congé(s)"}
+
 
 # ==================== SITES & HIERARCHICAL GROUPS ROUTES ====================
 class SiteCreate(BaseModel):

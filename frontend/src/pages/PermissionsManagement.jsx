@@ -62,7 +62,7 @@ const PermissionsManagement = () => {
   const handleScanPermissions = async () => {
     setScanning(true);
     try {
-      const response = await api.post('/permissions/scan');
+      const response = await api.post('/api/permissions/scan');
       toast.success(`✅ ${response.data.message} - ${response.data.total_permissions} permissions générées`);
       await fetchData();
       setHasChanges(false);

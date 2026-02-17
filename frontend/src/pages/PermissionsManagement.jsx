@@ -115,7 +115,7 @@ const PermissionsManagement = () => {
       // Sauvegarder les permissions de tous les rôles
       const savePromises = roles.map(role => {
         const permissionsArray = Array.from(rolePermissions[role.role] || []);
-        return api.put(`/permissions/roles/${role.role}`, {
+        return api.put(`/api/permissions/roles/${role.role}`, {
           permissions: permissionsArray
         });
       });

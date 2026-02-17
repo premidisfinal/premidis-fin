@@ -12,13 +12,11 @@ import {
 } from './ui/popover';
 import { 
   Bell, MessageSquare, Calendar, FileText, 
-  CheckCircle, AlertCircle, Info, X, Check
+  CheckCircle, AlertCircle, Info, X, Check, Lock
 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../config/api';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-import API_URL from "../config/api";
 
 const NotificationCenter = () => {
   const { user } = useAuth();
@@ -37,67 +35,17 @@ const NotificationCenter = () => {
 
   const fetchNotifications = async () => {
     try {
-      // Fetch chat unread messages
-      const chatUnreadRes = await axios.get(`${API_URL}/api/communication/chat/unread`);
-      const chatUnread = chatUnreadRes.data.total || 0;
+      // Fetch system notifications from new API
+      const response = await axios.get('/api/notifications');
+      const systemNotifs = response.data.notifications || [];
+      const unread = response.data.unread_count || 0;
       
-      // Fetch messages
-      const messagesRes = await axios.get(`${API_URL}/api/communication/messages`);
-      const messages = messagesRes.data.messages || [];
-      
-      // Fetch announcements
-      const announcementsRes = await axios.get(`${API_URL}/api/communication/announcements`);
-      const announcements = announcementsRes.data.announcements || [];
-      
-      // Fetch leaves (for admin)
-      let leaves = [];
-      if (user?.role === 'super_admin' || user?.role === 'admin') {
-        const leavesRes = await axios.get(`${API_URL}/api/leaves`, { params: { status: 'pending' } });
-        leaves = leavesRes.data.leaves || [];
-      }
-
-      // Combine and format notifications
-      const notifs = [
-        // Add chat unread as notification
-        ...(chatUnread > 0 ? [{
-          id: 'chat-unread',
-          type: 'chat',
-          title: 'Messages non lus',
-          content: `Vous avez ${chatUnread} message${chatUnread > 1 ? 's' : ''} non lu${chatUnread > 1 ? 's' : ''}`,
-          timestamp: new Date().toISOString(),
-          icon: MessageSquare,
-          color: 'text-green-500',
-          read: false,
-          count: chatUnread
-        }] : []),
-        ...messages
-          .filter(m => m.receiver_id === user?.id && !m.read)
-          .slice(0, 5)
-          .map(m => ({
-            id: `msg-${m.id}`,
-            type: 'message',
-            title: 'Nouveau message',
-            content: `De ${m.sender_name}: ${m.content.substring(0, 50)}...`,
-            timestamp: m.created_at,
-            icon: MessageSquare,
-            color: 'text-blue-500',
-            read: m.read
-          })),
-        ...announcements
-          .slice(0, 3)
-          .map(a => ({
-            id: `ann-${a.id}`,
-            type: 'announcement',
-            title: a.title,
-            content: a.content.substring(0, 60) + '...',
-            timestamp: a.created_at,
-            icon: a.priority === 'high' ? AlertCircle : Info,
-            color: a.priority === 'high' ? 'text-red-500' : 'text-primary',
-            read: false,
-            priority: a.priority
-          })),
-        ...leaves
-          .slice(0, 5)
+      setNotifications(systemNotifs);
+      setUnreadCount(unread);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
           .map(l => ({
             id: `leave-${l.id}`,
             type: 'leave',

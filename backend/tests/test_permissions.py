@@ -235,9 +235,10 @@ class TestPermissionsBackend:
         )
         assert update_response.status_code == 200, f"Expected 200, got {update_response.status_code}: {update_response.text}"
         
-        # Verify update
+        # Verify update - response contains "role" object with permissions
         updated_data = update_response.json()
-        assert test_permission in updated_data["permissions"], "New permission should be added"
+        assert "role" in updated_data, "Response should contain 'role' object"
+        assert test_permission in updated_data["role"]["permissions"], "New permission should be added"
         
         # Restore original permissions
         restore_response = self.session.put(

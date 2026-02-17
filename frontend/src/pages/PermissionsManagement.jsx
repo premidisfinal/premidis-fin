@@ -3,116 +3,152 @@ import { useAuth } from '../contexts/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Switch } from '../components/ui/switch';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Checkbox } from '../components/ui/checkbox';
 import { 
-  Shield, Users, UserCheck, Settings, Save, Loader2, 
-  Megaphone, Calendar, DollarSign, Eye, Edit, Trash2
+  Shield, Users, UserCheck, Save, Loader2, 
+  RefreshCw, Check, X, AlertCircle, Scan
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../config/api';
 import { toast } from 'sonner';
-
-import API_URL from "../config/api";
-
-// Default permissions by role
-const defaultPermissions = {
-  admin: {
-    can_manage_employees: true,
-    can_approve_leaves: true,
-    can_post_announcements: true,
-    can_post_behavior: true,
-    can_view_salaries: true,
-    can_edit_salaries: true,
-    can_delete_employees: true,
-    can_manage_permissions: true
-  },
-  secretary: {
-    can_manage_employees: true,
-    can_approve_leaves: true,
-    can_post_announcements: true,
-    can_post_behavior: false,
-    can_view_salaries: false,
-    can_edit_salaries: false,
-    can_delete_employees: false,
-    can_manage_permissions: false
-  },
-  employee: {
-    can_manage_employees: false,
-    can_approve_leaves: false,
-    can_post_announcements: false,
-    can_post_behavior: false,
-    can_view_salaries: false,
-    can_edit_salaries: false,
-    can_delete_employees: false,
-    can_manage_permissions: false
-  }
-};
-
-const permissionLabels = {
-  can_manage_employees: { label: 'Gérer les employés', icon: Users, description: 'Créer, modifier les dossiers employés' },
-  can_approve_leaves: { label: 'Approuver les congés', icon: Calendar, description: 'Approuver/rejeter les demandes de congé' },
-  can_post_announcements: { label: 'Publier des annonces', icon: Megaphone, description: 'Créer des annonces officielles' },
-  can_post_behavior: { label: 'Noter le comportement', icon: UserCheck, description: 'Ajouter des notes de comportement' },
-  can_view_salaries: { label: 'Voir les salaires', icon: Eye, description: 'Voir les salaires des employés' },
-  can_edit_salaries: { label: 'Modifier les salaires', icon: DollarSign, description: 'Modifier les salaires' },
-  can_delete_employees: { label: 'Supprimer des employés', icon: Trash2, description: 'Supprimer définitivement des employés' },
-  can_manage_permissions: { label: 'Gérer les permissions', icon: Shield, description: 'Modifier les permissions des rôles' }
-};
 
 const PermissionsManagement = () => {
   const { isAdmin } = useAuth();
-  const [permissions, setPermissions] = useState(defaultPermissions);
+  const [modules, setModules] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [rolePermissions, setRolePermissions] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeRole, setActiveRole] = useState('secretary');
+  const [scanning, setScanning] = useState(false);
+  const [activeRole, setActiveRole] = useState('admin');
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-    fetchPermissions();
+    fetchData();
   }, []);
 
-  const fetchPermissions = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/api/config/permissions`);
-      if (response.data.permissions) {
-        setPermissions(response.data.permissions);
+      // Récupérer la structure des permissions
+      const structureResponse = await api.get('/permissions/structure');
+      setModules(structureResponse.data.modules || []);
+
+      // Récupérer tous les rôles
+      const rolesResponse = await api.get('/permissions/roles');
+      const rolesData = rolesResponse.data.roles || [];
+      setRoles(rolesData);
+
+      // Construire un objet rolePermissions pour chaque rôle
+      const permissionsMap = {};
+      rolesData.forEach(role => {
+        permissionsMap[role.role] = new Set(role.permissions);
+      });
+      setRolePermissions(permissionsMap);
+      
+      // Définir le premier rôle comme actif par défaut
+      if (rolesData.length > 0) {
+        setActiveRole(rolesData[0].role);
       }
     } catch (error) {
-      console.error('Error fetching permissions:', error);
+      console.error('Erreur lors du chargement des permissions:', error);
+      toast.error('Erreur lors du chargement des permissions');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggle = (role, permission) => {
-    setPermissions(prev => ({
-      ...prev,
-      [role]: {
-        ...prev[role],
-        [permission]: !prev[role][permission]
-      }
-    }));
+  const handleScanPermissions = async () => {
+    setScanning(true);
+    try {
+      const response = await api.post('/permissions/scan');
+      toast.success(`✅ ${response.data.message} - ${response.data.total_permissions} permissions générées`);
+      await fetchData();
+      setHasChanges(false);
+    } catch (error) {
+      console.error('Erreur lors du scan:', error);
+      toast.error('Erreur lors du scan des permissions');
+    } finally {
+      setScanning(false);
+    }
   };
 
-  const handleSave = async () => {
+  const handleTogglePermission = (role, permissionPath, isChecked) => {
+    setRolePermissions(prev => {
+      const newPermissions = new Set(prev[role] || []);
+      
+      if (isChecked) {
+        newPermissions.add(permissionPath);
+      } else {
+        newPermissions.delete(permissionPath);
+      }
+      
+      return {
+        ...prev,
+        [role]: newPermissions
+      };
+    });
+    setHasChanges(true);
+  };
+
+  const handleSaveRole = async (roleName) => {
     setSaving(true);
     try {
-      await axios.put(`${API_URL}/api/config/permissions`, { permissions });
-      toast.success('Permissions mises à jour');
+      const permissionsArray = Array.from(rolePermissions[roleName] || []);
+      await api.put(`/permissions/roles/${roleName}`, {
+        permissions: permissionsArray
+      });
+      toast.success(`✅ Permissions du rôle "${roleName}" sauvegardées`);
+      setHasChanges(false);
     } catch (error) {
-      toast.error('Erreur lors de la sauvegarde');
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast.error('Erreur lors de la sauvegarde des permissions');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleReset = () => {
-    setPermissions(defaultPermissions);
-    toast.info('Permissions réinitialisées (non sauvegardées)');
+  const handleSaveAll = async () => {
+    setSaving(true);
+    try {
+      // Sauvegarder les permissions de tous les rôles
+      const savePromises = roles.map(role => {
+        const permissionsArray = Array.from(rolePermissions[role.role] || []);
+        return api.put(`/permissions/roles/${role.role}`, {
+          permissions: permissionsArray
+        });
+      });
+      
+      await Promise.all(savePromises);
+      toast.success(`✅ Toutes les permissions ont été sauvegardées`);
+      setHasChanges(false);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast.error('Erreur lors de la sauvegarde des permissions');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getRoleBadgeColor = (roleName) => {
+    const colors = {
+      'super_admin': 'bg-purple-600',
+      'admin': 'bg-red-500',
+      'secretary': 'bg-blue-500',
+      'employee': 'bg-green-500'
+    };
+    return colors[roleName] || 'bg-gray-500';
+  };
+
+  const getRoleIcon = (roleName) => {
+    if (roleName === 'admin' || roleName === 'super_admin') return Shield;
+    if (roleName === 'secretary') return UserCheck;
+    return Users;
+  };
+
+  const getPermissionsCount = (roleName) => {
+    return rolePermissions[roleName]?.size || 0;
   };
 
   if (!isAdmin()) {
@@ -129,6 +165,16 @@ const PermissionsManagement = () => {
     );
   }
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6" data-testid="permissions-page">
@@ -139,84 +185,167 @@ const PermissionsManagement = () => {
               <Shield className="h-8 w-8 text-primary" />
               Gestion des Permissions
             </h1>
-            <p className="text-muted-foreground">Définissez ce que chaque rôle peut faire dans l'application</p>
+            <p className="text-muted-foreground">Système dynamique de gestion des accès par rôle</p>
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleReset}>
-              Réinitialiser
+            <Button 
+              variant="outline" 
+              onClick={handleScanPermissions}
+              disabled={scanning}
+            >
+              {scanning ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Scan className="mr-2 h-4 w-4" />
+              )}
+              Scanner
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button 
+              onClick={handleSaveAll} 
+              disabled={saving || !hasChanges}
+            >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Save className="mr-2 h-4 w-4" />
-              Enregistrer
+              Sauvegarder Tout
             </Button>
           </div>
         </div>
 
-        {/* Role Tabs */}
-        <Tabs value={activeRole} onValueChange={setActiveRole}>
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
-            <TabsTrigger value="admin" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Admin
-            </TabsTrigger>
-            <TabsTrigger value="secretary" className="flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
-              Secrétaire
-            </TabsTrigger>
-            <TabsTrigger value="employee" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Employé
-            </TabsTrigger>
-          </TabsList>
+        {/* Info Banner */}
+        {hasChanges && (
+          <Card className="border-orange-500 bg-orange-50 dark:bg-orange-950">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-orange-900 dark:text-orange-100">Modifications non sauvegardées</h3>
+                  <p className="text-sm text-orange-700 dark:text-orange-200">
+                    Vous avez des modifications en attente. N'oubliez pas de sauvegarder.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-          {['admin', 'secretary', 'employee'].map((role) => (
-            <TabsContent key={role} value={role} className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {role === 'admin' && <Badge className="bg-red-500">Administrateur</Badge>}
-                    {role === 'secretary' && <Badge className="bg-blue-500">Secrétaire</Badge>}
-                    {role === 'employee' && <Badge className="bg-green-500">Employé</Badge>}
-                  </CardTitle>
-                  <CardDescription>
-                    {role === 'admin' && 'Accès complet au système (certaines permissions ne peuvent être désactivées)'}
-                    {role === 'secretary' && 'Permissions pour la gestion quotidienne RH'}
-                    {role === 'employee' && 'Accès limité à son propre profil et données'}
-                  </CardDescription>
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {roles.map((role) => {
+            const RoleIcon = getRoleIcon(role.role);
+            return (
+              <Card key={role.role}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <RoleIcon className="h-5 w-5 text-muted-foreground" />
+                    <Badge className={getRoleBadgeColor(role.role)}>
+                      {role.label}
+                    </Badge>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {Object.entries(permissionLabels).map(([key, config]) => {
-                      const IconComponent = config.icon;
-                      const isDisabled = role === 'admin' && ['can_manage_permissions', 'can_delete_employees'].includes(key);
-                      
-                      return (
-                        <div 
-                          key={key} 
-                          className={`flex items-center justify-between p-4 rounded-lg border ${
-                            permissions[role]?.[key] ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'
-                          }`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`p-2 rounded-lg ${permissions[role]?.[key] ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                              <IconComponent className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <p className="font-medium">{config.label}</p>
-                              <p className="text-sm text-muted-foreground">{config.description}</p>
-                            </div>
-                          </div>
-                          <Switch
-                            checked={permissions[role]?.[key] || false}
-                            onCheckedChange={() => handleToggle(role, key)}
-                            disabled={isDisabled}
-                          />
-                        </div>
-                      );
-                    })}
+                  <div className="text-2xl font-bold">{getPermissionsCount(role.role)}</div>
+                  <p className="text-xs text-muted-foreground">permissions actives</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Role Tabs */}
+        <Tabs value={activeRole} onValueChange={setActiveRole}>
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+            {roles.map((role) => {
+              const RoleIcon = getRoleIcon(role.role);
+              return (
+                <TabsTrigger key={role.role} value={role.role} className="flex items-center gap-2">
+                  <RoleIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{role.label}</span>
+                  <span className="sm:hidden">{role.role}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+
+          {roles.map((role) => (
+            <TabsContent key={role.role} value={role.role} className="mt-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Badge className={getRoleBadgeColor(role.role)}>{role.label}</Badge>
+                      </CardTitle>
+                      <CardDescription className="mt-2">
+                        {role.description}
+                      </CardDescription>
+                    </div>
+                    <Button 
+                      size="sm"
+                      onClick={() => handleSaveRole(role.role)}
+                      disabled={saving || !hasChanges}
+                    >
+                      {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      <Save className="mr-2 h-4 w-4" />
+                      Sauvegarder
+                    </Button>
                   </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {modules.map((module) => (
+                    <div key={module.module} className="space-y-3">
+                      <div className="flex items-center gap-2 border-b pb-2">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Shield className="h-4 w-4 text-primary" />
+                        </div>
+                        <h3 className="font-semibold text-lg">{module.label}</h3>
+                        <Badge variant="secondary" className="ml-auto">
+                          {module.permissions.filter(p => rolePermissions[role.role]?.has(p.full_path)).length}/{module.permissions.length}
+                        </Badge>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 pl-10">
+                        {module.permissions.map((permission) => {
+                          const isChecked = rolePermissions[role.role]?.has(permission.full_path) || false;
+                          const isWildcard = rolePermissions[role.role]?.has('*') || false;
+                          
+                          return (
+                            <div 
+                              key={permission.full_path}
+                              className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors ${
+                                isChecked || isWildcard 
+                                  ? 'bg-primary/5 border-primary/30' 
+                                  : 'bg-muted/30 hover:bg-muted/50'
+                              }`}
+                            >
+                              <Checkbox
+                                id={`${role.role}-${permission.full_path}`}
+                                checked={isChecked || isWildcard}
+                                disabled={isWildcard}
+                                onCheckedChange={(checked) => 
+                                  handleTogglePermission(role.role, permission.full_path, checked)
+                                }
+                                className="mt-1"
+                              />
+                              <label
+                                htmlFor={`${role.role}-${permission.full_path}`}
+                                className="flex-1 cursor-pointer"
+                              >
+                                <p className="text-sm font-medium leading-none mb-1">
+                                  {permission.label}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {permission.action}
+                                </p>
+                              </label>
+                              {(isChecked || isWildcard) && (
+                                <Check className="h-4 w-4 text-primary flex-shrink-0 mt-1" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -227,13 +356,15 @@ const PermissionsManagement = () => {
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <Shield className="h-6 w-6 text-primary mt-0.5" />
-              <div>
-                <h3 className="font-semibold">Important</h3>
-                <p className="text-sm text-muted-foreground">
-                  Les modifications de permissions prennent effet immédiatement après l'enregistrement. 
-                  Les utilisateurs devront peut-être se reconnecter pour voir les changements.
-                </p>
+              <Shield className="h-6 w-6 text-primary mt-0.5 flex-shrink-0" />
+              <div className="space-y-2">
+                <h3 className="font-semibold">À propos du système de permissions</h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• <strong>Scanner</strong> : Régénère automatiquement toutes les permissions depuis l'application</li>
+                  <li>• <strong>Wildcard (*)</strong> : Le rôle super_admin dispose d'un accès complet automatique</li>
+                  <li>• <strong>Effet immédiat</strong> : Les modifications prennent effet après sauvegarde (reconnexion recommandée)</li>
+                  <li>• <strong>Permissions groupées</strong> : Les permissions sont organisées par module fonctionnel</li>
+                </ul>
               </div>
             </div>
           </CardContent>

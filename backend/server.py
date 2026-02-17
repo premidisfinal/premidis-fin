@@ -423,6 +423,7 @@ communication_router = APIRouter(prefix="/communication", tags=["Communication"]
 upload_router = APIRouter(prefix="/upload", tags=["Upload"])
 notifications_router = APIRouter(prefix="/notifications", tags=["Notifications"])
 sites_router = APIRouter(prefix="/sites", tags=["Sites de travail"])
+permissions_router = APIRouter(prefix="/permissions", tags=["Permissions Dynamiques"])
 
 # ==================== AUTH ROUTES ====================
 

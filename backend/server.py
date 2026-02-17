@@ -331,6 +331,28 @@ class DocumentUpdateContent(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
 
+# ==================== PERMISSIONS MODELS (NEW SYSTEM) ====================
+class PermissionItem(BaseModel):
+    key: str  # e.g., "view_employees"
+    label: str  # e.g., "Voir la liste des employés"
+    action: str  # e.g., "view", "create", "edit", "delete"
+    full_path: str  # e.g., "gestion_personnel.view_employees"
+
+class PermissionModule(BaseModel):
+    module: str  # e.g., "gestion_personnel"
+    label: str  # e.g., "Gestion du Personnel"
+    icon: str  # e.g., "Users"
+    permissions: List[PermissionItem]
+
+class RolePermissionsUpdate(BaseModel):
+    permissions: List[str]  # Liste des permissions au format "module.permission"
+
+class RoleInfo(BaseModel):
+    role: str  # e.g., "admin", "secretary", "employee"
+    label: str
+    description: str
+    permissions: List[str]
+
 # ==================== AUTH HELPERS ====================
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)

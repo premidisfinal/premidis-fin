@@ -40,12 +40,102 @@ const NotificationCenter = () => {
       const systemNotifs = response.data.notifications || [];
       const unread = response.data.unread_count || 0;
       
-      setNotifications(systemNotifs);
+      // Format notifications to include icon and color
+      const formatted = systemNotifs.map(notif => ({
+        ...notif,
+        icon: getIconForType(notif.type),
+        color: getColorForType(notif.type),
+        content: notif.message,
+        timestamp: notif.created_at
+      }));
+      
+      setNotifications(formatted);
       setUnreadCount(unread);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     }
   };
+  
+  const getIconForType = (type) => {
+    const iconMap = {
+      'info': Info,
+      'success': CheckCircle,
+      'warning': AlertCircle,
+      'error': AlertCircle,
+      'login': Lock,
+      'leave_overlap': Calendar,
+      'leave_reminder': Calendar,
+      'custom': Bell
+    };
+    return iconMap[type] || Bell;
+  };
+  
+  const getColorForType = (type) => {
+    const colorMap = {
+      'info': 'text-blue-500',
+      'success': 'text-green-500',
+      'warning': 'text-orange-500',
+      'error': 'text-red-500',
+      'login': 'text-purple-500',
+      'leave_overlap': 'text-yellow-500',
+      'leave_reminder': 'text-cyan-500',
+      'custom': 'text-primary'
+    };
+    return colorMap[type] || 'text-gray-500';
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      await axios.put(`/api/notifications/${notificationId}/read`);
+      fetchNotifications();
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await axios.put('/api/notifications/read-all');
+      fetchNotifications();
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
+  };
+
+  const getTimeAgo = (timestamp) => {
+    try {
+      return formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: fr });
+    } catch (e) {
+      return '';
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="relative rounded-full"
+          data-testid="notification-bell"
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <>
+              {/* Badge with count */}
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+              
+              {/* Animated pulsing dot */}
+              <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+            </>
+          )}
+        </Button>
+      </PopoverTrigger>
           .map(l => ({
             id: `leave-${l.id}`,
             type: 'leave',

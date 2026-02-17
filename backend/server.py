@@ -445,6 +445,18 @@ async def login(credentials: UserLogin):
     
     user_response = UserResponse(**{k: v for k, v in user.items() if k != "password"})
     
+    # Créer une notification de connexion pour les admins
+    login_time = datetime.now(timezone.utc)
+    login_time_formatted = login_time.strftime("%d/%m/%Y à %H:%M")
+    user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or user.get('email', 'Utilisateur')
+    
+    asyncio.create_task(create_admin_notification(
+        title=f"🔐 Nouvelle connexion: {user_name}",
+        message=f"{user_name} ({user.get('role', 'utilisateur')}) s'est connecté le {login_time_formatted}",
+        notification_type="info",
+        link=None
+    ))
+    
     return TokenResponse(access_token=access_token, user=user_response)
 
 @auth_router.get("/me")

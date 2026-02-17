@@ -1074,6 +1074,71 @@ async def create_admin_notification(title: str, message: str, notification_type:
         return await create_notification(admin_ids, title, message, notification_type, link)
     return 0
 
+async def send_upcoming_leaves_notification(admin_user_id: str):
+    """Send notification about upcoming leaves when admin logs in"""
+    today = datetime.now(timezone.utc).date()
+    next_7_days = today + timedelta(days=7)
+    
+    # Find approved leaves starting in the next 7 days
+    upcoming_leaves = await db.leaves.find(
+        {
+            "status": "approved",
+            "start_date": {
+                "$gte": today.isoformat(),
+                "$lte": next_7_days.isoformat()
+            }
+        },
+        {"_id": 0}
+    ).to_list(50)
+    
+    if not upcoming_leaves:
+        return
+    
+    # Group by date
+    leaves_by_date = {}
+    for leave in upcoming_leaves:
+        start_date = leave.get("start_date", "")
+        if start_date not in leaves_by_date:
+            leaves_by_date[start_date] = []
+        
+        # Get employee info
+        employee = await db.users.find_one({"id": leave["employee_id"]}, {"_id": 0, "first_name": 1, "last_name": 1})
+        if employee:
+            employee_name = f"{employee.get('first_name', '')} {employee.get('last_name', '')}".strip()
+            leaves_by_date[start_date].append({
+                "name": employee_name,
+                "type": leave.get("type", "Congé"),
+                "end_date": leave.get("end_date", "")
+            })
+    
+    # Create notification message
+    message_parts = []
+    for date_str in sorted(leaves_by_date.keys()):
+        leaves_on_date = leaves_by_date[date_str]
+        date_obj = datetime.fromisoformat(date_str).date()
+        days_until = (date_obj - today).days
+        
+        if days_until == 0:
+            date_label = "Aujourd'hui"
+        elif days_until == 1:
+            date_label = "Demain"
+        else:
+            date_label = f"Dans {days_until} jours ({date_str})"
+        
+        names = ", ".join([f"{l['name']} ({l['type']})" for l in leaves_on_date])
+        message_parts.append(f"📅 {date_label}: {names}")
+    
+    full_message = "\n".join(message_parts)
+    
+    # Send notification to this admin only
+    await create_notification(
+        user_ids=[admin_user_id],
+        title=f"📋 {len(upcoming_leaves)} congé(s) à venir dans les 7 prochains jours",
+        message=full_message,
+        notification_type="info",
+        link="/time-management"
+    )
+
 @leaves_router.get("/balance")
 async def get_leave_balance(current_user: dict = Depends(get_current_user)):
     user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})

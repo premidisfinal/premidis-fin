@@ -982,6 +982,39 @@ async def create_overlap_notification(employee_name: str, department: str, start
         except Exception as e:
             logging.error(f"Failed to send overlap notification: {str(e)}")
 
+# ==================== NOTIFICATION HELPER FUNCTIONS ====================
+async def create_notification(user_ids: List[str], title: str, message: str, notification_type: str = "info", link: Optional[str] = None):
+    """Helper function to create notifications for multiple users"""
+    notifications = []
+    for user_id in user_ids:
+        notification = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "type": notification_type,
+            "title": title,
+            "message": message,
+            "link": link,
+            "read": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        notifications.append(notification)
+    
+    if notifications:
+        await db.notifications.insert_many(notifications)
+    return len(notifications)
+
+async def create_admin_notification(title: str, message: str, notification_type: str = "info", link: Optional[str] = None):
+    """Create notification for all admins"""
+    admins = await db.users.find(
+        {"role": {"$in": ["admin", "super_admin"]}, "is_active": True}, 
+        {"_id": 0, "id": 1}
+    ).to_list(100)
+    
+    admin_ids = [admin["id"] for admin in admins]
+    if admin_ids:
+        return await create_notification(admin_ids, title, message, notification_type, link)
+    return 0
+
 @leaves_router.get("/balance")
 async def get_leave_balance(current_user: dict = Depends(get_current_user)):
     user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})

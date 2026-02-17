@@ -1731,7 +1731,249 @@ async def get_categories(current_user: dict = Depends(get_current_user)):
         ]
     }
 
-# Default permissions
+# ==================== PERMISSIONS SYSTEM ====================
+
+# Comprehensive modules and permissions structure
+COMPREHENSIVE_PERMISSIONS = {
+    "dashboard": {
+        "label": "Tableau de Bord",
+        "icon": "LayoutDashboard",
+        "permissions": {
+            "view_dashboard": {"label": "Voir le tableau de bord", "action": "view"},
+            "view_statistics": {"label": "Voir les statistiques", "action": "view"},
+        }
+    },
+    "communication": {
+        "label": "Communication",
+        "icon": "MessageSquare",
+        "permissions": {
+            "view_messages": {"label": "Voir les messages", "action": "view"},
+            "create_message": {"label": "Créer un message", "action": "create"},
+            "delete_message": {"label": "Supprimer un message", "action": "delete"},
+            "view_announcements": {"label": "Voir les annonces", "action": "view"},
+            "create_announcement": {"label": "Créer une annonce", "action": "create"},
+            "edit_announcement": {"label": "Modifier une annonce", "action": "edit"},
+            "delete_announcement": {"label": "Supprimer une annonce", "action": "delete"},
+            "view_chat": {"label": "Accéder au chat", "action": "view"},
+        }
+    },
+    "gestion_personnel": {
+        "label": "Gestion du Personnel",
+        "icon": "Users",
+        "permissions": {
+            "view_employees": {"label": "Voir la liste des employés", "action": "view"},
+            "view_employee_details": {"label": "Voir les détails d'un employé", "action": "view"},
+            "create_employee": {"label": "Créer un employé", "action": "create"},
+            "edit_employee": {"label": "Modifier un employé", "action": "edit"},
+            "delete_employee": {"label": "Supprimer un employé", "action": "delete"},
+            "export_employees": {"label": "Exporter les employés", "action": "export"},
+            "import_employees": {"label": "Importer des employés", "action": "import"},
+            "view_employee_documents": {"label": "Voir les documents d'un employé", "action": "view"},
+            "upload_employee_documents": {"label": "Uploader des documents", "action": "create"},
+        }
+    },
+    "conges": {
+        "label": "Gestion des Congés",
+        "icon": "Calendar",
+        "permissions": {
+            "view_leaves": {"label": "Voir les congés", "action": "view"},
+            "view_own_leaves": {"label": "Voir ses propres congés", "action": "view"},
+            "create_leave": {"label": "Créer une demande de congé", "action": "create"},
+            "edit_leave": {"label": "Modifier une demande", "action": "edit"},
+            "delete_leave": {"label": "Supprimer une demande", "action": "delete"},
+            "approve_leave": {"label": "Approuver un congé", "action": "approve"},
+            "reject_leave": {"label": "Rejeter un congé", "action": "reject"},
+            "view_leave_calendar": {"label": "Voir le calendrier des congés", "action": "view"},
+            "export_leaves": {"label": "Exporter les congés", "action": "export"},
+        }
+    },
+    "comportement": {
+        "label": "Gestion des Comportements",
+        "icon": "UserCheck",
+        "permissions": {
+            "view_behaviors": {"label": "Voir les comportements", "action": "view"},
+            "create_behavior": {"label": "Créer un rapport", "action": "create"},
+            "edit_behavior": {"label": "Modifier un rapport", "action": "edit"},
+            "delete_behavior": {"label": "Supprimer un rapport", "action": "delete"},
+            "view_behavior_documents": {"label": "Voir les documents", "action": "view"},
+            "upload_behavior_documents": {"label": "Uploader des documents", "action": "create"},
+            "export_behaviors": {"label": "Exporter les rapports", "action": "export"},
+        }
+    },
+    "documents": {
+        "label": "Documents RH",
+        "icon": "FileText",
+        "permissions": {
+            "view_documents": {"label": "Voir les documents", "action": "view"},
+            "create_document": {"label": "Créer un document", "action": "create"},
+            "edit_document": {"label": "Modifier un document", "action": "edit"},
+            "delete_document": {"label": "Supprimer un document", "action": "delete"},
+            "view_templates": {"label": "Voir les modèles", "action": "view"},
+            "create_template": {"label": "Créer un modèle", "action": "create"},
+            "upload_docx": {"label": "Uploader des fichiers .docx", "action": "create"},
+            "export_document": {"label": "Exporter un document", "action": "export"},
+            "print_document": {"label": "Imprimer un document", "action": "print"},
+        }
+    },
+    "sites": {
+        "label": "Sites de Travail",
+        "icon": "Building2",
+        "permissions": {
+            "view_sites": {"label": "Voir les sites", "action": "view"},
+            "create_site": {"label": "Créer un site", "action": "create"},
+            "edit_site": {"label": "Modifier un site", "action": "edit"},
+            "delete_site": {"label": "Supprimer un site", "action": "delete"},
+            "view_site_employees": {"label": "Voir les employés d'un site", "action": "view"},
+        }
+    },
+    "departements": {
+        "label": "Départements",
+        "icon": "Briefcase",
+        "permissions": {
+            "view_departments": {"label": "Voir les départements", "action": "view"},
+            "create_department": {"label": "Créer un département", "action": "create"},
+            "edit_department": {"label": "Modifier un département", "action": "edit"},
+            "delete_department": {"label": "Supprimer un département", "action": "delete"},
+        }
+    },
+    "notifications": {
+        "label": "Notifications",
+        "icon": "Bell",
+        "permissions": {
+            "view_notifications": {"label": "Voir ses notifications", "action": "view"},
+            "create_notification": {"label": "Créer une notification", "action": "create"},
+            "create_custom_notification": {"label": "Créer une notification personnalisée", "action": "create"},
+            "manage_notification_templates": {"label": "Gérer les modèles de notifications", "action": "manage"},
+            "delete_notifications": {"label": "Supprimer des notifications", "action": "delete"},
+        }
+    },
+    "permissions": {
+        "label": "Gestion des Permissions",
+        "icon": "Shield",
+        "permissions": {
+            "view_permissions": {"label": "Voir les permissions", "action": "view"},
+            "edit_role_permissions": {"label": "Modifier les permissions d'un rôle", "action": "edit"},
+            "scan_permissions": {"label": "Scanner et générer les permissions", "action": "scan"},
+        }
+    },
+    "parametres": {
+        "label": "Paramètres",
+        "icon": "Settings",
+        "permissions": {
+            "view_settings": {"label": "Voir les paramètres", "action": "view"},
+            "edit_profile": {"label": "Modifier son profil", "action": "edit"},
+            "change_password": {"label": "Changer son mot de passe", "action": "edit"},
+            "manage_system_settings": {"label": "Gérer les paramètres système", "action": "manage"},
+            "manage_leave_rules": {"label": "Gérer les règles de congés", "action": "manage"},
+        }
+    }
+}
+
+# Default roles permissions
+DEFAULT_ROLE_PERMISSIONS = {
+    "super_admin": {
+        "label": "Super Administrateur",
+        "description": "Accès complet à toutes les fonctionnalités",
+        "permissions": ["*"]  # Wildcard - toutes les permissions
+    },
+    "admin": {
+        "label": "Administrateur",
+        "description": "Gestion complète de l'application sauf paramètres système",
+        "permissions": [
+            # Dashboard
+            "dashboard.view_dashboard", "dashboard.view_statistics",
+            # Communication
+            "communication.view_messages", "communication.create_message", "communication.delete_message",
+            "communication.view_announcements", "communication.create_announcement", 
+            "communication.edit_announcement", "communication.delete_announcement", "communication.view_chat",
+            # Personnel
+            "gestion_personnel.view_employees", "gestion_personnel.view_employee_details",
+            "gestion_personnel.create_employee", "gestion_personnel.edit_employee",
+            "gestion_personnel.delete_employee", "gestion_personnel.export_employees",
+            "gestion_personnel.import_employees", "gestion_personnel.view_employee_documents",
+            "gestion_personnel.upload_employee_documents",
+            # Congés
+            "conges.view_leaves", "conges.view_own_leaves", "conges.create_leave",
+            "conges.edit_leave", "conges.delete_leave", "conges.approve_leave",
+            "conges.reject_leave", "conges.view_leave_calendar", "conges.export_leaves",
+            # Comportement
+            "comportement.view_behaviors", "comportement.create_behavior", "comportement.edit_behavior",
+            "comportement.delete_behavior", "comportement.view_behavior_documents",
+            "comportement.upload_behavior_documents", "comportement.export_behaviors",
+            # Documents
+            "documents.view_documents", "documents.create_document", "documents.edit_document",
+            "documents.delete_document", "documents.view_templates", "documents.create_template",
+            "documents.upload_docx", "documents.export_document", "documents.print_document",
+            # Sites & Départements
+            "sites.view_sites", "sites.create_site", "sites.edit_site", "sites.delete_site",
+            "sites.view_site_employees",
+            "departements.view_departments", "departements.create_department",
+            "departements.edit_department", "departements.delete_department",
+            # Notifications
+            "notifications.view_notifications", "notifications.create_notification",
+            "notifications.create_custom_notification", "notifications.manage_notification_templates",
+            # Permissions
+            "permissions.view_permissions", "permissions.edit_role_permissions",
+            # Paramètres
+            "parametres.view_settings", "parametres.edit_profile", "parametres.change_password",
+        ]
+    },
+    "secretary": {
+        "label": "Secrétaire",
+        "description": "Gestion du personnel et des congés",
+        "permissions": [
+            # Dashboard
+            "dashboard.view_dashboard", "dashboard.view_statistics",
+            # Communication
+            "communication.view_messages", "communication.create_message",
+            "communication.view_announcements", "communication.view_chat",
+            # Personnel
+            "gestion_personnel.view_employees", "gestion_personnel.view_employee_details",
+            "gestion_personnel.create_employee", "gestion_personnel.edit_employee",
+            "gestion_personnel.view_employee_documents", "gestion_personnel.upload_employee_documents",
+            "gestion_personnel.export_employees",
+            # Congés
+            "conges.view_leaves", "conges.view_own_leaves", "conges.create_leave",
+            "conges.view_leave_calendar",
+            # Comportement
+            "comportement.view_behaviors", "comportement.create_behavior",
+            "comportement.view_behavior_documents",
+            # Documents
+            "documents.view_documents", "documents.create_document",
+            "documents.view_templates", "documents.export_document", "documents.print_document",
+            # Sites & Départements
+            "sites.view_sites", "sites.view_site_employees",
+            "departements.view_departments",
+            # Notifications
+            "notifications.view_notifications",
+            # Paramètres
+            "parametres.view_settings", "parametres.edit_profile", "parametres.change_password",
+        ]
+    },
+    "employee": {
+        "label": "Employé",
+        "description": "Accès limité aux fonctionnalités personnelles",
+        "permissions": [
+            # Dashboard
+            "dashboard.view_dashboard",
+            # Communication
+            "communication.view_messages", "communication.create_message",
+            "communication.view_announcements", "communication.view_chat",
+            # Personnel (limité)
+            "gestion_personnel.view_employee_details",  # Seulement son profil
+            # Congés
+            "conges.view_own_leaves", "conges.create_leave",
+            # Documents
+            "documents.view_documents", "documents.print_document",
+            # Notifications
+            "notifications.view_notifications",
+            # Paramètres
+            "parametres.view_settings", "parametres.edit_profile", "parametres.change_password",
+        ]
+    }
+}
+
+# OLD SYSTEM (kept for backwards compatibility)
 DEFAULT_PERMISSIONS = {
     "admin": {
         "can_manage_employees": True,

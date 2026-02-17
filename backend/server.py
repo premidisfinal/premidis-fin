@@ -500,6 +500,10 @@ async def login(credentials: UserLogin):
         link=None
     ))
     
+    # Si c'est un admin qui se connecte, envoyer les notifications de congés à venir
+    if user.get("role") in ["admin", "super_admin"]:
+        asyncio.create_task(send_upcoming_leaves_notification(user["id"]))
+    
     return TokenResponse(access_token=access_token, user=user_response)
 
 @auth_router.get("/me")

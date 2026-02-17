@@ -2030,6 +2030,199 @@ DEFAULT_PERMISSIONS = {
     }
 }
 
+# ==================== PERMISSIONS ROUTES (NEW DYNAMIC SYSTEM) ====================
+
+@permissions_router.post("/scan", status_code=status.HTTP_201_CREATED)
+async def scan_and_generate_permissions(current_user: dict = Depends(require_roles(["admin"]))):
+    """
+    Scanner l'application et générer la liste complète des permissions depuis COMPREHENSIVE_PERMISSIONS
+    Cette route peuple la base de données avec toutes les permissions disponibles
+    """
+    all_permissions = []
+    
+    # Parcourir tous les modules de COMPREHENSIVE_PERMISSIONS
+    for module_key, module_data in COMPREHENSIVE_PERMISSIONS.items():
+        module_label = module_data.get("label", module_key)
+        module_icon = module_data.get("icon", "Circle")
+        module_permissions = module_data.get("permissions", {})
+        
+        for perm_key, perm_data in module_permissions.items():
+            permission_doc = {
+                "id": f"{module_key}.{perm_key}",
+                "module": module_key,
+                "module_label": module_label,
+                "module_icon": module_icon,
+                "key": perm_key,
+                "label": perm_data.get("label", perm_key),
+                "action": perm_data.get("action", "execute"),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            all_permissions.append(permission_doc)
+    
+    # Supprimer les anciennes permissions et insérer les nouvelles
+    await db.permissions_catalog.delete_many({})
+    if all_permissions:
+        await db.permissions_catalog.insert_many(all_permissions)
+    
+    # Initialiser les rôles avec les permissions par défaut s'ils n'existent pas
+    for role_name, role_data in DEFAULT_ROLE_PERMISSIONS.items():
+        existing_role = await db.roles.find_one({"role": role_name}, {"_id": 0})
+        if not existing_role:
+            role_doc = {
+                "id": str(uuid.uuid4()),
+                "role": role_name,
+                "label": role_data.get("label", role_name),
+                "description": role_data.get("description", ""),
+                "permissions": role_data.get("permissions", []),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.roles.insert_one(role_doc)
+        else:
+            # Mettre à jour les permissions si le rôle existe déjà
+            await db.roles.update_one(
+                {"role": role_name},
+                {"$set": {
+                    "label": role_data.get("label", role_name),
+                    "description": role_data.get("description", ""),
+                    "permissions": role_data.get("permissions", []),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+    
+    return {
+        "message": "Scan terminé et permissions générées avec succès",
+        "total_permissions": len(all_permissions),
+        "total_modules": len(COMPREHENSIVE_PERMISSIONS),
+        "roles_initialized": len(DEFAULT_ROLE_PERMISSIONS)
+    }
+
+@permissions_router.get("/structure")
+async def get_permissions_structure(current_user: dict = Depends(require_roles(["admin"]))):
+    """
+    Récupérer la structure complète des permissions groupées par module
+    Retourne un format facile à utiliser pour le frontend
+    """
+    result = []
+    
+    for module_key, module_data in COMPREHENSIVE_PERMISSIONS.items():
+        module_permissions = []
+        for perm_key, perm_data in module_data.get("permissions", {}).items():
+            module_permissions.append({
+                "key": perm_key,
+                "label": perm_data.get("label", perm_key),
+                "action": perm_data.get("action", "execute"),
+                "full_path": f"{module_key}.{perm_key}"
+            })
+        
+        result.append({
+            "module": module_key,
+            "label": module_data.get("label", module_key),
+            "icon": module_data.get("icon", "Circle"),
+            "permissions": module_permissions
+        })
+    
+    return {"modules": result}
+
+@permissions_router.get("")
+async def list_all_permissions(current_user: dict = Depends(require_roles(["admin"]))):
+    """
+    Lister toutes les permissions disponibles depuis la base de données
+    """
+    permissions = await db.permissions_catalog.find({}, {"_id": 0}).to_list(1000)
+    
+    # Si aucune permission n'est trouvée, retourner depuis COMPREHENSIVE_PERMISSIONS
+    if not permissions:
+        return {
+            "message": "Aucune permission trouvée. Veuillez exécuter /scan d'abord.",
+            "permissions": []
+        }
+    
+    return {"permissions": permissions, "total": len(permissions)}
+
+@permissions_router.get("/roles")
+async def list_all_roles(current_user: dict = Depends(require_roles(["admin"]))):
+    """
+    Lister tous les rôles avec leurs permissions
+    """
+    roles = await db.roles.find({}, {"_id": 0}).to_list(100)
+    
+    # Si aucun rôle n'existe, initialiser depuis DEFAULT_ROLE_PERMISSIONS
+    if not roles:
+        for role_name, role_data in DEFAULT_ROLE_PERMISSIONS.items():
+            role_doc = {
+                "id": str(uuid.uuid4()),
+                "role": role_name,
+                "label": role_data.get("label", role_name),
+                "description": role_data.get("description", ""),
+                "permissions": role_data.get("permissions", []),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.roles.insert_one(role_doc)
+        
+        roles = await db.roles.find({}, {"_id": 0}).to_list(100)
+    
+    return {"roles": roles, "total": len(roles)}
+
+@permissions_router.get("/roles/{role_name}")
+async def get_role_permissions(
+    role_name: str,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """
+    Récupérer les permissions d'un rôle spécifique
+    """
+    role = await db.roles.find_one({"role": role_name}, {"_id": 0})
+    
+    if not role:
+        # Si le rôle n'existe pas en base, retourner depuis DEFAULT_ROLE_PERMISSIONS
+        if role_name in DEFAULT_ROLE_PERMISSIONS:
+            role_data = DEFAULT_ROLE_PERMISSIONS[role_name]
+            return {
+                "role": role_name,
+                "label": role_data.get("label", role_name),
+                "description": role_data.get("description", ""),
+                "permissions": role_data.get("permissions", [])
+            }
+        raise HTTPException(status_code=404, detail=f"Rôle '{role_name}' non trouvé")
+    
+    return role
+
+@permissions_router.put("/roles/{role_name}")
+async def update_role_permissions(
+    role_name: str,
+    data: RolePermissionsUpdate,
+    current_user: dict = Depends(require_roles(["admin"]))
+):
+    """
+    Mettre à jour les permissions d'un rôle
+    """
+    # Vérifier que le rôle existe
+    role = await db.roles.find_one({"role": role_name}, {"_id": 0})
+    
+    if not role:
+        raise HTTPException(status_code=404, detail=f"Rôle '{role_name}' non trouvé")
+    
+    # Mettre à jour les permissions
+    await db.roles.update_one(
+        {"role": role_name},
+        {"$set": {
+            "permissions": data.permissions,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user["id"]
+        }}
+    )
+    
+    updated_role = await db.roles.find_one({"role": role_name}, {"_id": 0})
+    
+    return {
+        "message": f"Permissions du rôle '{role_name}' mises à jour avec succès",
+        "role": updated_role
+    }
+
+# ==================== PERMISSIONS ROUTES (OLD SYSTEM - KEPT FOR BACKWARDS COMPATIBILITY) ====================
+
 @config_router.get("/permissions")
 async def get_permissions(current_user: dict = Depends(get_current_user)):
     """Get role permissions"""

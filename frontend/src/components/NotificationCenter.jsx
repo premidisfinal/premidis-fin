@@ -123,7 +123,7 @@ const NotificationCenter = () => {
           {unreadCount > 0 && (
             <>
               {/* Badge with count */}
-              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white z-10">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
               
@@ -133,62 +133,6 @@ const NotificationCenter = () => {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
               </span>
             </>
-          )}
-        </Button>
-      </PopoverTrigger>
-          .map(l => ({
-            id: `leave-${l.id}`,
-            type: 'leave',
-            title: 'Demande de congé',
-            content: `${l.employee_name} demande un congé du ${l.start_date} au ${l.end_date}`,
-            timestamp: l.created_at,
-            icon: Calendar,
-            color: 'text-yellow-500',
-            read: false
-          }))
-      ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-      setNotifications(notifs);
-      setUnreadCount(notifs.filter(n => !n.read).length);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    }
-  };
-
-  const markAsRead = (notifId) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === notifId ? { ...n, read: true } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    setUnreadCount(0);
-  };
-
-  const getTimeAgo = (timestamp) => {
-    try {
-      return formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: fr });
-    } catch {
-      return '';
-    }
-  };
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="relative"
-          data-testid="notifications-btn"
-        >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground font-medium animate-pulse">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
           )}
         </Button>
       </PopoverTrigger>

@@ -39,39 +39,47 @@ security = HTTPBearer()
 # Create the main app
 app = FastAPI(title="PREMIDIS SARL - HR Platform", version="2.0.0")
 
-# Background task scheduler
-from contextlib import asynccontextmanager
+# Will be defined later after database helpers
+_leave_reminder_task = None
 
-async def daily_leave_reminder_task():
-    """Background task that runs daily to send leave reminders"""
-    while True:
-        try:
-            # Wait until 8 AM tomorrow
-            now = datetime.now(timezone.utc)
-            tomorrow_8am = (now + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
-            wait_seconds = (tomorrow_8am - now).total_seconds()
-            
-            await asyncio.sleep(wait_seconds)
-            
-            # Send reminders
-            await send_leave_reminders()
-            logging.info("Daily leave reminders sent successfully")
-        except Exception as e:
-            logging.error(f"Error in daily leave reminder task: {e}")
-            await asyncio.sleep(3600)  # Wait 1 hour before retry
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup: Start background tasks
-    task = asyncio.create_task(daily_leave_reminder_task())
+async def start_background_tasks():
+    """Start background tasks after app startup"""
+    global _leave_reminder_task
+    
+    async def daily_leave_reminder_loop():
+        """Background task that runs daily to send leave reminders"""
+        while True:
+            try:
+                # Wait until 8 AM tomorrow
+                now = datetime.now(timezone.utc)
+                tomorrow_8am = (now + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
+                wait_seconds = (tomorrow_8am - now).total_seconds()
+                
+                logging.info(f"Next leave reminder scheduled in {wait_seconds/3600:.1f} hours")
+                await asyncio.sleep(wait_seconds)
+                
+                # Send reminders - function will be defined later in the file
+                await send_leave_reminders_background()
+                logging.info("Daily leave reminders sent successfully")
+            except Exception as e:
+                logging.error(f"Error in daily leave reminder task: {e}")
+                await asyncio.sleep(3600)  # Wait 1 hour before retry
+    
+    _leave_reminder_task = asyncio.create_task(daily_leave_reminder_loop())
     logging.info("Leave reminder scheduler started")
-    yield
-    # Shutdown: Cancel background tasks
-    task.cancel()
-    logging.info("Leave reminder scheduler stopped")
 
-# Recreate app with lifespan
-app = FastAPI(title="PREMIDIS SARL - HR Platform", version="2.0.0", lifespan=lifespan)
+@app.on_event("startup")
+async def startup_event():
+    """Startup event handler"""
+    await start_background_tasks()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Shutdown event handler"""
+    global _leave_reminder_task
+    if _leave_reminder_task:
+        _leave_reminder_task.cancel()
+        logging.info("Leave reminder scheduler stopped")
 
 # ==================== ENUMS ====================
 class UserRole(str, Enum):

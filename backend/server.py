@@ -3776,6 +3776,7 @@ api_router.include_router(notifications_router)
 api_router.include_router(sites_router)
 api_router.include_router(departments_router)
 api_router.include_router(documents_router)
+api_router.include_router(permissions_router)  # Nouveau système de permissions dynamiques
 
 # ==================== DOCUMENTS MODULE (WORD-LIKE) ROUTES ====================
 documents_module_router = APIRouter(prefix="/documents", tags=["Documents Module"])

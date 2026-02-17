@@ -96,7 +96,7 @@ const PermissionsManagement = () => {
     setSaving(true);
     try {
       const permissionsArray = Array.from(rolePermissions[roleName] || []);
-      await api.put(`/permissions/roles/${roleName}`, {
+      await api.put(`/api/permissions/roles/${roleName}`, {
         permissions: permissionsArray
       });
       toast.success(`✅ Permissions du rôle "${roleName}" sauvegardées`);

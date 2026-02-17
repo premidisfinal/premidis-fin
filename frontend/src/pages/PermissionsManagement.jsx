@@ -32,11 +32,11 @@ const PermissionsManagement = () => {
     setLoading(true);
     try {
       // Récupérer la structure des permissions
-      const structureResponse = await api.get('/permissions/structure');
+      const structureResponse = await api.get('/api/permissions/structure');
       setModules(structureResponse.data.modules || []);
 
       // Récupérer tous les rôles
-      const rolesResponse = await api.get('/permissions/roles');
+      const rolesResponse = await api.get('/api/permissions/roles');
       const rolesData = rolesResponse.data.roles || [];
       setRoles(rolesData);
 

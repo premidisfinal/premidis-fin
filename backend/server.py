@@ -193,6 +193,23 @@ class AttendanceCreate(BaseModel):
     check_out: Optional[str] = None
     notes: Optional[str] = ""
 
+# ==================== NOTIFICATION MODELS ====================
+class NotificationCreate(BaseModel):
+    title: str
+    message: str
+    type: str  # 'info', 'warning', 'success', 'error', 'custom'
+    target_users: List[str]  # Liste des user IDs ou 'all_admins', 'all_users'
+    link: Optional[str] = None  # Lien optionnel vers une page
+    
+class NotificationTemplate(BaseModel):
+    name: str
+    title_template: str  # "{{employee_name}} s'est connecté"
+    message_template: str
+    type: str
+    trigger_event: str  # 'login', 'leave_request', 'leave_reminder', 'custom'
+    target_role: Optional[str] = None  # 'admin', 'all', etc.
+    is_active: bool = True
+
 # ==================== DOCUMENTS RH MODELS ====================
 class DocumentTemplate(BaseModel):
     name: str

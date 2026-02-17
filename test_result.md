@@ -316,13 +316,17 @@ frontend:
 
 metadata:
   created_by: "testing_agent"
-  version: "1.3"
-  test_sequence: 5
-  run_ui: false
+  version: "1.4"
+  test_sequence: 6
+  run_ui: true
 
 test_plan:
   current_focus:
-    - "HR DOCUMENTS MODULE - Complete Frontend Implementation"
+    - "Dashboard - Statistics Dynamiques"
+    - "Sites de travail - Click on site shows employees by department"
+    - "Notifications - Système Complet"
+    - "Ressources Statiques (Images/Documents)"
+    - "Navigation Générale"
   stuck_tasks:
     - "HR DOCUMENTS MODULE - Complete Frontend Implementation"
   test_all: false

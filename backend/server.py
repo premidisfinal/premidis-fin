@@ -2397,8 +2397,8 @@ async def clear_all_notifications(
     return {"message": f"{result.deleted_count} notification(s) d'erreur supprimée(s)"}
 
 # ==================== LEAVE REMINDER SCHEDULER ====================
-async def send_leave_reminders():
-    """Send reminders for leaves starting tomorrow"""
+async def send_leave_reminders_background():
+    """Send reminders for leaves starting tomorrow - called by background scheduler"""
     tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).date()
     tomorrow_str = tomorrow.isoformat()
     
@@ -2445,7 +2445,7 @@ async def test_leave_reminders(
     current_user: dict = Depends(require_roles(["admin", "super_admin"]))
 ):
     """Admin: Test leave reminder system"""
-    count = await send_leave_reminders()
+    count = await send_leave_reminders_background()
     return {"message": f"Rappels envoyés pour {count} congé(s)"}
 
 

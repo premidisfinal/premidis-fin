@@ -343,41 +343,63 @@ const DocumentsModuleV2 = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {documents.map((doc) => (
-                    <Card key={doc.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-20 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                            <FileText className="h-8 w-8 text-gray-600" />
-                          </div>
-                          
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-lg">{doc.title}</h4>
-                            <div className="text-sm text-muted-foreground">
-                              <p>Créé le: {new Date(doc.created_at).toLocaleString('fr-FR')}</p>
-                              <p>Auteur: {doc.author_name}</p>
-                              <p>Modifié le: {new Date(doc.updated_at).toLocaleString('fr-FR')}</p>
+                  {documents.map((doc) => {
+                    // Déterminer si c'est un document RH ou normal
+                    const isHRDoc = doc.template_name !== undefined;
+                    const displayTitle = isHRDoc ? doc.template_name : doc.title;
+                    const authorName = isHRDoc ? doc.created_by_name : doc.author_name;
+                    const employeeName = isHRDoc ? doc.employee_name : null;
+                    
+                    return (
+                      <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-20 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                              <FileText className="h-8 w-8 text-gray-600" />
+                            </div>
+                            
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-lg">{displayTitle}</h4>
+                              <div className="text-sm text-muted-foreground">
+                                <p>Créé le: {new Date(doc.created_at).toLocaleString('fr-FR')}</p>
+                                <p>Auteur: {authorName}</p>
+                                {employeeName && <p>Employé: {employeeName}</p>}
+                                {!isHRDoc && doc.updated_at && (
+                                  <p>Modifié le: {new Date(doc.updated_at).toLocaleString('fr-FR')}</p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePreview(doc)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {!isHRDoc && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditDocument(doc)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => confirmDelete(doc.id, isHRDoc ? 'hr-doc' : 'doc')}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
-                          
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePreview(doc)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditDocument(doc)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                               onClick={() => {
                                 setItemToDelete({ type: 'document', id: doc.id, name: doc.title });
                                 setShowDeleteDialog(true);

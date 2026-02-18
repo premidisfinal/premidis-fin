@@ -1140,6 +1140,19 @@ const TimeManagement = () => {
                           )}
                         </div>
                         
+                        {/* Generate Document button for approved leaves (admin only) */}
+                        {isAdmin() && leave.status === 'approved' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex items-center gap-2"
+                            onClick={() => handleGenerateDocument(leave.id)}
+                          >
+                            <FileText className="h-4 w-4" />
+                            Générer document
+                          </Button>
+                        )}
+                        
                         {isAdmin() && leave.status === 'pending' && (
                           <div className="flex gap-2">
                             <Button

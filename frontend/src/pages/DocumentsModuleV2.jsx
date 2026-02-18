@@ -163,6 +163,10 @@ const DocumentsModuleV2 = () => {
         await axios.delete(`/api/documents/${itemToDelete.id}`);
         toast.success('Document supprimé');
         fetchDocuments();
+      } else if (itemToDelete.type === 'hr-doc') {
+        await axios.delete(`/api/hr-documents/${itemToDelete.id}`);
+        toast.success('Document supprimé');
+        fetchDocuments();
       } else if (itemToDelete.type === 'form') {
         await axios.delete(`/api/documents/forms/${itemToDelete.id}`);
         toast.success('Forme supprimée');

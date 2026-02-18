@@ -394,7 +394,14 @@ const DocumentsModuleV2 = () => {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => confirmDelete(doc.id, isHRDoc ? 'hr-doc' : 'doc')}
+                                onClick={() => {
+                                  setShowDeleteDialog(true);
+                                  setItemToDelete({ 
+                                    type: isHRDoc ? 'hr-doc' : 'document', 
+                                    id: doc.id, 
+                                    name: displayTitle 
+                                  });
+                                }}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

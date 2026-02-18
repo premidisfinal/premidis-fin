@@ -73,6 +73,12 @@ const TimeManagement = () => {
   const [statusFilter, setStatusFilter] = useState(null);
   const [leaveRules, setLeaveRules] = useState(null);
   const [leaveBalance, setLeaveBalance] = useState({});
+  
+  // Document generation state
+  const [generateDocDialogOpen, setGenerateDocDialogOpen] = useState(false);
+  const [selectedLeaveId, setSelectedLeaveId] = useState(null);
+  const [documentTemplates, setDocumentTemplates] = useState([]);
+  const [generatingDocument, setGeneratingDocument] = useState(false);
 
   // Default leave types (fallback)
   const defaultLeaveTypes = [

@@ -3568,9 +3568,16 @@ async def get_employee_data(
 
 # ========== TEMPLATES ==========
 @documents_router.get("/templates")
-async def list_templates(current_user: dict = Depends(get_current_user)):
-    """Get all document templates"""
-    templates = await db.document_templates.find({}, {"_id": 0}).to_list(100)
+async def list_templates(
+    source_module: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all document templates, optionally filtered by source module"""
+    query = {}
+    if source_module:
+        query["source_module"] = source_module
+    
+    templates = await db.document_templates.find(query, {"_id": 0}).to_list(100)
     return {"templates": templates}
 
 @documents_router.post("/templates", status_code=status.HTTP_201_CREATED)

@@ -68,8 +68,17 @@ const DocumentsModuleV2 = () => {
 
   const fetchDocuments = async () => {
     try {
+      // Récupérer les documents normaux
       const response = await axios.get('/api/documents');
-      setDocuments(response.data.documents || []);
+      const normalDocs = response.data.documents || [];
+      
+      // Récupérer aussi les documents RH (congés)
+      const hrResponse = await axios.get('/api/hr-documents');
+      const hrDocs = hrResponse.data.documents || [];
+      
+      // Combiner les deux listes
+      const allDocuments = [...normalDocs, ...hrDocs];
+      setDocuments(allDocuments);
     } catch (error) {
       console.error('Error fetching documents:', error);
     }

@@ -1387,6 +1387,87 @@ const TimeManagement = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Generate Document Dialog */}
+        <Dialog open={generateDocDialogOpen} onOpenChange={setGenerateDocDialogOpen}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Générer un document de congé
+              </DialogTitle>
+              <DialogDescription>
+                Sélectionnez un modèle pour générer automatiquement le document de communication d'absence.
+                Les informations seront pré-remplies automatiquement.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {generatingDocument ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : documentTemplates.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-muted-foreground">Aucun modèle disponible pour les congés.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Veuillez créer un modèle dans le module Documents RH.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-3">
+                    {documentTemplates.map((template) => (
+                      <div
+                        key={template.id}
+                        className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => handleConfirmGenerateDocument(template.id)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-sm mb-1">{template.name}</h4>
+                            {template.description && (
+                              <p className="text-xs text-muted-foreground mb-2">{template.description}</p>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-xs">
+                                {template.category}
+                              </Badge>
+                              {template.fields && template.fields.length > 0 && (
+                                <span className="text-xs text-muted-foreground">
+                                  {template.fields.length} balises automatiques
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <Button size="sm" variant="outline">
+                            <FileText className="h-4 w-4 mr-2" />
+                            Utiliser
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-blue-900 dark:text-blue-100">
+                        <p className="font-medium mb-1">Informations automatiques</p>
+                        <ul className="text-xs space-y-1 text-blue-700 dark:text-blue-200">
+                          <li>• Les données de l'employé et du congé seront remplies automatiquement</li>
+                          <li>• Vous pourrez modifier le document avant de le valider</li>
+                          <li>• Le document sera enregistré dans le module Documents</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

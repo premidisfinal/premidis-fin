@@ -1392,7 +1392,7 @@ async def generate_leave_document(
         "created_by_name": f"{current_user['first_name']} {current_user['last_name']}"
     }
     
-    await db.documents_rh.insert_one(document_doc)
+    await db.hr_documents.insert_one(document_doc)
     document_doc.pop("_id", None)
     
     return {

@@ -394,6 +394,53 @@ const TimeManagement = () => {
     }
   };
 
+  const handleGenerateDocument = async (leaveId) => {
+    setSelectedLeaveId(leaveId);
+    setGeneratingDocument(true);
+    
+    try {
+      // Récupérer les modèles liés au module "leaves"
+      const response = await axios.get(`/api/hr-documents/templates`, {
+        params: { source_module: 'leaves' }
+      });
+      setDocumentTemplates(response.data.templates || []);
+      setGenerateDocDialogOpen(true);
+    } catch (error) {
+      toast.error('Erreur lors du chargement des modèles');
+      console.error(error);
+    } finally {
+      setGeneratingDocument(false);
+    }
+  };
+
+  const handleConfirmGenerateDocument = async (templateId) => {
+    setGeneratingDocument(true);
+    
+    try {
+      const response = await axios.post(
+        `/api/leaves/${selectedLeaveId}/generate-document`,
+        null,
+        { params: { template_id: templateId } }
+      );
+      
+      toast.success('✅ Document généré avec succès');
+      setGenerateDocDialogOpen(false);
+      
+      // Naviguer vers le module Documents ou afficher le document
+      const documentId = response.data.document?.id;
+      if (documentId) {
+        toast.info('📄 Document disponible dans le module Documents', {
+          duration: 5000
+        });
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Erreur lors de la génération du document'));
+      console.error(error);
+    } finally {
+      setGeneratingDocument(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',

@@ -1362,6 +1362,15 @@ async def generate_leave_document(
     for placeholder, value in replacements.items():
         content = content.replace(placeholder, value)
     
+    # Cocher automatiquement la case correspondant au type de congé
+    leave_type = leave.get("leave_type")
+    if leave_type:
+        # Chercher et cocher la checkbox correspondante
+        content = content.replace(
+            f'data-auto-check="{leave_type}"',
+            f'data-auto-check="{leave_type}" checked'
+        )
+    
     # Créer le document dans la base de données
     document_doc = {
         "id": str(uuid.uuid4()),

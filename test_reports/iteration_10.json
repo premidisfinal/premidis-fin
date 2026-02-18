@@ -1,0 +1,85 @@
+{
+  "summary": "Comprehensive testing of Leave Document Generation feature completed successfully. Backend achieved 100% success rate (12/12 tests). Frontend E2E testing verified the complete flow: approved leave → click 'Générer document' → select template → document created with status 'draft' → success toast displayed.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": [
+    "Backend: GET /api/hr-documents/templates?source_module=leaves - Returns only templates linked to leaves module",
+    "Backend: Templates have required fields (id, name, content, source_module)",
+    "Backend: POST /api/leaves/{leave_id}/generate-document creates document with status 'draft'",
+    "Backend: Generated document has placeholders replaced with actual values (employee name, dates, etc.)",
+    "Backend: Generated document contains employee information (name, department, function, site)",
+    "Backend: Document is saved in documents_rh collection with correct source_module and source_id",
+    "Backend: Return date is calculated (date_fin + 1 day, if Sunday +2 days)",
+    "Backend: Generation fails for non-approved leave (400 error)",
+    "Backend: Generation fails for non-existent leave (404 error)",
+    "Backend: Generation fails for non-existent template (404 error)",
+    "Backend: Generation requires authentication (401/403 for unauthenticated)",
+    "Frontend: 'Générer document' button appears ONLY for approved leaves (admin only)",
+    "Frontend: Clicking 'Générer document' opens dialog with template list",
+    "Frontend: Templates display name, description, and 'leave' badge correctly",
+    "Frontend: Dialog shows 'Informations automatiques' info panel",
+    "Frontend: Clicking template 'Utiliser' button generates document",
+    "Frontend: Success toast appears: 'Document disponible dans le module Documents'",
+    "Frontend: Dialog closes after successful generation",
+    "E2E: Complete flow - View approved leave → Click Générer → Select template → Document created"
+  ],
+
+  "test_report_links": [
+    "/app/backend/tests/test_leave_document_generation.py",
+    "/app/test_reports/pytest/leave_document_generation_results.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [],
+
+  "updated_files": [
+    "/app/backend/tests/test_leave_document_generation.py"
+  ],
+
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+
+  "test_credentials": {
+    "admin_email": "admin@example.com",
+    "admin_password": "admin123"
+  },
+
+  "seed_data_creation": "Used existing approved leave (BAHIZI FRANCK, 2026-02-18 to 2026-03-03) and existing templates ('Template Test Complet', 'Communication d'Absence - Modèle Complet')",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "Leave document generation feature fully implemented and tested. Backend endpoint POST /api/leaves/{leave_id}/generate-document creates documents with auto-filled placeholders. Frontend shows 'Générer document' button only for approved leaves (admin view). Dialog lists templates with source_module='leaves'. Generated documents are stored in documents_rh collection with status='draft' for manual editing. Return date calculation works (date_fin + 1 day, +1 more if Sunday).",
+
+  "verified_features": {
+    "placeholder_replacement": [
+      "{{employe.nom}} → Employee full name",
+      "{{employe.departement}} → Department",
+      "{{employe.fonction}} → Position",
+      "{{employe.site}} → Site name",
+      "{{conge.date_debut}} → Start date (DD/MM/YYYY)",
+      "{{conge.date_fin}} → End date (DD/MM/YYYY)",
+      "{{conge.nb_jours}} → Working days count",
+      "{{conge.date_retour}} → Return date (calculated)",
+      "{{conge.type}} → Leave type",
+      "{{date.document}} → Document generation date"
+    ],
+    "return_date_calculation": "date_fin + 1 day, if Sunday then +2 days total",
+    "document_status": "Created with 'draft' status for manual editing",
+    "template_filtering": "Templates filtered by source_module='leaves'"
+  }
+}

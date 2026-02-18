@@ -1301,6 +1301,105 @@ async def get_leave_details(leave_id: str, current_user: dict = Depends(get_curr
     
     return leave
 
+@leaves_router.post("/{leave_id}/generate-document", status_code=status.HTTP_201_CREATED)
+async def generate_leave_document(
+    leave_id: str,
+    template_id: str,
+    current_user: dict = Depends(require_roles(["admin", "secretary"]))
+):
+    """
+    Générer automatiquement un document à partir d'un congé approuvé
+    Remplace les balises et coche automatiquement les cases (site, type de congé)
+    """
+    # Récupérer le congé
+    leave = await db.leaves.find_one({"id": leave_id}, {"_id": 0})
+    if not leave:
+        raise HTTPException(status_code=404, detail="Congé non trouvé")
+    
+    # Vérifier que le congé est approuvé
+    if leave.get("status") != "approved":
+        raise HTTPException(status_code=400, detail="Le congé doit être approuvé pour générer un document")
+    
+    # Récupérer l'employé
+    employee = await db.users.find_one({"id": leave["employee_id"]}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    # Récupérer le site de l'employé
+    employee_site = None
+    if employee.get("site_id"):
+        employee_site = await db.sites.find_one({"id": employee["site_id"]}, {"_id": 0})
+    
+    # Récupérer le modèle de document
+    template = await db.document_templates.find_one({"id": template_id}, {"_id": 0})
+    if not template:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    # Calculer la date de retour (date_fin + 1, si dimanche → +2)
+    from datetime import datetime, timedelta
+    date_fin = datetime.strptime(leave["end_date"], "%Y-%m-%d")
+    date_retour = date_fin + timedelta(days=1)
+    # Si c'est un dimanche (weekday() == 6), ajouter 1 jour de plus
+    if date_retour.weekday() == 6:
+        date_retour = date_retour + timedelta(days=1)
+    
+    # Préparer les données pour le remplacement des balises
+    replacements = {
+        "{{employe.nom}}": f"{employee.get('first_name', '')} {employee.get('last_name', '')}".strip(),
+        "{{employe.departement}}": employee.get('department', 'N/A'),
+        "{{employe.fonction}}": employee.get('position', 'N/A'),
+        "{{employe.site}}": employee_site.get('name', 'N/A') if employee_site else 'N/A',
+        "{{conge.date_debut}}": datetime.strptime(leave["start_date"], "%Y-%m-%d").strftime("%d/%m/%Y"),
+        "{{conge.date_fin}}": datetime.strptime(leave["end_date"], "%Y-%m-%d").strftime("%d/%m/%Y"),
+        "{{conge.nb_jours}}": str(leave.get("working_days", leave.get("days_requested", 0))),
+        "{{conge.date_retour}}": date_retour.strftime("%d/%m/%Y"),
+        "{{conge.type}}": leave.get("leave_type_label", leave.get("leave_type", "N/A")),
+        "{{date.document}}": datetime.now(timezone.utc).strftime("%d/%m/%Y")
+    }
+    
+    # Remplacer les balises dans le contenu du modèle
+    content = template.get("content", "")
+    for placeholder, value in replacements.items():
+        content = content.replace(placeholder, value)
+    
+    # Créer le document dans la base de données
+    document_doc = {
+        "id": str(uuid.uuid4()),
+        "template_id": template_id,
+        "template_name": template.get("name", "Document"),
+        "employee_id": leave["employee_id"],
+        "employee_name": f"{employee['first_name']} {employee['last_name']}",
+        "beneficiary_name": f"{employee['first_name']} {employee['last_name']}",
+        "beneficiary_matricule": employee.get("id", "N/A"),
+        "document_type": "Congé",
+        "period_start": leave["start_date"],
+        "period_end": leave["end_date"],
+        "reason": leave.get("reason", ""),
+        "source_module": "leaves",
+        "source_id": leave_id,
+        "content": content,
+        "original_template": template.get("content", ""),
+        "status": "draft",  # Draft pour permettre l'édition manuelle
+        "metadata": {
+            "employee_site": employee_site.get('name') if employee_site else None,
+            "leave_type": leave.get("leave_type"),
+            "leave_type_label": leave.get("leave_type_label", leave.get("leave_type")),
+            "auto_check_site": employee_site.get('name') if employee_site else None,
+            "auto_check_leave_type": leave.get("leave_type_label", leave.get("leave_type"))
+        },
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"],
+        "created_by_name": f"{current_user['first_name']} {current_user['last_name']}"
+    }
+    
+    await db.documents_rh.insert_one(document_doc)
+    document_doc.pop("_id", None)
+    
+    return {
+        "message": "Document généré avec succès",
+        "document": document_doc
+    }
+
 @leaves_router.delete("/{leave_id}")
 async def delete_leave(
     leave_id: str,

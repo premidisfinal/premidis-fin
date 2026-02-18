@@ -21,6 +21,7 @@ import PermissionsManagement from './pages/PermissionsManagement';
 import SitesManagement from './pages/SitesManagement';
 import DepartmentsManagement from './pages/DepartmentsManagement';
 import DocumentsModule from './pages/DocumentsModuleV2';
+import DocumentsRHHistory from './pages/DocumentsRHHistory';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {

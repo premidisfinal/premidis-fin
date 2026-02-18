@@ -411,18 +411,6 @@ const DocumentsModuleV2 = () => {
                       </Card>
                     );
                   })}
-                              onClick={() => {
-                                setItemToDelete({ type: 'document', id: doc.id, name: doc.title });
-                                setShowDeleteDialog(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
                 </div>
               )}
             </CardContent>

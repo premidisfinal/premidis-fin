@@ -1330,8 +1330,8 @@ async def generate_leave_document(
     if employee.get("site_id"):
         employee_site = await db.sites.find_one({"id": employee["site_id"]}, {"_id": 0})
     
-    # Récupérer le modèle de document
-    template = await db.document_templates.find_one({"id": template_id}, {"_id": 0})
+    # Récupérer le modèle de document (depuis document_forms, pas document_templates)
+    template = await db.document_forms.find_one({"id": template_id}, {"_id": 0})
     if not template:
         raise HTTPException(status_code=404, detail="Modèle non trouvé")
     

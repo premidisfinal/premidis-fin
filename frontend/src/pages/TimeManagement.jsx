@@ -399,11 +399,14 @@ const TimeManagement = () => {
     setGeneratingDocument(true);
     
     try {
-      // Récupérer les modèles liés au module "leaves"
-      const response = await axios.get(`/api/hr-documents/templates`, {
-        params: { source_module: 'leaves' }
-      });
-      setDocumentTemplates(response.data.templates || []);
+      // Récupérer les formes de documents (pas les templates)
+      const response = await axios.get(`/api/documents/forms`);
+      // Filtrer pour obtenir uniquement "Communication d'Absences"
+      const allForms = response.data.forms || [];
+      const leaveForms = allForms.filter(form => 
+        form.name && form.name.toLowerCase().includes('absence')
+      );
+      setDocumentTemplates(leaveForms);
       setGenerateDocDialogOpen(true);
     } catch (error) {
       toast.error('Erreur lors du chargement des modèles');
